@@ -155,7 +155,26 @@ It follows the system preference until the lever is thrown once, then remembers 
 Both themes are checked by measuring real contrast ratios on every visible text node across all
 pages — currently zero failures in either.
 
-## 7. The flat-shape layer
+## 7. The castle
+
+`src/components/Castle.astro` — a walking machine built out of Khushi's own things: a CRT for a
+head (with someone living inside it), a filing cabinet, a record deck, a stack of floppies, all
+bolted together and carried on two chunky legs. It sits between the hero and the keyboard, so the
+keyboard below reads as its control panel.
+
+Everything is drawn with the site's ink outline, so it belongs to the same world as the keycaps and
+the floppy disks, and it's painted with theme tokens — at night the boxes go dark and the windows,
+the screen and the star are the only things still lit.
+
+It's alive while nobody touches it: the whole castle lumbers, four cogs turn at different speeds and
+directions, the chimneys puff, a lamp blinks, flowers sway, clouds drift and the resident in the
+screen pops up to look at you every nine seconds. All of it stops under `prefers-reduced-motion`.
+
+One trap worth remembering: rotating an SVG group with `transform-box: view-box` spins it about the
+**viewBox origin**, not its own centre, which flung the first set of cogs off the castle entirely.
+Each cog now lives in a placed wrapper and turns about its own origin.
+
+## 8. The flat-shape layer
 
 Every content section sits on a layer of flat shapes — concentric rings, leaves, petals,
 blobs, arcs, dot grids and checker blocks — in green, teal and sea blue. It's one component,
@@ -195,6 +214,7 @@ hidden from screen readers, never catches a click, and always painted under the 
 | Deck state machine + choreography | `src/scripts/turntable.ts` |
 | Flat shapes + machine parts | `src/components/Shapes.astro` |
 | Day/night lever | `src/components/ThemeLever.astro` |
+| The castle | `src/components/Castle.astro` |
 | Colors, type, keycap buttons, section spacing | `src/styles/global.css` |
 
 ## Next up

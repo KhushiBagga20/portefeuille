@@ -1,0 +1,616 @@
+---
+// The castle: a walking machine built out of Khushi's own things — a CRT for a head,
+// a filing cabinet, a turntable deck, a stack of floppies, all bolted together and
+// carried on two chunky legs.
+//
+// Everything is drawn with the site's ink outline so it belongs to the same world,
+// and it's painted with theme tokens, so at night the boxes go dark and the windows
+// are the only things still lit.
+
+/** A cog centred on the origin, with flat-topped teeth and a hole through the hub. */
+function gear(teeth = 12, ro = 50, ri = 39, hub = 15) {
+  const pts: string[] = [];
+  const at = (r: number, a: number) => pts.push(`${(r * Math.cos(a)).toFixed(2)} ${(r * Math.sin(a)).toFixed(2)}`);
+  const w = (Math.PI * 2) / teeth;
+  for (let i = 0; i < teeth; i++) {
+    const a = i * w;
+    at(ro, a + w * 0.08);
+    at(ro, a + w * 0.36);
+    at(ri, a + w * 0.46);
+    at(ri, a + w * 0.94);
+  }
+  return `M${pts.join('L')}Z M${hub} 0 A${hub} ${hub} 0 1 0 ${-hub} 0 A${hub} ${hub} 0 1 0 ${hub} 0Z`;
+}
+
+const COG = gear();
+
+// windows: [x, y, w, h]
+const windows: [number, number, number, number][] = [
+  [449, 262, 46, 46],
+  [515, 262, 46, 46],
+  [449, 328, 46, 46],
+  [905, 505, 52, 44],
+  [975, 505, 52, 44],
+];
+
+// drawer fronts on the filing cabinet
+const drawers = [392, 462, 532];
+
+const smoke = [0, 1, 2, 3];
+
+// one closed outline, 146 × 56, so the stroke runs round the whole cloud
+const CLOUD = 'M6 56 C6 40 18 29 33 32 C39 13 65 7 79 21 C93 9 115 17 117 36 C133 36 143 44 140 56 Z';
+---
+
+<section class="castle" aria-labelledby="castle-title">
+  <p class="castle__eyebrow">chapter 01½ · the machine</p>
+  <h2 id="castle-title" class="sr-only">The castle</h2>
+
+  <svg class="castle__svg" viewBox="0 0 1400 880" role="img" aria-label="A walking castle built from a monitor, a filing cabinet, a record deck and a stack of floppy disks.">
+    <defs>
+      <clipPath id="castle-screen"><rect x="958" y="150" width="238" height="166" rx="16"></rect></clipPath>
+    </defs>
+
+    <!-- the sky it walks through -->
+    <g class="sky" aria-hidden="true">
+      <path class="cloud cloud--a" d={CLOUD} transform="translate(64 150) scale(1.25)"></path>
+      <path class="cloud cloud--b" d={CLOUD} transform="translate(1178 382) scale(1.05)"></path>
+      <path class="cloud cloud--c" d={CLOUD} transform="translate(178 596) scale(0.8)"></path>
+      <g class="drift drift--a" transform="translate(96 516) rotate(-7)">
+        <rect class="sheet" width="74" height="94" rx="6"></rect>
+        <path class="sheet-line" d="M14 26 H60 M14 44 H60 M14 62 H44" stroke-width="4"></path>
+      </g>
+      <polygon class="twinkle twinkle--a" points="1290,180 1300,208 1328,218 1300,228 1290,256 1280,228 1252,218 1280,208"></polygon>
+      <polygon class="twinkle twinkle--b" points="92,724 99,744 119,751 99,758 92,778 85,758 65,751 85,744"></polygon>
+    </g>
+
+    <!-- the ground it walks on -->
+    <ellipse class="castle__ground" cx="700" cy="846" rx="470" ry="26"></ellipse>
+
+    <g class="castle__walk">
+      <!-- ── legs, behind everything ───────────── -->
+      <g class="leg leg--back">
+        <path class="ink" d="M560 640 L498 744" stroke-width="30" stroke-linecap="round"></path>
+        <path class="ink" d="M498 744 L470 818" stroke-width="24" stroke-linecap="round"></path>
+        <rect class="plate" x="412" y="806" width="120" height="30" rx="14"></rect>
+        <circle class="joint" cx="498" cy="744" r="21"></circle>
+      </g>
+      <g class="leg leg--front">
+        <path class="ink" d="M860 640 L928 752" stroke-width="34" stroke-linecap="round"></path>
+        <path class="ink" d="M928 752 L952 820" stroke-width="26" stroke-linecap="round"></path>
+        <rect class="plate" x="892" y="808" width="132" height="32" rx="15"></rect>
+        <circle class="joint" cx="928" cy="752" r="23"></circle>
+      </g>
+
+      <!-- ── chimneys + smoke ──────────────────── -->
+      <g class="stacks">
+        {
+          [
+            [470, 150, 46],
+            [556, 110, 38],
+          ].map(([x, y, w]) => (
+            <g>
+              <rect class="pipe" x={x} y={y} width={w} height={130} rx="8" />
+              <rect class="pipe-lip" x={x - 9} y={y - 14} width={w + 18} height={26} rx="10" />
+            </g>
+          ))
+        }
+      </g>
+      <g class="puffs" aria-hidden="true">
+        {smoke.map((i) => <circle class="puff" cx="493" cy="138" r="15" style={`--i:${i}`} />)}
+        {smoke.map((i) => <circle class="puff puff--b" cx="575" cy="98" r="11" style={`--i:${i}`} />)}
+      </g>
+
+      <!-- ── the body stack ────────────────────── -->
+      <!-- back annex with the lit windows -->
+      <rect class="box box--annex" x="416" y="222" width="190" height="200" rx="18"></rect>
+      <path class="ink-line" d="M416 288 H606" stroke-width="5"></path>
+
+      <!-- filing cabinet -->
+      <rect class="box box--cabinet" x="372" y="360" width="300" height="256" rx="20"></rect>
+      {
+        drawers.map((y) => (
+          <g>
+            <rect class="drawer" x={396} y={y} width={252} height={56} rx="10" />
+            <rect class="handle" x={492} y={y + 22} width={60} height="12" rx="6" />
+          </g>
+        ))
+      }
+
+      <!-- the record deck it stands on -->
+      <rect class="box box--deck" x="606" y="470" width="420" height="160" rx="22"></rect>
+      <ellipse class="platter" cx="716" cy="524" rx="74" ry="26"></ellipse>
+      <ellipse class="spindle" cx="716" cy="524" rx="9" ry="4"></ellipse>
+      <rect class="slot" x="824" y="586" width="150" height="14" rx="7"></rect>
+
+      <!-- the CRT head -->
+      <rect class="box box--head" x="930" y="118" width="294" height="230" rx="26"></rect>
+      <rect class="screen" x="958" y="150" width="238" height="166" rx="16"></rect>
+      <g clip-path="url(#castle-screen)">
+        <path class="scan" d="M958 150 H1196 M958 162 H1196 M958 174 H1196 M958 186 H1196 M958 198 H1196 M958 210 H1196 M958 222 H1196 M958 234 H1196 M958 246 H1196 M958 258 H1196 M958 270 H1196 M958 282 H1196 M958 294 H1196 M958 306 H1196"></path>
+        <!-- a little resident, watching from inside -->
+        <g class="resident">
+          <ellipse class="blob" cx="1077" cy="268" rx="52" ry="42"></ellipse>
+          <circle class="eye" cx="1060" cy="258" r="7"></circle>
+          <circle class="eye" cx="1095" cy="258" r="7"></circle>
+          <path class="smile" d="M1062 282 Q1077 294 1092 282" stroke-width="5" fill="none" stroke-linecap="round"></path>
+        </g>
+      </g>
+      <circle class="lamp" cx="952" cy="334" r="7"></circle>
+
+      <!-- neck connecting head to deck -->
+      <rect class="neck" x="1008" y="340" width="90" height="140" rx="14"></rect>
+
+      <!-- floppy stack wedged in the side -->
+      <g class="floppies">
+        {
+          [
+            [1046, 612, 'var(--tomato)'],
+            [1060, 646, 'var(--mint)'],
+            [1038, 680, 'var(--lilac)'],
+          ].map(([x, y, c]) => (
+            <g transform={`translate(${x} ${y}) rotate(-4)`}>
+              <rect class="floppy" width="118" height="30" rx="5" style={`--c:${c}`} />
+              <rect class="floppy-shutter" x="38" y="5" width="42" height="20" rx="3" />
+            </g>
+          ))
+        }
+      </g>
+
+      <!-- pipe joining the cabinet to the deck -->
+      <path class="pipe-run" d="M672 452 H742 A22 22 0 0 1 764 474 V470" stroke-width="22" fill="none" stroke-linecap="round"></path>
+
+      <!-- gears between the parts -->
+      <g transform="translate(350 470)"><g class="cog cog--a"><path d={COG} fill-rule="evenodd"></path></g></g>
+      <g transform="translate(1046 432) scale(0.66)"><g class="cog cog--b"><path d={COG} fill-rule="evenodd"></path></g></g>
+      <g transform="translate(700 654) scale(0.56)"><g class="cog cog--c"><path d={COG} fill-rule="evenodd"></path></g></g>
+      <g transform="translate(606 300) scale(0.44)"><g class="cog cog--d"><path d={COG} fill-rule="evenodd"></path></g></g>
+
+      <!-- windows -->
+      {windows.map(([x, y, w, h]) => <rect class="window" x={x} y={y} width={w} height={h} rx="7" />)}
+
+      <!-- antenna + flag -->
+      <path class="ink-line" d="M1180 118 V40" stroke-width="8" stroke-linecap="round"></path>
+      <path class="flag" d="M1180 44 L1266 66 L1180 90 Z"></path>
+      <circle class="star" cx="1180" cy="34" r="11"></circle>
+
+      <!-- things growing out of the joints -->
+      <g class="sprigs">
+        <path class="stem" d="M372 392 C330 376 312 340 316 306" stroke-width="7" fill="none" stroke-linecap="round"></path>
+        <ellipse class="leaf" cx="300" cy="330" rx="27" ry="16" transform="rotate(-34 300 330)"></ellipse>
+        <ellipse class="leaf" cx="336" cy="300" rx="24" ry="14" transform="rotate(22 336 300)"></ellipse>
+        <circle class="bloom" cx="316" cy="300" r="12"></circle>
+        <path class="stem" d="M1026 606 C1072 598 1092 572 1090 544" stroke-width="6" fill="none" stroke-linecap="round"></path>
+        <ellipse class="leaf" cx="1106" cy="562" rx="23" ry="13" transform="rotate(30 1106 562)"></ellipse>
+        <circle class="bloom bloom--b" cx="1090" cy="538" r="10"></circle>
+      </g>
+
+      <!-- bolts holding it together -->
+      {
+        [
+          [372, 376],
+          [672, 376],
+          [372, 600],
+          [672, 600],
+          [606, 486],
+          [1010, 486],
+        ].map(([x, y]) => <circle class="bolt" cx={x} cy={y} r="9" />)
+      }
+    </g>
+  </svg>
+
+  <p class="castle__note">everything I make lives in here</p>
+</section>
+
+<style>
+  .castle {
+    position: relative;
+    padding: clamp(24px, 5vw, 56px) var(--gutter) clamp(8px, 2vw, 24px);
+    border-top: var(--line) solid var(--ink);
+    background: var(--paper);
+    overflow: clip;
+  }
+
+  .castle__eyebrow {
+    max-width: 1240px;
+    margin: 0 auto;
+    font: 400 11px/1 var(--font-pixel);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .castle__svg {
+    display: block;
+    width: min(100%, 1120px);
+    height: auto;
+    margin: clamp(-8px, -1vw, 0px) auto 0;
+    overflow: visible;
+  }
+
+  .castle__note {
+    margin: -6px 0 0;
+    font: 400 clamp(22px, 2.2vw, 30px) / 1.1 var(--font-hand);
+    text-align: center;
+    rotate: -1.4deg;
+  }
+
+  /* ── the castle's materials ──────────────── */
+  .castle__svg :is(.box, .drawer, .plate, .joint, .window, .screen, .neck, .platter, .floppy, .bolt, .flag, .star, .lamp, .blob, .pipe, .pipe-lip, .leaf, .bloom) {
+    stroke: var(--ink);
+    stroke-width: 5;
+    stroke-linejoin: round;
+  }
+
+  .box {
+    fill: var(--cream);
+  }
+
+  .box--annex {
+    fill: var(--sky);
+  }
+
+  .box--cabinet {
+    fill: var(--lilac);
+  }
+
+  .box--deck {
+    fill: var(--cream);
+  }
+
+  .box--head {
+    fill: var(--mint);
+  }
+
+  .drawer {
+    fill: var(--paper-deep);
+  }
+
+  .handle {
+    fill: var(--ink);
+  }
+
+  .neck {
+    fill: var(--brass);
+  }
+
+  .plate,
+  .joint {
+    fill: var(--brass);
+  }
+
+  .ink {
+    stroke: var(--ink);
+    fill: none;
+  }
+
+  .ink-line {
+    stroke: var(--ink);
+    fill: none;
+  }
+
+  .pipe,
+  .pipe-lip {
+    fill: var(--brass);
+  }
+
+  .pipe-run {
+    stroke: var(--brass);
+    stroke-width: 22;
+  }
+
+  .platter {
+    fill: var(--ink);
+  }
+
+  .spindle {
+    fill: var(--cream);
+  }
+
+  .slot {
+    fill: var(--ink);
+  }
+
+  .floppy {
+    fill: var(--c);
+  }
+
+  .floppy-shutter {
+    fill: var(--paper-deep);
+    stroke: var(--ink);
+    stroke-width: 3;
+  }
+
+  .bolt {
+    fill: var(--brass);
+  }
+
+  .flag {
+    fill: var(--tomato);
+  }
+
+  .star {
+    fill: var(--lemon);
+  }
+
+  .lamp {
+    fill: var(--mint);
+    stroke-width: 3;
+  }
+
+  .cog path {
+    fill: var(--teal-deep);
+    stroke: var(--ink);
+    stroke-width: 5;
+    stroke-linejoin: round;
+  }
+
+  .cog--b path {
+    fill: var(--green-deep);
+  }
+
+  .cog--c path {
+    fill: var(--brass);
+  }
+
+  .stem {
+    stroke: var(--green-deep);
+  }
+
+  .leaf {
+    fill: var(--green);
+  }
+
+  .bloom {
+    fill: var(--pink);
+  }
+
+  .bloom--b {
+    fill: var(--lemon);
+  }
+
+  .cloud {
+    fill: var(--bone);
+    stroke: var(--ink);
+    stroke-width: 4.5;
+    stroke-linejoin: round;
+    transform-box: fill-box;
+  }
+
+  .cloud--a {
+    animation: float 13s ease-in-out infinite alternate;
+  }
+
+  .cloud--b {
+    animation: float 17s ease-in-out infinite alternate-reverse;
+  }
+
+  .cloud--c {
+    animation: float 11s ease-in-out infinite alternate;
+  }
+
+  @keyframes float {
+    to {
+      transform: translateX(26px);
+    }
+  }
+
+  .sheet {
+    fill: var(--bone);
+    stroke: var(--ink);
+    stroke-width: 5;
+  }
+
+  .sheet-line {
+    stroke: var(--ink);
+    opacity: 0.35;
+    fill: none;
+  }
+
+  .drift--a {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: tumble 9s ease-in-out infinite alternate;
+  }
+
+  @keyframes tumble {
+    to {
+      transform: translate(14px, -22px) rotate(-11deg);
+    }
+  }
+
+  .twinkle {
+    fill: var(--lemon);
+    stroke: var(--ink);
+    stroke-width: 4;
+    stroke-linejoin: round;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: wink 4.5s ease-in-out infinite alternate;
+  }
+
+  .twinkle--b {
+    animation-duration: 6s;
+    animation-delay: -2s;
+  }
+
+  @keyframes wink {
+    to {
+      scale: 0.72;
+      rotate: 28deg;
+    }
+  }
+
+  .castle__ground {
+    fill: var(--ink);
+    opacity: 0.16;
+  }
+
+  /* ── the screen, and whoever lives in it ── */
+  .screen {
+    fill: #1d1733;
+  }
+
+  .scan {
+    stroke: var(--mint);
+    stroke-width: 2;
+    opacity: 0.16;
+  }
+
+  .blob {
+    fill: var(--lemon);
+  }
+
+  .eye,
+  .smile {
+    fill: var(--ink);
+    stroke: var(--ink);
+  }
+
+  .window {
+    fill: var(--lemon);
+  }
+
+  /* After dark the boxes go quiet and the windows are what's left burning. */
+  :global(:root[data-theme='night']) .window,
+  :global(:root[data-theme='night']) .star {
+    fill: var(--glow);
+    filter: drop-shadow(0 0 10px var(--glow));
+  }
+
+  :global(:root[data-theme='night']) .screen {
+    filter: drop-shadow(0 0 14px rgb(127 224 176 / 0.4));
+  }
+
+  /* ── it is alive ─────────────────────────── */
+  .castle__walk {
+    transform-origin: 700px 820px;
+    animation: lumber 7s ease-in-out infinite alternate;
+  }
+
+  @keyframes lumber {
+    from {
+      transform: translateY(0) rotate(-0.5deg);
+    }
+    to {
+      transform: translateY(-10px) rotate(0.5deg);
+    }
+  }
+
+  .cog {
+    transform-origin: 0 0;
+    animation: turn 24s linear infinite;
+  }
+
+  .cog--b {
+    animation-duration: 15s;
+    animation-direction: reverse;
+  }
+
+  .cog--c {
+    animation-duration: 11s;
+  }
+
+  .cog--d {
+    animation-duration: 18s;
+    animation-direction: reverse;
+  }
+
+  .cog--d path {
+    fill: var(--sea);
+  }
+
+  @keyframes turn {
+    to {
+      rotate: 360deg;
+    }
+  }
+
+  .puff {
+    fill: var(--ink);
+    opacity: 0;
+    animation: rise 5s ease-out infinite;
+    animation-delay: calc(var(--i) * 1.25s);
+  }
+
+  .puff--b {
+    animation-duration: 6s;
+    animation-delay: calc(var(--i) * 1.5s + 0.6s);
+  }
+
+  @keyframes rise {
+    0% {
+      opacity: 0;
+      transform: translate(0, 0) scale(0.4);
+    }
+    18% {
+      opacity: 0.16;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(-38px, -118px) scale(1.7);
+    }
+  }
+
+  .lamp {
+    animation: blink 3.4s steps(2, jump-none) infinite;
+  }
+
+  @keyframes blink {
+    50% {
+      fill: var(--tomato);
+    }
+  }
+
+  .resident {
+    transform-origin: 1077px 268px;
+    animation: peek 9s ease-in-out infinite;
+  }
+
+  @keyframes peek {
+    0%,
+    42%,
+    100% {
+      transform: translateY(44px);
+    }
+    58%,
+    88% {
+      transform: translateY(0);
+    }
+  }
+
+  .sprigs {
+    transform-origin: 372px 392px;
+    animation: sway 6s ease-in-out infinite alternate;
+  }
+
+  @keyframes sway {
+    to {
+      transform: rotate(2.4deg);
+    }
+  }
+
+  @media (max-width: 760px) {
+    .castle__svg {
+      width: 128%;
+      margin-left: -14%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .castle__walk,
+    .cloud,
+    .drift--a,
+    .twinkle,
+    .cog,
+    .puff,
+    .lamp,
+    .resident,
+    .sprigs {
+      animation: none;
+    }
+
+    .resident {
+      transform: translateY(0);
+    }
+  }
+</style>
