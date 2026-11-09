@@ -74,13 +74,13 @@ import { desk, pad, sections } from '../data/keyboard';
 
   h2 {
     margin: 10px 0 0;
-    color: var(--cream);
+    color: var(--bone);
     font: 400 clamp(44px, 4.8vw, 84px) / 0.9 var(--font-display);
     white-space: nowrap;
     -webkit-text-stroke: 0.07em var(--ink);
     paint-order: stroke fill;
     text-shadow:
-      0.035em 0.045em 0 var(--ink),
+      0.035em 0.045em 0 var(--shadow),
       0.065em 0.08em 0 var(--tomato);
   }
 
@@ -97,7 +97,7 @@ import { desk, pad, sections } from '../data/keyboard';
     background: #211b36;
     box-shadow:
       inset 0 0 0 4px #302a4d,
-      0 5px 0 var(--ink);
+      0 5px 0 var(--shadow);
     color: var(--mint);
     font: 400 16px/1 var(--font-pixel);
     letter-spacing: 0.06em;
@@ -172,7 +172,7 @@ import { desk, pad, sections } from '../data/keyboard';
     border: 2px solid var(--ink);
     border-radius: 6px;
     background: var(--cream);
-    box-shadow: 0 2px 0 var(--ink);
+    box-shadow: 0 2px 0 var(--shadow);
     font: 400 11px/1 var(--font-pixel);
     vertical-align: 3px;
   }

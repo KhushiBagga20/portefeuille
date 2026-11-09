@@ -55,7 +55,18 @@ const person = {
     <meta name="twitter:card" content="summary_large_image" />
 
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <script is:inline>document.documentElement.classList.add('js');</script>
+    <script is:inline>
+      document.documentElement.classList.add('js');
+      // Pick the time of day before the first paint, so the castle never flickers.
+      (() => {
+        let saved = null;
+        try {
+          saved = localStorage.getItem('khushi:theme');
+        } catch {}
+        const night = saved ? saved === 'night' : matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.dataset.theme = night ? 'night' : 'day';
+      })();
+    </script>
     <script type="application/ld+json" set:html={JSON.stringify(person)} />
   </head>
   <body>

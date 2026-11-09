@@ -227,7 +227,8 @@ const links = [
     border: var(--line) solid var(--ink);
     border-radius: 16px;
     background: var(--lilac);
-    box-shadow: 6px 7px 0 var(--ink);
+    box-shadow: 6px 7px 0 var(--shadow);
+    color: var(--on-accent);
   }
 
   .drive__slot {
@@ -269,7 +270,7 @@ const links = [
     border: var(--line) solid var(--ink);
     border-radius: 16px;
     background: var(--cream);
-    box-shadow: 6px 7px 0 var(--ink);
+    box-shadow: 6px 7px 0 var(--shadow);
   }
 
   dt {
@@ -314,14 +315,21 @@ const links = [
     border: var(--line) solid var(--ink);
     border-radius: 28px;
     background: var(--cream);
-    box-shadow: 12px 14px 0 var(--ink);
+    box-shadow: 12px 14px 0 var(--shadow);
   }
 
+  /* A screen is a light source, so it stays lit after dark: the panel keeps the
+     daytime ink no matter what the rest of the castle is doing. */
   .screen {
+    --ink: #241f1b;
+    --ink-soft: #5c5248;
+    --text-soft: #463c34;
+    --shadow: #241f1b;
     overflow: hidden;
-    border: var(--line) solid var(--ink);
+    border: var(--line) solid var(--shadow);
     border-radius: 14px;
-    background: #fffdf8;
+    background: var(--bone);
+    color: var(--ink);
   }
 
   .screen__bar {
@@ -331,6 +339,7 @@ const links = [
     padding: 10px 14px;
     border-bottom: var(--line) solid var(--ink);
     background: var(--lemon);
+    color: var(--on-accent);
     font: 400 11px/1 var(--font-pixel);
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -368,7 +377,7 @@ const links = [
     -webkit-text-stroke: 0.07em var(--ink);
     paint-order: stroke fill;
     text-shadow:
-      0.035em 0.045em 0 var(--ink),
+      0.035em 0.045em 0 var(--shadow),
       0.065em 0.08em 0 var(--tomato);
   }
 
@@ -544,7 +553,7 @@ const links = [
     .monitor {
       padding: 8px 8px 0;
       border-radius: 20px;
-      box-shadow: 7px 8px 0 var(--ink);
+      box-shadow: 7px 8px 0 var(--shadow);
     }
   }
 

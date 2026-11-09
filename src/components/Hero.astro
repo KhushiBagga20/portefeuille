@@ -121,7 +121,7 @@ const wobble = [-4, 3, -2, 4, -3, 2];
     -webkit-text-stroke: 0.07em var(--ink);
     paint-order: stroke fill;
     text-shadow:
-      0.035em 0.045em 0 var(--ink),
+      0.035em 0.045em 0 var(--shadow),
       0.065em 0.08em 0 var(--tomato);
     rotate: var(--r);
     transition: translate 0.5s var(--spring);
@@ -262,7 +262,8 @@ const wobble = [-4, 3, -2, 4, -3, 2];
     border: 2px solid var(--ink);
     border-radius: 4px 4px 14px 4px;
     background: #fff1a8;
-    box-shadow: 4px 5px 0 var(--ink);
+    color: var(--on-accent);
+    box-shadow: 4px 5px 0 var(--shadow);
     font: 400 21px/1.05 var(--font-hand);
     rotate: -6deg;
     translate: calc(var(--mx) * var(--d) * -12px) calc(var(--my) * var(--d) * -9px + var(--p) * var(--d) * -34px);
@@ -362,7 +363,7 @@ const wobble = [-4, 3, -2, 4, -3, 2];
     border: 2px solid var(--ink);
     border-radius: 6px;
     background: var(--cream);
-    box-shadow: 0 3px 0 var(--ink);
+    box-shadow: 0 3px 0 var(--shadow);
     font: 700 13px/1 var(--font-body);
     animation: tap 1.6s var(--ease-out) infinite;
   }
@@ -372,11 +373,11 @@ const wobble = [-4, 3, -2, 4, -3, 2];
     60%,
     100% {
       translate: 0 0;
-      box-shadow: 0 3px 0 var(--ink);
+      box-shadow: 0 3px 0 var(--shadow);
     }
     75% {
       translate: 0 3px;
-      box-shadow: 0 0 0 var(--ink);
+      box-shadow: 0 0 0 var(--shadow);
     }
   }
 

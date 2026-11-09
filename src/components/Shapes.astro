@@ -5,7 +5,24 @@
 // Purely decorative — hidden from screen readers, never catches a click, and always
 // painted under the content. Shapes are placed toward the edges so the reading column
 // stays clean; `hide` drops the busiest ones on narrow screens.
-type Kind = 'disc' | 'ring' | 'rings' | 'blob' | 'leaf' | 'petal' | 'arc' | 'pill' | 'dots' | 'checker';
+type Kind = 'disc' | 'ring' | 'rings' | 'blob' | 'leaf' | 'petal' | 'arc' | 'pill' | 'dots' | 'checker' | 'gear' | 'bolt' | 'pipe';
+
+/** A cog with flat-topped teeth and a hole through the hub. */
+function gearPath(teeth = 11, ro = 49, ri = 37, hub = 15) {
+  const pts: string[] = [];
+  const at = (r: number, a: number) => pts.push(`${(50 + r * Math.cos(a)).toFixed(2)} ${(50 + r * Math.sin(a)).toFixed(2)}`);
+  const w = (Math.PI * 2) / teeth;
+  for (let i = 0; i < teeth; i++) {
+    const a = i * w;
+    at(ro, a + w * 0.06);
+    at(ro, a + w * 0.38);
+    at(ri, a + w * 0.47);
+    at(ri, a + w * 0.94);
+  }
+  // second subpath is the hub hole (fill-rule: evenodd punches it out)
+  return `M${pts.join('L')}Z M${50 + hub} 50 A${hub} ${hub} 0 1 0 ${50 - hub} 50 A${hub} ${hub} 0 1 0 ${50 + hub} 50Z`;
+}
+const GEAR = gearPath();
 
 type Shape = {
   k: Kind;
@@ -40,6 +57,8 @@ const TO = 'var(--tomato)';
 // the darker sea blue is kept to thin or small shapes out in the margins.
 const sets: Record<Props['variant'], Shape[]> = {
   about: [
+    { k: 'gear', x: 94, y: 88, s: 1.1, c: GD, rot: 0, o: 0.7, hide: true },
+    { k: 'bolt', x: 50, y: 1, s: 0.34, c: TD, o: 0.7, hide: true },
     { k: 'rings', x: 88, y: 11, s: 1.6, c: T, o: 0.95 },
     { k: 'leaf', x: 2, y: 60, s: 1.9, c: G, rot: -18, o: 0.85 },
     { k: 'blob', x: 34, y: 88, s: 1.5, c: T, o: 0.5 },
@@ -52,6 +71,8 @@ const sets: Record<Props['variant'], Shape[]> = {
     { k: 'pill', x: 4, y: 93, s: 0.8, c: GD, rot: -14, o: 0.5, hide: true },
   ],
   projects: [
+    { k: 'gear', x: 6, y: 6, s: 1.2, c: TD, o: 0.6 },
+    { k: 'pipe', x: 96, y: 24, s: 1.1, c: GD, rot: 90, o: 0.6, hide: true },
     { k: 'checker', x: 88, y: 5, s: 1.5, c: TD, o: 0.55 },
     { k: 'blob', x: 0, y: 28, s: 2.1, c: G, o: 0.8 },
     { k: 'ring', x: 92, y: 40, s: 1.4, c: S, o: 0.85, hide: true },
@@ -63,6 +84,8 @@ const sets: Record<Props['variant'], Shape[]> = {
     { k: 'arc', x: 97, y: 70, s: 1.1, c: G, rot: -90, o: 0.6, hide: true },
   ],
   milestones: [
+    { k: 'gear', x: 70, y: 96, s: 1, c: TD, o: 0.6, hide: true },
+    { k: 'bolt', x: 6, y: 96, s: 0.36, c: GD, o: 0.7, hide: true },
     { k: 'rings', x: 3, y: 9, s: 1.5, c: GD, o: 0.9 },
     { k: 'pill', x: 82, y: 17, s: 1.7, c: T, rot: -22, o: 0.8 },
     { k: 'dots', x: 90, y: 60, s: 1.6, c: S, o: 0.7 },
@@ -74,6 +97,8 @@ const sets: Record<Props['variant'], Shape[]> = {
     { k: 'disc', x: 30, y: 4, s: 0.28, c: TO, o: 0.9, hide: true },
   ],
   communities: [
+    { k: 'gear', x: 16, y: 92, s: 1.1, c: GD, o: 0.6, hide: true },
+    { k: 'pipe', x: 2, y: 8, s: 1, c: TD, rot: 0, o: 0.55, hide: true },
     { k: 'blob', x: 86, y: 16, s: 2.2, c: T, o: 0.8 },
     { k: 'arc', x: 4, y: 55, s: 1.6, c: G, rot: 12, o: 0.85 },
     { k: 'ring', x: 60, y: 80, s: 1.1, c: SD, o: 0.7, hide: true },
@@ -83,6 +108,8 @@ const sets: Record<Props['variant'], Shape[]> = {
     { k: 'petal', x: 44, y: 96, s: 1, c: G, rot: -30, o: 0.6, hide: true },
   ],
   skills: [
+    { k: 'gear', x: 92, y: 92, s: 1.2, c: GD, o: 0.6, hide: true },
+    { k: 'bolt', x: 72, y: 4, s: 0.34, c: TD, o: 0.7, hide: true },
     { k: 'checker', x: 2, y: 10, s: 1.4, c: GD, o: 0.55 },
     { k: 'rings', x: 47, y: 64, s: 1.5, c: S, o: 0.8 },
     { k: 'petal', x: 94, y: 10, s: 1.3, c: G, rot: -40, o: 0.85 },
@@ -93,6 +120,8 @@ const sets: Record<Props['variant'], Shape[]> = {
     { k: 'disc', x: 70, y: 86, s: 0.32, c: L, o: 1, hide: true },
   ],
   contact: [
+    { k: 'gear', x: 36, y: 4, s: 1, c: TD, o: 0.55, hide: true },
+    { k: 'pipe', x: 97, y: 88, s: 1.1, c: GD, rot: 180, o: 0.6, hide: true },
     { k: 'leaf', x: 86, y: 9, s: 1.9, c: G, rot: 24, o: 0.8 },
     { k: 'rings', x: 5, y: 64, s: 1.5, c: T, o: 0.9 },
     { k: 'blob', x: 72, y: 74, s: 1.7, c: T, o: 0.5, hide: true },
@@ -107,12 +136,19 @@ const shapes = sets[variant];
 ---
 
 <div class="shapes" aria-hidden="true">
+  <span class="stars"></span>
   {
     shapes.map((p) => (
       <span
         class:list={['s', `s--${p.k}`, p.hide && 'is-extra']}
         style={`--x:${p.x}%;--y:${p.y}%;--s:${p.s};--c:${p.c};--rot:${p.rot ?? 0}deg;--o:${p.o ?? 1}`}
-      />
+      >
+        {p.k === 'gear' && (
+          <svg viewBox="0 0 100 100" aria-hidden="true">
+            <path d={GEAR} fill-rule="evenodd" />
+          </svg>
+        )}
+      </span>
     ))
   }
 </div>
@@ -124,6 +160,34 @@ const shapes = sets[variant];
     z-index: 0;
     overflow: hidden;
     pointer-events: none;
+  }
+
+  /* The castle's night sky. Nothing to see while the sun is up. */
+  .stars {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    background-image:
+      radial-gradient(1.6px 1.6px at 12% 18%, var(--bone), transparent),
+      radial-gradient(1.4px 1.4px at 68% 9%, var(--bone), transparent),
+      radial-gradient(1.8px 1.8px at 34% 62%, var(--bone), transparent),
+      radial-gradient(1.3px 1.3px at 88% 44%, var(--bone), transparent),
+      radial-gradient(1.5px 1.5px at 54% 86%, var(--bone), transparent),
+      radial-gradient(1.2px 1.2px at 22% 92%, var(--bone), transparent),
+      radial-gradient(1.7px 1.7px at 78% 73%, var(--bone), transparent),
+      radial-gradient(1.3px 1.3px at 44% 32%, var(--bone), transparent);
+    transition: opacity 0.6s ease;
+  }
+
+  :global(:root[data-theme='night']) .stars {
+    opacity: 0.75;
+    animation: twinkle 6s ease-in-out infinite alternate;
+  }
+
+  @keyframes twinkle {
+    to {
+      opacity: 0.4;
+    }
   }
 
   .s {
@@ -196,6 +260,50 @@ const shapes = sets[variant];
     background-size: calc(var(--u) * 0.2) calc(var(--u) * 0.2);
   }
 
+  /* ── the machine parts ───────────────── */
+  .s--gear svg {
+    width: 100%;
+    height: 100%;
+    fill: var(--c);
+  }
+
+  .s--gear {
+    animation: turn 34s linear infinite;
+  }
+
+  .s--gear:nth-of-type(even) {
+    animation-direction: reverse;
+  }
+
+  @keyframes turn {
+    to {
+      rotate: 360deg;
+    }
+  }
+
+  .s--bolt {
+    background: var(--c);
+    clip-path: polygon(25% 2%, 75% 2%, 100% 50%, 75% 98%, 25% 98%, 0 50%);
+  }
+
+  .s--bolt::after {
+    content: '';
+    position: absolute;
+    inset: 42% 22%;
+    border-radius: 2px;
+    background: var(--paper);
+    opacity: 0.55;
+  }
+
+  /* an elbow of pipe, for joining one room to the next */
+  .s--pipe {
+    border: calc(var(--u) * 0.17) solid var(--c);
+    border-top-color: transparent;
+    border-right-color: transparent;
+    border-bottom-left-radius: 100%;
+    background: none;
+  }
+
   /* a nod to the grid in the poster */
   .s--checker {
     background:
@@ -215,6 +323,15 @@ const shapes = sets[variant];
 
     .is-extra {
       display: none;
+    }
+  }
+</style>
+
+<style>
+  @media (prefers-reduced-motion: reduce) {
+    .s--gear,
+    .stars {
+      animation: none;
     }
   }
 </style>

@@ -1,0 +1,136 @@
+---
+// The castle's day/night lever. Not an icon button — a brass switch you throw.
+// The arm swings, the bulb changes colour, and the whole room follows.
+---
+
+<button class="lever" type="button" role="switch" aria-checked="false" data-lever>
+  <span class="sr-only">Night mode</span>
+  <svg viewBox="0 0 104 46" aria-hidden="true">
+    <!-- plate -->
+    <rect x="1.5" y="1.5" width="101" height="43" rx="12" fill="var(--brass)" stroke="var(--shadow)" stroke-width="3"></rect>
+    <rect x="7" y="6" width="90" height="12" rx="6" fill="#000" opacity="0.18"></rect>
+
+    <!-- the track the arm swings in -->
+    <path d="M26 31 A26 26 0 0 1 78 31" fill="none" stroke="var(--shadow)" stroke-width="7" stroke-linecap="round" opacity="0.45"></path>
+
+    <!-- tiny engraved labels -->
+    <circle cx="26" cy="31" r="2.6" fill="var(--shadow)" opacity="0.5"></circle>
+    <circle cx="78" cy="31" r="2.6" fill="var(--shadow)" opacity="0.5"></circle>
+
+    <!-- the arm, pivoting from the plate -->
+    <g class="lever__arm">
+      <rect x="-3.5" y="-24" width="7" height="27" rx="3.5" fill="var(--ink)"></rect>
+      <circle cy="-25" r="8.5" fill="var(--glow)" stroke="var(--shadow)" stroke-width="3"></circle>
+      <circle cy="-25" r="3" fill="var(--shadow)" opacity="0.35"></circle>
+    </g>
+    <circle cx="52" cy="33" r="7" fill="var(--ink)" stroke="var(--shadow)" stroke-width="2.5"></circle>
+
+    <!-- indicator bulb -->
+    <circle class="lever__bulb" cx="88" cy="12" r="4.5"></circle>
+  </svg>
+</button>
+
+<script>
+  const KEY = 'khushi:theme';
+  const root = document.documentElement;
+
+  const paint = (night: boolean) => {
+    root.dataset.theme = night ? 'night' : 'day';
+    document.querySelectorAll<HTMLButtonElement>('[data-lever]').forEach((b) => {
+      b.setAttribute('aria-checked', String(night));
+      b.title = night ? 'Night — flip for day' : 'Day — flip for night';
+    });
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', night ? '#221c26' : '#f7efe0');
+  };
+
+  paint(root.dataset.theme === 'night');
+
+  document.querySelectorAll<HTMLButtonElement>('[data-lever]').forEach((button) =>
+    button.addEventListener('click', () => {
+      const night = root.dataset.theme !== 'night';
+      // only animate the colour change on a deliberate flip, never on load
+      root.classList.add('is-switching');
+      paint(night);
+      try {
+        localStorage.setItem(KEY, night ? 'night' : 'day');
+      } catch {}
+      window.setTimeout(() => root.classList.remove('is-switching'), 700);
+    }),
+  );
+
+  // Follow the system until the lever has been thrown at least once.
+  const system = matchMedia('(prefers-color-scheme: dark)');
+  system.addEventListener('change', (e) => {
+    let saved = null;
+    try {
+      saved = localStorage.getItem(KEY);
+    } catch {}
+    if (!saved) paint(e.matches);
+  });
+</script>
+
+<style>
+  .lever {
+    --key-depth: 4px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .lever svg {
+    width: 62px;
+    height: auto;
+    overflow: visible;
+  }
+
+  .lever__arm {
+    transform: translate(52px, 33px) rotate(-38deg);
+    transform-origin: 52px 33px;
+    transform-box: view-box;
+    transition: transform 0.5s var(--spring);
+  }
+
+  .lever[aria-checked='true'] .lever__arm {
+    transform: translate(52px, 33px) rotate(38deg);
+  }
+
+  .lever__bulb {
+    fill: var(--shadow);
+    opacity: 0.35;
+    transition:
+      fill 0.4s ease,
+      opacity 0.4s ease;
+  }
+
+  .lever[aria-checked='true'] .lever__bulb {
+    fill: var(--glow);
+    opacity: 1;
+    filter: drop-shadow(0 0 4px var(--glow));
+  }
+
+  @media (hover: hover) {
+    .lever:hover svg {
+      translate: 0 -2px;
+    }
+  }
+
+  .lever svg {
+    transition: translate 0.2s var(--ease-out);
+  }
+
+  .lever:focus-visible {
+    outline: 3px dashed var(--purple);
+    outline-offset: 5px;
+    border-radius: 12px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lever__arm {
+      transition-duration: 0.01ms;
+    }
+  }
+</style>

@@ -1,44 +1,106 @@
 /* ─────────────────────────────────────────────
-   Khushi's world: tokens
-   Periwinkle ground, cream paper objects, black ink,
-   lemon to highlight, tomato to act. Garden colours
-   only live in the keyboard.
-   ───────────────────────────────────────────── */
-:root {
-  /* ground */
-  --paper: #b9c6ff;
-  --paper-deep: #a7b5fb;
-  --grid: rgb(255 255 255 / 0.26);
+   Kai's Moving Castle: the colour system
+   ─────────────────────────────────────────────
+   Two atmospheres, one castle. DAY is the inventor's workshop with
+   sun on the paper; NIGHT is the same room after everyone's gone,
+   lit by its own windows. Night is not an inversion — the accents
+   shift to amber and periwinkle rather than flipping.
 
-  /* ink + paper objects (the photo frame uses these; keep them stable) */
-  --ink: #1b1526;
-  --ink-soft: #4d4660;
-  --cream: #fff8ec;
-  --pink: #ff5c9e;
+   The tokens are semantic, so components never name a colour:
+     --paper / --paper-deep   the room itself
+     --cream                  paper objects: cards, keycaps, sleeves
+     --bone                   a fill that stays light in both themes
+     --ink / --ink-soft       outlines and type
+     --shadow                 the hard offset under every object
+     --glow                   window light, lamps, indicator bulbs
+   ───────────────────────────────────────────── */
+:root,
+:root[data-theme='day'] {
+  color-scheme: light;
+
+  /* the room */
+  --paper: #f7efe0;
+  --paper-deep: #efe4d1;
+  --grid: rgb(36 31 27 / 0.07);
+
+  /* objects + ink */
+  --cream: #fffbf3;
+  --bone: #fff6e6;
+  --ink: #241f1b;
+  --ink-soft: #5c5248;
+  --text-soft: #463c34;
+  --shadow: #241f1b;
 
   /* accents */
-  --lemon: #ffe14f;
-  --tomato: #ff6a3d;
-  --lilac: #cbb8ff;
-  --mint: #7fe0b0;
-  --text-soft: #2f2a47;
+  --lemon: #ffd24a;
+  --tomato: #ff6b4a;
+  --lilac: #b9a5e8;
+  --mint: #78d6a4;
+  --pink: #f2799e;
+  --sky: #b9c6ff;
+  --brass: #c89b4a;
+  --glow: #ffc45a;
+  /* accents stay light in both themes, so ink on them stays dark in both themes */
+  --on-accent: #241f1b;
+  --soon-fill: rgb(255 255 255 / 0.4);
 
-  /* the flat-shape layer behind the content sections */
-  --green: #5fc07a;
-  --green-deep: #2e8f5f;
-  --teal: #3fb8ae;
-  --teal-deep: #1f7f82;
-  --sea: #3d6fd6;
-  --sea-deep: #2a4aa8;
+  /* the shape + machine layer */
+  --green: #3fa86b;
+  --green-deep: #2b7d50;
+  --teal: #2fa396;
+  --teal-deep: #1d7a74;
+  --sea: #3351c9;
+  --sea-deep: #26399a;
 
-  /* older names, still used by stickers */
+  /* older names, still used by stickers and the drawn objects */
   --yellow: var(--lemon);
-  --purple: #7f52f5;
-  --cyan: #38d1db;
+  --purple: #7c5bd4;
+  --cyan: #35b8c4;
   --blue: #86b4f7;
   --blue-deep: #4f6fe3;
   --blue-pale: #dce8ff;
+}
 
+:root[data-theme='night'] {
+  color-scheme: dark;
+
+  --paper: #221c26;
+  --paper-deep: #1a1520;
+  --grid: rgb(244 232 214 / 0.06);
+
+  --cream: #332940;
+  --bone: #f4e8d6;
+  --ink: #f4e8d6;
+  --ink-soft: #b7a6c2;
+  --text-soft: #ddd0dc;
+  --shadow: #120d18;
+
+  --lemon: #ffc24a;
+  --tomato: #ff7f5c;
+  --lilac: #a58fe0;
+  --mint: #6fd6a8;
+  --pink: #f08ca8;
+  --sky: #8e9be8;
+  --brass: #d9a94e;
+  --glow: #ffb547;
+  --on-accent: #1c1520;
+  --soon-fill: rgb(255 255 255 / 0.05);
+
+  --green: #4fb97e;
+  --green-deep: #359460;
+  --teal: #3fbfb2;
+  --teal-deep: #2a9b95;
+  --sea: #5a6fe0;
+  --sea-deep: #3f51bd;
+
+  --purple: #9b7ee8;
+  --cyan: #45cad6;
+  --blue: #7f9ae0;
+  --blue-deep: #5a73d8;
+  --blue-pale: #3a3350;
+}
+
+:root {
   --font-display: 'Bagel Fat One', 'Arial Rounded MT Bold', system-ui, sans-serif;
   --font-body: 'Bricolage Grotesque Variable', ui-sans-serif, system-ui, sans-serif;
   --font-pixel: 'Silkscreen', ui-monospace, monospace;
@@ -48,6 +110,20 @@
   --line: 3px;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   --spring: linear(0, 0.06 2.4%, 0.25 5.3%, 0.83 13%, 1.03 17%, 1.13 21%, 1.15 24%, 1.12 29%, 1.02 38%, 0.98 45%, 0.97 51%, 1 70%, 1);
+}
+
+/* The castle changing its mind about the time of day. */
+:root.is-switching,
+:root.is-switching body,
+:root.is-switching .section,
+:root.is-switching .key,
+:root.is-switching .card,
+:root.is-switching .note {
+  transition:
+    background-color 0.55s ease,
+    border-color 0.55s ease,
+    color 0.55s ease,
+    box-shadow 0.55s ease;
 }
 
 *,
@@ -90,7 +166,7 @@ a {
 
 ::selection {
   background: var(--lemon);
-  color: var(--ink);
+  color: var(--on-accent);
 }
 
 .sr-only {
@@ -116,7 +192,7 @@ a {
    ───────────────────────────────────────────── */
 .key {
   --key-face: var(--cream);
-  --key-edge: var(--ink);
+  --key-edge: var(--shadow);
   --key-depth: 5px;
   --key-lift: 0px;
   position: relative;
@@ -130,7 +206,7 @@ a {
   border-radius: 13px;
   background: var(--key-face);
   box-shadow: 0 calc(var(--key-depth) + var(--key-lift)) 0 var(--key-edge);
-  color: var(--ink);
+  color: var(--key-ink, var(--ink));
   font: 650 16px/1 var(--font-body);
   letter-spacing: -0.01em;
   text-decoration: none;
@@ -159,14 +235,17 @@ a {
 
 .key--pink {
   --key-face: var(--pink);
+  --key-ink: var(--on-accent);
 }
 
 .key--tomato {
   --key-face: var(--tomato);
+  --key-ink: var(--on-accent);
 }
 
 .key--yellow {
   --key-face: var(--yellow);
+  --key-ink: var(--on-accent);
 }
 
 .key small {

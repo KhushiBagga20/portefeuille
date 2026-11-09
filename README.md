@@ -122,7 +122,40 @@ One caveat worth knowing: the track list comes from Spotify's own embed page, wh
 internal format they could change. If the script ever errors, the site keeps working on the
 last committed `playlist.json` — only the refresh breaks.
 
-## 6. The flat-shape layer
+## 6. Day and night
+
+The castle has two atmospheres, thrown by a brass lever in the nav (`ThemeLever.astro`) —
+not a sun/moon icon. DAY is the workshop with sun on the paper; NIGHT is the same room after
+everyone's gone, lit by its own windows. Night isn't an inversion: accents shift to amber and
+periwinkle rather than flipping.
+
+The whole system is semantic tokens in `global.css`, so components never name a colour:
+
+| Token | Role |
+| --- | --- |
+| `--paper` / `--paper-deep` | the room itself |
+| `--cream` | paper objects: cards, keycaps, sleeves |
+| `--bone` | a fill that stays light in **both** themes (display type, lit panels) |
+| `--ink` / `--ink-soft` | outlines and type — goes light at night |
+| `--on-accent` | type printed on an accent fill — stays **dark** in both themes |
+| `--shadow` | the hard offset under every object — stays dark |
+| `--glow` | window light, lamps, indicator bulbs |
+
+Three rules make the flip safe, and they're the ones to remember when adding anything:
+
+1. Text on an accent fill (lemon, tomato, lilac, mint, pink) uses `--on-accent`, never `--ink` —
+   accents stay light in both themes, so their ink must stay dark.
+2. Hard offset shadows use `--shadow`, never `--ink`, or they'd turn into light halos at night.
+3. A **screen is a light source**: the case-study monitor redeclares the daytime ink locally, so
+   it stays lit after dark instead of going transparent.
+
+The theme is chosen before first paint by an inline script in `Base.astro`, so there's no flash.
+It follows the system preference until the lever is thrown once, then remembers the choice.
+
+Both themes are checked by measuring real contrast ratios on every visible text node across all
+pages — currently zero failures in either.
+
+## 7. The flat-shape layer
 
 Every content section sits on a layer of flat shapes — concentric rings, leaves, petals,
 blobs, arcs, dot grids and checker blocks — in green, teal and sea blue. It's one component,
@@ -131,6 +164,10 @@ blobs, arcs, dot grids and checker blocks — in green, teal and sea blue. It's 
 To move, recolour or add a shape, edit that section's entry in the `sets` object: `k` is the
 kind, `x`/`y` are percentages of the section box, `s` scales it, `c` is the colour and `o` the
 opacity. `hide: true` drops a shape on narrow screens.
+
+The vocabulary is both organic and mechanical: rings, leaves, petals, blobs, arcs, dot grids and
+checker blocks, plus **gears** (which turn slowly), **bolts** and **pipe elbows** placed at the
+section seams so the rooms read as joined parts of one machine.
 
 Two rules keep it readable: big light fills (green, teal, lemon) may sit behind text, while the
 darker sea blue stays in thin or small shapes out in the margins. The layer is decorative only —
@@ -156,7 +193,8 @@ hidden from screen readers, never catches a click, and always painted under the 
 | Record room | `src/pages/music.astro`, `src/components/MusicRoom.astro` |
 | Deck + sleeves | `src/components/Turntable.astro`, `src/components/Sleeve.astro` |
 | Deck state machine + choreography | `src/scripts/turntable.ts` |
-| Flat shapes behind sections | `src/components/Shapes.astro` |
+| Flat shapes + machine parts | `src/components/Shapes.astro` |
+| Day/night lever | `src/components/ThemeLever.astro` |
 | Colors, type, keycap buttons, section spacing | `src/styles/global.css` |
 
 ## Next up

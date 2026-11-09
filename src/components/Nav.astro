@@ -1,6 +1,7 @@
 ---
 import Doodle from './Doodle.astro';
 import SoundToggle from './SoundToggle.astro';
+import ThemeLever from './ThemeLever.astro';
 import { site } from '../data/site';
 ---
 
@@ -13,6 +14,7 @@ import { site } from '../data/site';
     <nav class="links" aria-label="Main">
       {site.nav.map((item) => <a class="key key--nav" href={item.href}>{item.label}</a>)}
     </nav>
+    <ThemeLever />
     <SoundToggle />
     <button class="key key--nav menu-button" popovertarget="site-menu" aria-label="Open menu">menu</button>
   </div>
@@ -58,7 +60,7 @@ import { site } from '../data/site';
   .nav:global(.is-solid) {
     padding-block: 10px;
     background-color: var(--paper);
-    box-shadow: 0 var(--line) 0 var(--ink);
+    box-shadow: 0 var(--line) 0 var(--shadow);
     pointer-events: auto;
   }
 
@@ -114,7 +116,7 @@ import { site } from '../data/site';
     border: var(--line) solid var(--ink);
     border-radius: 18px;
     background: var(--paper);
-    box-shadow: 6px 7px 0 var(--ink);
+    box-shadow: 6px 7px 0 var(--shadow);
   }
 
   .menu:popover-open {
