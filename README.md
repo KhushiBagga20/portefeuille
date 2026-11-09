@@ -122,6 +122,20 @@ One caveat worth knowing: the track list comes from Spotify's own embed page, wh
 internal format they could change. If the script ever errors, the site keeps working on the
 last committed `playlist.json` — only the refresh breaks.
 
+## 6. The flat-shape layer
+
+Every content section sits on a layer of flat shapes — concentric rings, leaves, petals,
+blobs, arcs, dot grids and checker blocks — in green, teal and sea blue. It's one component,
+`src/components/Shapes.astro`, with a named set of shapes per section.
+
+To move, recolour or add a shape, edit that section's entry in the `sets` object: `k` is the
+kind, `x`/`y` are percentages of the section box, `s` scales it, `c` is the colour and `o` the
+opacity. `hide: true` drops a shape on narrow screens.
+
+Two rules keep it readable: big light fills (green, teal, lemon) may sit behind text, while the
+darker sea blue stays in thin or small shapes out in the margins. The layer is decorative only —
+hidden from screen readers, never catches a click, and always painted under the content.
+
 ## Where things live
 
 | What | File |
@@ -142,6 +156,7 @@ last committed `playlist.json` — only the refresh breaks.
 | Record room | `src/pages/music.astro`, `src/components/MusicRoom.astro` |
 | Deck + sleeves | `src/components/Turntable.astro`, `src/components/Sleeve.astro` |
 | Deck state machine + choreography | `src/scripts/turntable.ts` |
+| Flat shapes behind sections | `src/components/Shapes.astro` |
 | Colors, type, keycap buttons, section spacing | `src/styles/global.css` |
 
 ## Next up

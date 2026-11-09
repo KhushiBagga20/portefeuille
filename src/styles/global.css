@@ -23,6 +23,14 @@
   --mint: #7fe0b0;
   --text-soft: #2f2a47;
 
+  /* the flat-shape layer behind the content sections */
+  --green: #5fc07a;
+  --green-deep: #2e8f5f;
+  --teal: #3fb8ae;
+  --teal-deep: #1f7f82;
+  --sea: #3d6fd6;
+  --sea-deep: #2a4aa8;
+
   /* older names, still used by stickers */
   --yellow: var(--lemon);
   --purple: #7f52f5;
@@ -199,6 +207,8 @@ a {
 }
 
 .section__inner {
+  position: relative;
+  z-index: 1;
   max-width: 1180px;
   margin: 0 auto;
 }

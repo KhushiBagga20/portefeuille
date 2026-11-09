@@ -1,9 +1,11 @@
 ---
+import Shapes from './Shapes.astro';
 import SectionHead from './SectionHead.astro';
 import { skills } from '../data/profile';
 ---
 
 <section id="skills" class="section" aria-labelledby="skills-title">
+  <Shapes variant="skills" />
   <div class="section__inner">
     <SectionHead
       eyebrow="skills.cfg"

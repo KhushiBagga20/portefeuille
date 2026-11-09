@@ -1,4 +1,5 @@
 ---
+import Shapes from './Shapes.astro';
 import Computer from './Computer.astro';
 import ComingSoon from './ComingSoon.astro';
 import SectionHead from './SectionHead.astro';
@@ -15,6 +16,7 @@ const links = [
 ---
 
 <section id="contact" class="section section--deep" aria-labelledby="contact-title">
+  <Shapes variant="contact" />
   <div class="section__inner contact">
     <div class="contact__text">
       <SectionHead eyebrow="contact.eml" title="say hi" id="contact-title" />

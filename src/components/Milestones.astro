@@ -1,4 +1,5 @@
 ---
+import Shapes from './Shapes.astro';
 import Badge from './Badge.astro';
 import SectionHead from './SectionHead.astro';
 import { achievements } from '../data/achievements';
@@ -15,6 +16,7 @@ const tilts = [-1.2, 0.8, -0.6, 1, -0.9];
 ---
 
 <section id="milestones" class="section" aria-labelledby="milestones-title">
+  <Shapes variant="milestones" />
   <div class="section__inner">
     <SectionHead eyebrow="milestones.log · achievements & recognition" title="milestones" id="milestones-title" fill="mint" />
 
