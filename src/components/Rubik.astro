@@ -1,0 +1,193 @@
+---
+// The cube on the desk. A real 3×3 you can orbit and actually turn.
+// Saturated ground, because this one is meant to shout.
+const stickers = [
+  'var(--lemon)', // +x
+  'var(--mint)', // -x
+  'var(--bone)', // +y
+  'var(--sea)', // -y
+  'var(--tomato)', // +z
+  'var(--lilac)', // -z
+];
+
+// a few one-tap moves for anyone not using a mouse
+const moves: [string, string][] = [
+  ['top', '1,1,1'],
+  ['front', '2,1,1'],
+  ['right', '0,1,1'],
+  ['left', '0,-1,-1'],
+];
+---
+
+<section class="cube" data-rubik data-colors={JSON.stringify(stickers)} data-plastic="#1b1526" aria-labelledby="cube-title">
+  <div class="cube__grid">
+    <div class="cube__copy">
+      <p class="eyebrow">chapter 00 · the fidget</p>
+      <h2 id="cube-title">turn it</h2>
+      <p class="cube__note">twenty-six little boxes, forty-three quintillion ways to be wrong</p>
+      <p class="cube__how">
+        <strong>drag the cube</strong> to spin it. <strong>drag a sticker</strong> to turn that layer.
+      </p>
+
+      <div class="cube__controls">
+        <button class="key key--sm key--tomato" type="button" data-scramble>scramble</button>
+        <button class="key key--sm" type="button" data-reset>solve it for me</button>
+      </div>
+
+      <div class="cube__moves" role="group" aria-label="Turn a layer">
+        {moves.map(([label, m]) => <button class="chip" type="button" data-move={m}>{label}</button>)}
+      </div>
+    </div>
+
+    <div class="cube__stage">
+      <svg class="cube__svg" data-cube viewBox="-340 -340 680 680" role="img" aria-label="An interactive Rubik's cube. Drag to spin it, or drag a sticker to turn a layer.">
+        <ellipse class="cube__shadow" cx="18" cy="268" rx="214" ry="34"></ellipse>
+        <g data-cubies></g>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<script>
+  import { initRubik } from '../scripts/rubik';
+  document.querySelectorAll<HTMLElement>('[data-rubik]').forEach(initRubik);
+</script>
+
+<style>
+  .cube {
+    position: relative;
+    padding: clamp(40px, 6vw, 80px) var(--gutter) clamp(44px, 6vw, 84px);
+    border-top: var(--line) solid var(--ink);
+    /* the loud one */
+    background:
+      radial-gradient(60% 70% at 78% 40%, rgb(255 255 255 / 0.16), transparent 70%),
+      var(--shout);
+    overflow: clip;
+  }
+
+  .cube__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    align-items: center;
+    gap: clamp(24px, 4vw, 64px);
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+
+  .eyebrow {
+    margin: 0;
+    color: var(--on-shout);
+    font: 400 11px/1 var(--font-pixel);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.75;
+  }
+
+  h2 {
+    margin: 10px 0 0;
+    color: var(--lemon);
+    font: 400 clamp(52px, 7vw, 110px) / 0.88 var(--font-display);
+    -webkit-text-stroke: 0.07em var(--ink);
+    paint-order: stroke fill;
+    text-shadow:
+      0.035em 0.045em 0 var(--ink),
+      0.07em 0.085em 0 var(--sea);
+  }
+
+  .cube__note {
+    max-width: 24ch;
+    margin: 14px 0 0;
+    color: var(--on-shout);
+    font: 400 clamp(21px, 2vw, 27px) / 1.15 var(--font-hand);
+    rotate: -1.2deg;
+  }
+
+  .cube__how {
+    margin: 18px 0 0;
+    color: var(--on-shout);
+    font-size: 16px;
+    line-height: 1.5;
+  }
+
+  .cube__how strong {
+    font-weight: 750;
+  }
+
+  .cube__controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 22px;
+  }
+
+  .cube__moves {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .chip {
+    padding: 7px 12px 6px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: var(--bone);
+    box-shadow: 0 3px 0 var(--ink);
+    color: var(--on-accent);
+    font: 400 10px/1 var(--font-pixel);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition:
+      translate 0.12s ease,
+      box-shadow 0.12s ease;
+  }
+
+  .chip:hover {
+    translate: 0 -2px;
+    box-shadow: 0 5px 0 var(--ink);
+  }
+
+  .chip:active {
+    translate: 0 3px;
+    box-shadow: 0 0 0 var(--ink);
+  }
+
+  .cube__stage {
+    display: grid;
+    place-items: center;
+  }
+
+  .cube__svg {
+    display: block;
+    width: min(100%, 560px);
+    height: auto;
+    overflow: visible;
+    touch-action: none;
+    cursor: grab;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .cube__svg:active {
+    cursor: grabbing;
+  }
+
+  .cube__shadow {
+    fill: var(--ink);
+    opacity: 0.22;
+  }
+
+  @media (max-width: 859px) {
+    .cube__grid {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 20px;
+    }
+
+    .cube__stage {
+      order: -1;
+    }
+
+    .cube__svg {
+      width: min(100%, 400px);
+    }
+  }
+</style>

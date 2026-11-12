@@ -155,7 +155,26 @@ It follows the system preference until the lever is thrown once, then remembers 
 Both themes are checked by measuring real contrast ratios on every visible text node across all
 pages — currently zero failures in either.
 
-## 7. The castle
+## 7. The cube
+
+`src/components/Rubik.astro` + `src/scripts/rubik.ts` — a real 3×3 Rubik's cube on a hot-pink
+band, right after the hero. Not a GIF and not a CSS trick: 26 cubies, each carrying its own 3×3
+orientation matrix, drawn as depth-sorted SVG polygons through an orthographic camera. Same
+chunky ink outline as everything else.
+
+- **Drag the background** to orbit it; it turns slowly on its own when left alone.
+- **Drag a sticker** to turn that layer. The drag vector is projected onto the two in-face axes,
+  the nearer one wins, and the rotation axis is the third — which is how a real cube answers
+  your thumb. Direction comes from the sign of that projection and the handedness of the pair.
+- **Scramble** queues twelve random quarter-turns; **solve it for me** snaps every cubie home.
+- Four one-tap buttons turn layers for anyone not using a mouse.
+- It only animates while on screen, and sits perfectly still under `prefers-reduced-motion`.
+
+A turn animates as an extra rotation applied on top of the affected cubies, then *commits* at 90°
+by rewriting their integer positions and orientation matrices — so floating-point drift can never
+accumulate across hundreds of turns.
+
+## 8. The castle
 
 `src/components/Castle.astro` — a walking machine built out of Khushi's own things: a CRT for a
 head (with someone living inside it), a filing cabinet, a record deck, a stack of floppies, all
@@ -174,7 +193,7 @@ One trap worth remembering: rotating an SVG group with `transform-box: view-box`
 **viewBox origin**, not its own centre, which flung the first set of cogs off the castle entirely.
 Each cog now lives in a placed wrapper and turns about its own origin.
 
-## 8. The flat-shape layer
+## 9. The flat-shape layer
 
 Every content section sits on a layer of flat shapes — concentric rings, leaves, petals,
 blobs, arcs, dot grids and checker blocks — in green, teal and sea blue. It's one component,
@@ -215,6 +234,7 @@ hidden from screen readers, never catches a click, and always painted under the 
 | Flat shapes + machine parts | `src/components/Shapes.astro` |
 | Day/night lever | `src/components/ThemeLever.astro` |
 | The castle | `src/components/Castle.astro` |
+| The Rubik's cube | `src/components/Rubik.astro`, `src/scripts/rubik.ts` |
 | Colors, type, keycap buttons, section spacing | `src/styles/global.css` |
 
 ## Next up
