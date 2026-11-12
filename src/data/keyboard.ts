@@ -18,7 +18,7 @@ export const sections: { key: string; label: string; href: string; tone: Tone }[
   { key: 'M', label: 'milestones', href: '#milestones', tone: 'mint' },
   { key: 'E', label: 'experience', href: '#experience', tone: 'pink' },
   { key: 'C', label: 'contact', href: '#contact', tone: 'cream' },
-  { key: 'V', label: 'records', href: '/music/', tone: 'sky' },
+  { key: 'V', label: 'records', href: '#records', tone: 'sky' },
 ];
 
 // Top face, light side, dark side, legend.

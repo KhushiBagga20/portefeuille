@@ -45,6 +45,9 @@ interface Props {
 const { variant } = Astro.props;
 
 const G = 'var(--green)';
+const MG = 'var(--marigold)';
+const MD = 'var(--marigold-deep)';
+const RN = 'var(--rani)';
 const GD = 'var(--green-deep)';
 const T = 'var(--teal)';
 const TD = 'var(--teal-deep)';
@@ -59,11 +62,11 @@ const sets: Record<Props['variant'], Shape[]> = {
   about: [
     { k: 'gear', x: 94, y: 88, s: 1.1, c: GD, rot: 0, o: 0.7, hide: true },
     { k: 'bolt', x: 50, y: 1, s: 0.34, c: TD, o: 0.7, hide: true },
-    { k: 'rings', x: 88, y: 11, s: 1.6, c: T, o: 0.95 },
+    { k: 'rings', x: 88, y: 11, s: 1.6, c: MG, o: 0.95 },
     { k: 'leaf', x: 2, y: 60, s: 1.9, c: G, rot: -18, o: 0.85 },
     { k: 'blob', x: 34, y: 88, s: 1.5, c: T, o: 0.5 },
     { k: 'dots', x: 70, y: 87, s: 1.5, c: S, o: 0.75, hide: true },
-    { k: 'disc', x: 95, y: 52, s: 0.5, c: L, o: 1 },
+    { k: 'disc', x: 95, y: 52, s: 0.5, c: MG, o: 1 },
     { k: 'arc', x: 22, y: 1, s: 1.2, c: S, rot: 168, o: 0.8, hide: true },
     { k: 'petal', x: 57, y: 10, s: 0.75, c: G, rot: 20, o: 0.55, hide: true },
     { k: 'ring', x: 64, y: 97, s: 0.9, c: SD, o: 0.6, hide: true },
@@ -76,7 +79,7 @@ const sets: Record<Props['variant'], Shape[]> = {
     { k: 'checker', x: 88, y: 5, s: 1.5, c: TD, o: 0.55 },
     { k: 'blob', x: 0, y: 28, s: 2.1, c: G, o: 0.8 },
     { k: 'ring', x: 92, y: 40, s: 1.4, c: S, o: 0.85, hide: true },
-    { k: 'petal', x: 78, y: 86, s: 1.3, c: T, rot: 28, o: 0.8 },
+    { k: 'petal', x: 78, y: 86, s: 1.3, c: MG, rot: 28, o: 0.85 },
     { k: 'leaf', x: 48, y: 2, s: 1, c: T, rot: 140, o: 0.5, hide: true },
     { k: 'dots', x: 20, y: 70, s: 1.4, c: S, o: 0.6, hide: true },
     { k: 'disc', x: 12, y: 94, s: 0.45, c: TO, o: 0.95, hide: true },
@@ -87,10 +90,10 @@ const sets: Record<Props['variant'], Shape[]> = {
     { k: 'gear', x: 70, y: 96, s: 1, c: TD, o: 0.6, hide: true },
     { k: 'bolt', x: 6, y: 96, s: 0.36, c: GD, o: 0.7, hide: true },
     { k: 'rings', x: 3, y: 9, s: 1.5, c: GD, o: 0.9 },
-    { k: 'pill', x: 82, y: 17, s: 1.7, c: T, rot: -22, o: 0.8 },
+    { k: 'pill', x: 82, y: 17, s: 1.7, c: MG, rot: -22, o: 0.85 },
     { k: 'dots', x: 90, y: 60, s: 1.6, c: S, o: 0.7 },
     { k: 'leaf', x: 44, y: 97, s: 1.3, c: G, rot: 36, o: 0.75, hide: true },
-    { k: 'disc', x: 14, y: 78, s: 0.55, c: L, o: 1, hide: true },
+    { k: 'disc', x: 14, y: 78, s: 0.55, c: RN, o: 0.9, hide: true },
     { k: 'blob', x: 66, y: 3, s: 1.3, c: G, o: 0.45, hide: true },
     { k: 'arc', x: 4, y: 47, s: 1.2, c: T, rot: 90, o: 0.55 },
     { k: 'checker', x: 96, y: 92, s: 1.2, c: TD, o: 0.5, hide: true },
@@ -99,7 +102,7 @@ const sets: Record<Props['variant'], Shape[]> = {
   communities: [
     { k: 'gear', x: 16, y: 92, s: 1.1, c: GD, o: 0.6, hide: true },
     { k: 'pipe', x: 2, y: 8, s: 1, c: TD, rot: 0, o: 0.55, hide: true },
-    { k: 'blob', x: 86, y: 16, s: 2.2, c: T, o: 0.8 },
+    { k: 'blob', x: 86, y: 16, s: 2.2, c: MG, o: 0.7 },
     { k: 'arc', x: 4, y: 55, s: 1.6, c: G, rot: 12, o: 0.85 },
     { k: 'ring', x: 60, y: 80, s: 1.1, c: SD, o: 0.7, hide: true },
     { k: 'disc', x: 30, y: 6, s: 0.45, c: TO, o: 0.95, hide: true },
@@ -112,7 +115,7 @@ const sets: Record<Props['variant'], Shape[]> = {
     { k: 'bolt', x: 72, y: 4, s: 0.34, c: TD, o: 0.7, hide: true },
     { k: 'checker', x: 2, y: 10, s: 1.4, c: GD, o: 0.55 },
     { k: 'rings', x: 47, y: 64, s: 1.5, c: S, o: 0.8 },
-    { k: 'petal', x: 94, y: 10, s: 1.3, c: G, rot: -40, o: 0.85 },
+    { k: 'petal', x: 94, y: 10, s: 1.3, c: MD, rot: -40, o: 0.85 },
     { k: 'dots', x: 1, y: 80, s: 1.4, c: S, o: 0.6, hide: true },
     { k: 'pill', x: 46, y: 97, s: 1.3, c: T, rot: 8, o: 0.65 },
     { k: 'blob', x: 54, y: 4, s: 1.2, c: T, o: 0.4, hide: true },
@@ -123,7 +126,7 @@ const sets: Record<Props['variant'], Shape[]> = {
     { k: 'gear', x: 36, y: 4, s: 1, c: TD, o: 0.55, hide: true },
     { k: 'pipe', x: 97, y: 88, s: 1.1, c: GD, rot: 180, o: 0.6, hide: true },
     { k: 'leaf', x: 86, y: 9, s: 1.9, c: G, rot: 24, o: 0.8 },
-    { k: 'rings', x: 5, y: 64, s: 1.5, c: T, o: 0.9 },
+    { k: 'rings', x: 5, y: 64, s: 1.5, c: MG, o: 0.9 },
     { k: 'blob', x: 72, y: 74, s: 1.7, c: T, o: 0.5, hide: true },
     { k: 'disc', x: 22, y: 12, s: 0.5, c: L, o: 1, hide: true },
     { k: 'dots', x: 46, y: 92, s: 1.3, c: S, o: 0.6, hide: true },

@@ -1,5 +1,6 @@
 ---
 import Shapes from './Shapes.astro';
+import Garland from './Garland.astro';
 import { Image } from 'astro:assets';
 import SectionHead from './SectionHead.astro';
 import { about, education } from '../data/profile';
@@ -9,7 +10,8 @@ import drawing from '../assets/collage/illustration.png';
 const tilts = [-3, 2, -1, 3, -2, 1, -3];
 ---
 
-<section id="about" class="section" aria-labelledby="about-title">
+<section id="about" class="section has-garland" aria-labelledby="about-title">
+  <Garland class="garland-hang" />
   <Shapes variant="about" />
   <div class="section__inner about">
     <div class="about__text">

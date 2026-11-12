@@ -174,24 +174,20 @@ A turn animates as an extra rotation applied on top of the affected cubies, then
 by rewriting their integer positions and orientation matrices — so floating-point drift can never
 accumulate across hundreds of turns.
 
-## 8. The castle
+## 8. Marigolds
 
-`src/components/Castle.astro` — a walking machine built out of Khushi's own things: a CRT for a
-head (with someone living inside it), a filing cabinet, a record deck, a stack of floppies, all
-bolted together and carried on two chunky legs. It sits between the hero and the keyboard, so the
-keyboard below reads as its control panel.
+The signature motif, and the reason for the palette. `src/components/Garland.astro` strings
+marigolds across the top of a section the way a toran hangs over a doorway: a quadratic sag for
+the string, flowers dangling *below* it (their centres offset down by their own radius, or the
+tops clip), leaves tucked between, and each flower swinging slightly out of step with its
+neighbours.
 
-Everything is drawn with the site's ink outline, so it belongs to the same world as the keycaps and
-the floppy disks, and it's painted with theme tokens — at night the boxes go dark and the windows,
-the screen and the star are the only things still lit.
+Drop one in with `<Garland class="garland-hang" />` as the first child of a `.section`, and add
+`has-garland` to that section so it gets headroom for the flowers. `droop` and `count` are props.
 
-It's alive while nobody touches it: the whole castle lumbers, four cogs turn at different speeds and
-directions, the chimneys puff, a lamp blinks, flowers sway, clouds drift and the resident in the
-screen pops up to look at you every nine seconds. All of it stops under `prefers-reduced-motion`.
-
-One trap worth remembering: rotating an SVG group with `transform-box: view-box` spins it about the
-**viewBox origin**, not its own centre, which flung the first set of cogs off the castle entirely.
-Each cog now lives in a placed wrapper and turns about its own origin.
+The whole colour system is built around them — marigold and turmeric against warm cream, with
+rani pink and leaf green behind. At night the ground goes deep brown and the marigolds are what
+the lamps catch.
 
 ## 9. The flat-shape layer
 
@@ -233,7 +229,7 @@ hidden from screen readers, never catches a click, and always painted under the 
 | Deck state machine + choreography | `src/scripts/turntable.ts` |
 | Flat shapes + machine parts | `src/components/Shapes.astro` |
 | Day/night lever | `src/components/ThemeLever.astro` |
-| The castle | `src/components/Castle.astro` |
+| Marigold garland | `src/components/Garland.astro` |
 | The Rubik's cube | `src/components/Rubik.astro`, `src/scripts/rubik.ts` |
 | Colors, type, keycap buttons, section spacing | `src/styles/global.css` |
 

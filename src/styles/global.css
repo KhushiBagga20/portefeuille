@@ -1,108 +1,119 @@
 /* ─────────────────────────────────────────────
-   Kai's Moving Castle: the colour system
+   Marigold: the colour system
    ─────────────────────────────────────────────
-   Two atmospheres, one castle. DAY is the inventor's workshop with
-   sun on the paper; NIGHT is the same room after everyone's gone,
-   lit by its own windows. Night is not an inversion — the accents
-   shift to amber and periwinkle rather than flipping.
+   Built around genda phool — marigold against warm cream, with rani pink
+   and leaf green behind it. DAY is a courtyard at midday; NIGHT is the same
+   courtyard after dark, where the marigolds are what the lamps catch.
 
-   The tokens are semantic, so components never name a colour:
-     --paper / --paper-deep   the room itself
+   Components never name a colour. They use:
+     --paper / --paper-deep   the ground
      --cream                  paper objects: cards, keycaps, sleeves
-     --bone                   a fill that stays light in both themes
+     --bone                   a fill that stays light in BOTH themes
      --ink / --ink-soft       outlines and type
-     --shadow                 the hard offset under every object
-     --glow                   window light, lamps, indicator bulbs
+     --on-accent              type printed on an accent — stays DARK in both
+     --shadow                 the hard offset under every object — stays dark
+     --shout / --on-shout     saturated showpiece bands
    ───────────────────────────────────────────── */
 :root,
 :root[data-theme='day'] {
   color-scheme: light;
 
-  /* the room */
-  --paper: #f7efe0;
-  --paper-deep: #efe4d1;
-  --grid: rgb(36 31 27 / 0.07);
+  /* the ground */
+  --paper: #fdf4e3;
+  --paper-deep: #f7e7c9;
+  --grid: rgb(42 26 12 / 0.07);
 
   /* objects + ink */
-  --cream: #fffbf3;
-  --bone: #fff6e6;
-  --ink: #241f1b;
-  --ink-soft: #5c5248;
-  --text-soft: #463c34;
-  --shadow: #241f1b;
+  --cream: #fffcf5;
+  --bone: #fff7e8;
+  --ink: #2a1a0c;
+  --ink-soft: #6b5340;
+  --text-soft: #4a3524;
+  --shadow: #2a1a0c;
+  --on-accent: #2a1a0c;
+  --soon-fill: rgb(255 255 255 / 0.45);
 
-  /* accents */
-  --lemon: #ffd24a;
-  --tomato: #ff6b4a;
-  --lilac: #b9a5e8;
-  --mint: #78d6a4;
-  --pink: #f2799e;
-  --sky: #b9c6ff;
-  --brass: #c89b4a;
-  --glow: #ffc45a;
-  /* accents stay light in both themes, so ink on them stays dark in both themes */
-  --on-accent: #241f1b;
-  /* saturated grounds for the showpiece bands, straight off the mood board */
-  --shout: #ff2f7e;
-  --on-shout: #2a0a18;
-  --soon-fill: rgb(255 255 255 / 0.4);
+  /* the marigold itself */
+  --marigold: #f59a1f;
+  --marigold-deep: #dd6e12;
+  --turmeric: #ffc94d;
+  --rani: #e6246b;
+  --leaf: #2e9c6c;
+  --leaf-deep: #166047;
+  --indigo: #2b3a8f;
+  --brass: #c08a3e;
+  --glow: #ffb534;
 
-  /* the shape + machine layer */
-  --green: #3fa86b;
-  --green-deep: #2b7d50;
-  --teal: #2fa396;
-  --teal-deep: #1d7a74;
-  --sea: #3351c9;
-  --sea-deep: #26399a;
+  /* the showpiece band */
+  --shout: #ff3d86;
+  --on-shout: #28060f;
 
-  /* older names, still used by stickers and the drawn objects */
-  --yellow: var(--lemon);
-  --purple: #7c5bd4;
-  --cyan: #35b8c4;
-  --blue: #86b4f7;
-  --blue-deep: #4f6fe3;
-  --blue-pale: #dce8ff;
+  /* names the components already use, pointed at the new palette */
+  --lemon: var(--turmeric);
+  --tomato: #ef7536;
+  --lilac: #c3a6e0;
+  --mint: #6fcf9f;
+  --pink: var(--rani);
+  --sky: #8fb8e8;
+
+  --green: var(--leaf);
+  --green-deep: var(--leaf-deep);
+  --teal: #2ba89a;
+  --teal-deep: #176d67;
+  --sea: var(--indigo);
+  --sea-deep: #1d2a6e;
+
+  --yellow: var(--turmeric);
+  --purple: #8b6ad0;
+  --cyan: #2fb0bd;
+  --blue: #8fb8e8;
+  --blue-deep: #3f56c4;
+  --blue-pale: #e4ecfb;
 }
 
 :root[data-theme='night'] {
   color-scheme: dark;
 
-  --paper: #221c26;
-  --paper-deep: #1a1520;
-  --grid: rgb(244 232 214 / 0.06);
+  --paper: #1e1510;
+  --paper-deep: #15100b;
+  --grid: rgb(251 234 210 / 0.06);
 
-  --cream: #332940;
-  --bone: #f4e8d6;
-  --ink: #f4e8d6;
-  --ink-soft: #b7a6c2;
-  --text-soft: #ddd0dc;
-  --shadow: #120d18;
+  --cream: #2f241b;
+  --bone: #fbead2;
+  --ink: #fbead2;
+  --ink-soft: #c2a98d;
+  --text-soft: #e3d2ba;
+  --shadow: #0c0805;
+  --on-accent: #1d1206;
+  --soon-fill: rgb(255 240 215 / 0.06);
 
-  --lemon: #ffc24a;
-  --tomato: #ff7f5c;
-  --lilac: #a58fe0;
-  --mint: #6fd6a8;
-  --pink: #f08ca8;
-  --sky: #8e9be8;
-  --brass: #d9a94e;
-  --glow: #ffb547;
-  --on-accent: #1c1520;
-  --shout: #c81559;
-  --on-shout: #ffe4ef;
-  --soon-fill: rgb(255 255 255 / 0.05);
+  --marigold: #ffa92e;
+  --marigold-deep: #f0831c;
+  --turmeric: #ffd05c;
+  --rani: #f0477f;
+  --leaf: #35a878;
+  --leaf-deep: #27855e;
+  --indigo: #5468d8;
+  --brass: #d6a257;
+  --glow: #ffb534;
 
-  --green: #4fb97e;
-  --green-deep: #359460;
-  --teal: #3fbfb2;
-  --teal-deep: #2a9b95;
-  --sea: #5a6fe0;
-  --sea-deep: #3f51bd;
+  --shout: #b81555;
+  --on-shout: #ffe6ef;
 
-  --purple: #9b7ee8;
-  --cyan: #45cad6;
-  --blue: #7f9ae0;
-  --blue-deep: #5a73d8;
-  --blue-pale: #3a3350;
+  --tomato: #ff8a4c;
+  --lilac: #b79ae0;
+  --mint: #63c79a;
+  --sky: #7ea4d8;
+
+  --teal: #33b5a8;
+  --teal-deep: #2a9188;
+  --sea-deep: #4055c4;
+
+  --purple: #a183e6;
+  --cyan: #3fc2cf;
+  --blue: #7ea4d8;
+  --blue-deep: #5468d8;
+  --blue-pale: #2a2338;
 }
 
 :root {
@@ -284,6 +295,18 @@ a {
   padding: clamp(72px, 10vw, 128px) var(--gutter);
   border-top: var(--line) solid var(--ink);
   scroll-margin-top: 60px;
+}
+
+/* a section with a garland strung across it needs headroom for the flowers */
+.section.has-garland {
+  padding-top: clamp(116px, 13vw, 190px);
+}
+
+.garland-hang {
+  position: absolute;
+  inset: -6px 0 auto;
+  z-index: 1;
+  pointer-events: none;
 }
 
 .section--deep {

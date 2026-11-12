@@ -3,6 +3,13 @@ import Sleeve from './Sleeve.astro';
 import Turntable from './Turntable.astro';
 import { CRATE, deckLabel, playlist, roomNote, tintFor } from '../data/music';
 
+interface Props {
+  /** h1 on its own page, h2 when it sits inside the home page */
+  level?: 'h1' | 'h2';
+}
+const { level = 'h1' } = Astro.props;
+const Heading = level;
+
 const crate = playlist.tracks.slice(0, CRATE);
 const tilts = [-2.4, 1.8, -1.2, 2.6, -2, 1.3, -2.8, 2.1, -1.6];
 const shifts = [0, 16, -10, 22, -6, 12, -18, 8, -14];
@@ -16,10 +23,10 @@ const payload = {
 };
 ---
 
-<section class="room" data-room data-playlist={JSON.stringify(payload)} aria-labelledby="room-title">
+<section id="records" class="room" data-room data-playlist={JSON.stringify(payload)} aria-labelledby="room-title">
   <div class="room__head">
     <p class="eyebrow">music.room</p>
-    <h1 id="room-title">my records</h1>
+    <Heading id="room-title" class="room__title">my records</Heading>
     <p class="room__note">{roomNote}</p>
   </div>
 
@@ -157,7 +164,7 @@ const payload = {
     text-transform: uppercase;
   }
 
-  h1 {
+  .room__title {
     margin: 12px 0 0;
     color: var(--lemon);
     font: 400 clamp(46px, 6vw, 92px) / 0.92 var(--font-display);
@@ -523,10 +530,10 @@ const payload = {
     margin: 22px auto 0;
     padding: 14px 16px 12px;
     border-radius: 20px;
-    background: linear-gradient(#e7ebe4, #cbd3c8);
+    background: linear-gradient(var(--cream), var(--paper-deep));
     box-shadow:
-      0 1px 0 rgb(255 255 255 / 0.8) inset,
-      0 7px 0 #8d998e,
+      0 1px 0 rgb(255 255 255 / 0.5) inset,
+      0 7px 0 var(--brass),
       0 14px 22px -12px rgb(27 21 38 / 0.5);
   }
 
@@ -535,7 +542,7 @@ const payload = {
     align-items: center;
     gap: 7px;
     margin: 0 0 10px;
-    color: #4f5a51;
+    color: var(--ink-soft);
     font: 400 10px/1.3 var(--font-pixel);
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -590,7 +597,7 @@ const payload = {
 
   .amp__fineprint {
     margin: 10px 2px 0;
-    color: #5d6a5f;
+    color: var(--ink-soft);
     font-size: 12px;
     line-height: 1.4;
   }
