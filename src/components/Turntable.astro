@@ -173,7 +173,7 @@ const feet: [number, number][] = [
           d={`M0 0 L${DISC.r} 0 A${DISC.r} ${DISC.r} 0 0 1 ${Math.cos(0.5) * DISC.r} ${Math.sin(0.5) * DISC.r} Z`}
           fill="#fff"
           opacity="0.07"></path>
-        <circle r={LABEL_R} data-label fill="#d6ff3d"></circle>
+        <circle r={LABEL_R} data-label fill="#ffae00"></circle>
         <g clip-path="url(#tt-label-clip)">
           <image data-label-art href="" x={-LABEL_R} y={-LABEL_R} width={LABEL_R * 2} height={LABEL_R * 2} preserveAspectRatio="xMidYMid slice"></image>
         </g>
@@ -266,7 +266,7 @@ const feet: [number, number][] = [
   }
 
   .deck__pitch:focus-visible rect:first-child {
-    stroke: var(--acid);
+    stroke: var(--marigold-pale);
     stroke-width: 6px;
   }
 
@@ -320,11 +320,11 @@ const feet: [number, number][] = [
   }
 
   .deck__power[aria-pressed='true'] .deck__power-dot {
-    fill: #d6ff3d;
+    fill: #ffd24a;
   }
 
   .deck__power:focus-visible circle:first-child {
-    stroke: var(--acid);
+    stroke: var(--marigold-pale);
     stroke-width: 8px;
   }
 

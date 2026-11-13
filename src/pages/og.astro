@@ -1,7 +1,6 @@
 ---
 // The link-preview card (1200 × 630). Not a real page: `npm run og` screenshots it into public/og.png.
 import '@fontsource-variable/archivo/wdth.css';
-import '@fontsource/instrument-serif/latin-400-italic.css';
 import '@fontsource/ibm-plex-mono/latin-500.css';
 import '../styles/global.css';
 import Collage from '../components/Collage.astro';
@@ -26,10 +25,11 @@ const letters = [...site.name.toUpperCase()];
       <div class="bloom">
         <Rosette
           rings={[
-            { n: 16, at: 74, r: 15.5, fill: 'var(--cobalt)' },
-            { n: 11, at: 47, r: 15, fill: 'color-mix(in srgb, var(--cobalt) 80%, white)' },
+            { n: 16, at: 74, r: 15.5, fill: 'var(--marigold)' },
+            { n: 11, at: 47, r: 15, fill: 'var(--marigold-pale)' },
+            { n: 7, at: 23, r: 12.5, fill: 'var(--marigold-deep)' },
           ]}
-          core={{ r: 9, fill: 'var(--acid)' }}
+          core={{ r: 8.5, fill: 'var(--signal)' }}
         />
       </div>
 
@@ -135,9 +135,11 @@ const letters = [...site.name.toUpperCase()];
 
   .headline__b {
     display: block;
-    font-family: var(--font-voice);
-    font-size: 1.06em;
-    font-style: italic;
+    margin-top: 0.08em;
+    font-family: var(--font-display);
+    font-size: 0.84em;
+    font-weight: 300;
+    letter-spacing: -0.03em;
   }
 
   .meta {

@@ -66,24 +66,24 @@ const diskFace = { w: DISK.w, h: DISK.d, r: 8 };
   <title id="crt-title">A retro computer whose screen says “say hi”</title>
   <defs>
     <linearGradient id="crt-body" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#d9ccff"></stop>
-      <stop offset="1" stop-color="#9a84ef"></stop>
+      <stop offset="0" stop-color="#c9d5ff"></stop>
+      <stop offset="1" stop-color="#7f96ea"></stop>
     </linearGradient>
     <linearGradient id="crt-tube" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#c7b7ff"></stop>
-      <stop offset="1" stop-color="#8a73e3"></stop>
+      <stop offset="0" stop-color="#b9c8fb"></stop>
+      <stop offset="1" stop-color="#6f86dc"></stop>
     </linearGradient>
     <linearGradient id="crt-base" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#c9bbfd"></stop>
-      <stop offset="1" stop-color="#8f79e6"></stop>
+      <stop offset="0" stop-color="#bccafc"></stop>
+      <stop offset="1" stop-color="#7289df"></stop>
     </linearGradient>
     <linearGradient id="crt-disk" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0" stop-color="#2b2f63"></stop>
       <stop offset="1" stop-color="#0c0d21"></stop>
     </linearGradient>
     <radialGradient id="crt-glass" cx="0.4" cy="0.35" r="0.8">
-      <stop offset="0" stop-color="#3a3163"></stop>
-      <stop offset="1" stop-color="#191428"></stop>
+      <stop offset="0" stop-color="#2a3160"></stop>
+      <stop offset="1" stop-color="#12152c"></stop>
     </radialGradient>
     <pattern id="crt-scan" width="4" height="3" patternUnits="userSpaceOnUse">
       <rect width="4" height="1" fill="#000" opacity="0.35"></rect>
@@ -115,13 +115,13 @@ const diskFace = { w: DISK.w, h: DISK.d, r: 8 };
     width={BASE.w}
     height={BASE.d}
     rx={BASE.r}
-    fill="#ddd2ff"></rect>
+    fill="#dbe4ff"></rect>
 
   <!-- the tube behind the screen -->
   <path d={box(TUBE, 0, TUBE.cy)} fill="url(#crt-tube)"></path>
   <g transform={planeTransform(m, TUBE.z1, 0, TUBE.cy)}>
-    <rect x={-TUBE.w / 2} y={-TUBE.d / 2} width={TUBE.w} height={TUBE.d} rx={TUBE.r} fill="#e3d9ff"></rect>
-    <g stroke="#c4b4fb" stroke-width="7" stroke-linecap="round">
+    <rect x={-TUBE.w / 2} y={-TUBE.d / 2} width={TUBE.w} height={TUBE.d} rx={TUBE.r} fill="#e3eaff"></rect>
+    <g stroke="#b3c2f8" stroke-width="7" stroke-linecap="round">
       <path d="M-70 -40 H70 M-70 -18 H70 M-70 4 H70"></path>
     </g>
   </g>
@@ -129,13 +129,13 @@ const diskFace = { w: DISK.w, h: DISK.d, r: 8 };
   <!-- body -->
   <path d={box(BODY)} fill="url(#crt-body)"></path>
   <g transform={planeTransform(m, BODY.z1)}>
-    <rect x={-BODY.w / 2} y={-BODY.d / 2} width={BODY.w} height={BODY.d} rx={BODY.r} fill="#f1ebff"></rect>
+    <rect x={-BODY.w / 2} y={-BODY.d / 2} width={BODY.w} height={BODY.d} rx={BODY.r} fill="#f0f4ff"></rect>
   </g>
 
   <!-- front wall: bezel, screen, slot -->
   <g transform={wall}>
-    <rect x="-176" y="3" width="352" height={BODY.z1 - BODY.z0 - 6} rx="18" fill="#f6f4ff"></rect>
-    <rect x="-150" y="16" width="300" height="198" rx="34" fill="#d9ccff"></rect>
+    <rect x="-176" y="3" width="352" height={BODY.z1 - BODY.z0 - 6} rx="18" fill="#f4f6ff"></rect>
+    <rect x="-150" y="16" width="300" height="198" rx="34" fill="#c9d5ff"></rect>
     <rect class="crt__glass" x="-136" y="28" width="272" height="174" rx="26" fill="url(#crt-glass)"></rect>
     <rect x="-136" y="28" width="272" height="174" rx="26" fill="url(#crt-scan)"></rect>
     <g class="crt__text" filter="url(#crt-glow)" data-crt-screen>
@@ -145,12 +145,12 @@ const diskFace = { w: DISK.w, h: DISK.d, r: 8 };
     </g>
     <path d="M-110 46 Q-40 34 36 40" fill="none" stroke="#fff" stroke-opacity="0.14" stroke-width="12" stroke-linecap="round"></path>
 
-    <rect x={SLOT.u0} y={SLOT.w0} width={SLOT.u1 - SLOT.u0} height={SLOT.w1 - SLOT.w0} rx="4" fill="#2b2344"></rect>
+    <rect x={SLOT.u0} y={SLOT.w0} width={SLOT.u1 - SLOT.u0} height={SLOT.w1 - SLOT.w0} rx="4" fill="#1c2244"></rect>
     <circle class="crt__led" cx="-128" cy="231" r="5"></circle>
     <text class="crt__brand" x="-112" y="235">khushi</text>
-    <circle cx="140" cy="262" r="7" fill="#b9a6fb"></circle>
-    <circle cx="160" cy="262" r="7" fill="#b9a6fb"></circle>
-    <polygon points="154,6 159,17 171,18 162,26 165,38 154,31 143,38 146,26 137,18 149,17" fill="#d6ff3d"></polygon>
+    <circle cx="140" cy="262" r="7" fill="#a9b9f5"></circle>
+    <circle cx="160" cy="262" r="7" fill="#a9b9f5"></circle>
+    <polygon points="154,6 159,17 171,18 162,26 165,38 154,31 143,38 146,26 137,18 149,17" fill="#ffc21a"></polygon>
   </g>
 
   <!-- floppy, half in the drive -->
@@ -210,12 +210,12 @@ const diskFace = { w: DISK.w, h: DISK.d, r: 8 };
   .crt__text text {
     font-family: var(--font-mono);
     font-weight: 500;
-    fill: #d6ff3d;
+    fill: #ffc21a;
   }
 
   .crt__dim {
     font-size: 13px;
-    fill: #8f86be !important;
+    fill: #93a0cf !important;
   }
 
   .crt__line {
@@ -237,18 +237,18 @@ const diskFace = { w: DISK.w, h: DISK.d, r: 8 };
   }
 
   .crt__led {
-    fill: #d6ff3d;
+    fill: #ffc21a;
     animation: crt-led 2.4s ease-in-out infinite;
   }
 
   @keyframes crt-led {
     50% {
-      fill: #8fae1f;
+      fill: #b98200;
     }
   }
 
   .crt__brand {
-    fill: #9d8fd6;
+    fill: #8497d9;
     font-family: var(--font-mono);
     font-size: 11px;
     letter-spacing: 0.08em;
@@ -274,9 +274,9 @@ const diskFace = { w: DISK.w, h: DISK.d, r: 8 };
 
   .floppy__label {
     fill: #0c0d21;
-    font-family: var(--font-voice);
-    font-size: 30px;
-    font-style: italic;
+    font-family: var(--font-mono);
+    font-size: 19px;
+    font-weight: 500;
     text-anchor: middle;
   }
 

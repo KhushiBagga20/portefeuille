@@ -23,7 +23,7 @@ const letters = [...site.name.toUpperCase()];
 const year = new Date().getFullYear();
 ---
 
-<section id="contact" class="contact poster s-acid" data-view data-kinetic {...c.attrs} aria-labelledby="contact-title">
+<section id="contact" class="contact poster s-marigold" data-view data-kinetic {...c.attrs} aria-labelledby="contact-title">
   <div class="wrap">
     <PosterHead id="contact" note="the last page" />
 
@@ -110,11 +110,6 @@ const year = new Date().getFullYear();
     overflow: clip;
     /* the same dome the site opened with, in the other colour */
     clip-path: ellipse(calc(56% + pow(var(--dome), 3) * 650%) calc(100% + pow(var(--dome), 8) * 60%) at 50% 100%);
-  }
-
-  /* whatever comes before leaves room for the dome to land on */
-  :global(.poster:has(+ .contact)) {
-    padding-bottom: calc(clamp(64px, 9vw, 132px) + clamp(90px, 16vw, 260px));
   }
 
   .contact__grid {

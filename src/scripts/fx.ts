@@ -273,20 +273,30 @@ export async function jumpTo(hash: string): Promise<boolean> {
   const name = card.querySelector<HTMLElement>('[data-jump-name]')!;
   name.textContent = dest.dataset.chapterName ?? dest.id;
 
+  // Size the word to the screen it's on: measure it once at a known size, then scale so it
+  // fills the measure without ever touching the edges, whatever its length.
+  const pad = parseFloat(getComputedStyle(card).paddingLeft) || 0;
+  name.style.fontSize = '200px';
+  const natural = name.getBoundingClientRect().width || 1;
+  const fit = (200 * (card.clientWidth - pad * 2)) / natural;
+  name.style.fontSize = `${Math.min(fit * 0.98, innerWidth * 0.3, innerHeight * 0.6).toFixed(1)}px`;
+
   const ease = 'cubic-bezier(0.7, 0, 0.2, 1)';
   const cover = card.animate([{ clipPath: 'inset(0 0 0 100%)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: 430, easing: ease, fill: 'forwards' });
-  const drift = name.animate([{ translate: '14vw 0' }, { translate: '0 0' }, { translate: '-10vw 0' }], {
-    duration: 1150,
-    easing: 'cubic-bezier(0.2, 0.7, 0.2, 1)',
-    fill: 'forwards',
+  // the word rises into place from under its own baseline; it never moves sideways
+  const rise = name.animate([{ translate: '0 104%' }, { translate: '0 0' }], {
+    duration: 560,
+    delay: 140,
+    easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)',
+    fill: 'both',
   });
   await cover.finished.catch(() => undefined);
   land();
-  await wait(170);
+  await wait(260);
   const leave = card.animate([{ clipPath: 'inset(0 0 0 0)' }, { clipPath: 'inset(0 100% 0 0)' }], { duration: 520, easing: ease, fill: 'forwards' });
   await leave.finished.catch(() => undefined);
   card.classList.remove('is-on');
-  [cover, leave, drift].forEach((a) => a.cancel());
+  [cover, leave, rise].forEach((a) => a.cancel());
   jumping = false;
   return true;
 }

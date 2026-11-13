@@ -27,17 +27,17 @@ const now = site.currently.replace(/^currently:\s*/i, '');
         </span>
         <span class="sr-only">{site.name} ({site.fullName})</span>
       </h1>
-      <p class="hello voice" aria-hidden="true">{site.hello}</p>
+      <p class="hello" aria-hidden="true">{site.hello}</p>
     </div>
 
     <div class="bloom" aria-hidden="true">
       <Rosette
         rings={[
-          { n: 16, at: 74, r: 15.5, fill: 'var(--cobalt)', rate: 1 },
-          { n: 11, at: 47, r: 15, fill: 'color-mix(in srgb, var(--cobalt) 80%, white)', rate: -1.5 },
-          { n: 7, at: 23, r: 12.5, fill: 'color-mix(in srgb, var(--cobalt) 86%, black)', rate: 2.4 },
+          { n: 16, at: 74, r: 15.5, fill: 'var(--marigold)', rate: 1 },
+          { n: 11, at: 47, r: 15, fill: 'var(--marigold-pale)', rate: -1.5 },
+          { n: 7, at: 23, r: 12.5, fill: 'var(--marigold-deep)', rate: 2.4 },
         ]}
-        core={{ r: 8.5, fill: 'var(--acid)' }}
+        core={{ r: 8.5, fill: 'var(--signal)' }}
       />
     </div>
 
@@ -200,16 +200,18 @@ const now = site.currently.replace(/^currently:\s*/i, '');
     -webkit-text-stroke: 1.5px var(--bg);
   }
 
+  /* the greeting is knocked out of the K's own stem, reading down it */
   .hello {
     position: absolute;
-    top: 0.03em;
-    left: 0.16em;
+    top: 2.2cqw;
+    left: 3.25cqw;
     margin: 0;
-    color: var(--accent);
-    font-size: clamp(26px, 3.3vw, 56px);
-    line-height: 1;
-    rotate: -7deg;
-    transform-origin: left bottom;
+    color: var(--bg);
+    font: 500 clamp(8px, 0.98cqw, 14px) / 1 var(--font-mono);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    writing-mode: vertical-rl;
   }
 
   /* ── the flower ─────────────────────── */
@@ -260,7 +262,7 @@ const now = site.currently.replace(/^currently:\s*/i, '');
 
   .fig__caps {
     position: relative;
-    font-size: clamp(20px, 1.7vw, 27px);
+    font-size: clamp(16px, 1.3vw, 21px);
     line-height: 1;
   }
 
@@ -329,11 +331,13 @@ const now = site.currently.replace(/^currently:\s*/i, '');
     text-transform: uppercase;
   }
 
+  /* the second line is set light and sized so both lines come out the same width */
   .headline__b {
     display: block;
-    margin-top: 0.02em;
-    font-size: 1.06em;
-    letter-spacing: -0.01em;
+    margin-top: 0.1em;
+    font-size: 0.896em;
+    letter-spacing: -0.03em;
+    line-height: 0.95;
   }
 
   .intro {
@@ -576,12 +580,9 @@ const now = site.currently.replace(/^currently:\s*/i, '');
       display: none;
     }
 
-    /* under the name, on clear paper, rather than across the K */
+    /* the stem is too thin to print in at this size */
     .hello {
-      top: calc(100% + 4px);
-      left: 2px;
-      font-size: 27px;
-      rotate: -5deg;
+      display: none;
     }
 
     .foot__scroll {

@@ -476,18 +476,66 @@ export function initMusicRoom(room: HTMLElement) {
   };
   $<HTMLButtonElement>('[data-shuffle]')!.addEventListener('click', () => void load(randomTrack()));
 
-  // Rummage: refill the pile with a fresh handful from the playlist.
-  $<HTMLButtonElement>('[data-dig]')?.addEventListener('click', () => {
-    const pool = tracks.map((_, i) => i).filter((i) => i !== track);
-    for (let i = pool.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [pool[i], pool[j]] = [pool[j], pool[i]];
-    }
-    picks.forEach((_, i) => {
-      if (i === slot) return; // leave the record that's playing where it is
-      crate[i] = pool.pop() ?? crate[i];
-      paintSleeve(i);
+  // Dig deeper: the sleeves revolve to the next handful, working through the whole
+  // collection in order and coming back round to the start.
+  const range = $<HTMLElement>('[data-crate-range]');
+  const perPage = picks.length;
+  const pages = Math.ceil(tracks.length / perPage);
+  let page = 0;
+  let digging = false;
+
+  /** Turn one sleeve edge-on, swap what's in it while it can't be seen, turn it back. */
+  function revolve(pick: HTMLElement, swap: () => void, delay: number) {
+    if (reduceMotion.matches || !pick.animate) return void swap();
+    const away = pick.animate([{ transform: 'perspective(900px) rotateY(0deg)' }, { transform: 'perspective(900px) rotateY(90deg)' }], {
+      duration: 240,
+      delay,
+      easing: 'cubic-bezier(0.5, 0, 0.9, 0.5)',
+      fill: 'forwards',
     });
+    return away.finished
+      .then(() => {
+        swap();
+        const back = pick.animate([{ transform: 'perspective(900px) rotateY(-90deg)' }, { transform: 'perspective(900px) rotateY(0deg)' }], {
+          duration: 420,
+          easing: 'cubic-bezier(0.2, 0.9, 0.3, 1.1)',
+        });
+        away.cancel();
+        return back.finished;
+      })
+      .catch(() => undefined);
+  }
+
+  $<HTMLButtonElement>('[data-dig]')?.addEventListener('click', async () => {
+    if (digging) return;
+    digging = true;
+    page = (page + 1) % pages;
+    const first = page * perPage;
+    const incoming = picks.map((_, i) => (first + i) % tracks.length);
+    // The record that's playing keeps its sleeve. If it also belongs to this handful,
+    // its usual place takes the track the playing sleeve would have shown.
+    if (slot >= 0) {
+      const twin = incoming.findIndex((n, i) => n === track && i !== slot);
+      if (twin >= 0) incoming[twin] = incoming[slot];
+    }
+    if (range) {
+      const last = Math.min(first + perPage, tracks.length);
+      range.textContent = `${String(first + 1).padStart(3, '0')}–${String(last).padStart(3, '0')}`;
+    }
+    await Promise.all(
+      picks.map((pick, i) => {
+        if (i === slot) return undefined;
+        return revolve(
+          pick,
+          () => {
+            crate[i] = incoming[i];
+            paintSleeve(i);
+          },
+          i * 70,
+        );
+      }),
+    );
+    digging = false;
   });
 
   room.querySelectorAll<HTMLButtonElement>('[data-rpm]').forEach((button) =>

@@ -17,7 +17,7 @@ export const site = {
 
   // Absolute (/#…) so they also work from project pages.
   nav: [
-    { label: 'work', href: '/#projects' },
+    { label: 'projects', href: '/#projects' },
     { label: 'about', href: '/#about' },
     { label: 'résumé', href: '/#resume' },
     { label: 'records', href: '/#records' },

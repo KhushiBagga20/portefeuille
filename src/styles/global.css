@@ -10,14 +10,20 @@
      --accent        the one loud colour allowed on this ground
      --on-accent     type printed on the accent
 
-   Paper sections follow the day/night switch. Coloured posters never change:
-   cobalt is cobalt at midnight too. Physical objects (cards, sheets, the
-   keyboard, the deck) keep their own colours in both themes.
+   THE COLOUR SCHEME. Two neutrals, one pair, one spark:
+     ink + paper          every sheet starts here
+     cobalt + marigold    the pair. Blue is structure; orange-yellow is the flower
+     magenta              the spark, for one room only
+   Acid green belongs to the cube room and nowhere else. Violet survives on a
+   couple of objects (a disk, a sticker), never as a ground.
 
-   Three typefaces, three jobs:
-     Archivo            structure — everything from 11px labels to 20vw mastheads
-     Instrument Serif   the voice — italic asides, the human bits
-     IBM Plex Mono      annotation — indices, metadata, instructions
+   Paper sections follow the day/night switch. Coloured posters never change.
+   Physical objects (cards, sheets, the keyboard, the deck) keep their own colours.
+
+   Two typefaces:
+     Archivo         everything, by changing its cut: condensed-black for
+                     structure, light for the quieter voice, regular for reading
+     IBM Plex Mono   annotation — indices, metadata, instructions
    ───────────────────────────────────────────── */
 
 :root {
@@ -25,12 +31,15 @@
   --c-paper: #f3f3ef;
   --c-ink: #0c0d21;
   --cobalt: #2238ff;
-  --violet: #7a3cff;
   --magenta: #ff2a85;
-  --acid: #d6ff3d;
-  --signal: #ff4d1f;
   --marigold: #ffae00;
+  --marigold-deep: #ff7a00;
+  --marigold-pale: #ffd24a;
+  --signal: #ff4d1f;
   --periwinkle: #c6d0ff;
+  /* not part of the scheme: the cube room's light, and a colour two objects wear */
+  --acid: #d6ff3d;
+  --violet: #7a3cff;
 
   /* physical paper: index cards, the résumé sheet, the ID */
   --sheet: #ffffff;
@@ -42,7 +51,6 @@
   --font-display: 'Archivo Variable', 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
   --font-body: 'Archivo Variable', 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
-  --font-voice: 'Instrument Serif', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
 
   /* ── measure ── */
   --gutter: clamp(16px, 3.4vw, 56px);
@@ -104,7 +112,7 @@
   --fg: #f3f3ef;
   --fg-2: #b9bbd6;
   --line: rgb(243 243 239 / 0.22);
-  --accent: var(--acid);
+  --accent: var(--marigold);
   --on-accent: #0c0d21;
 }
 
@@ -113,16 +121,7 @@
   --fg: #ffffff;
   --fg-2: rgb(255 255 255 / 0.86);
   --line: rgb(255 255 255 / 0.36);
-  --accent: var(--acid);
-  --on-accent: #0c0d21;
-}
-
-.s-violet {
-  --bg: var(--violet);
-  --fg: #ffffff;
-  --fg-2: rgb(255 255 255 / 0.93);
-  --line: rgb(255 255 255 / 0.4);
-  --accent: var(--acid);
+  --accent: var(--marigold-pale);
   --on-accent: #0c0d21;
 }
 
@@ -135,13 +134,13 @@
   --on-accent: #0c0d21;
 }
 
-.s-acid {
-  --bg: var(--acid);
+.s-marigold {
+  --bg: var(--marigold);
   --fg: #0c0d21;
-  --fg-2: #272e12;
-  --line: rgb(12 13 33 / 0.3);
-  --accent: var(--cobalt);
-  --on-accent: #ffffff;
+  --fg-2: #2b1d05;
+  --line: rgb(12 13 33 / 0.34);
+  --accent: #0c0d21;
+  --on-accent: var(--marigold);
 }
 
 /* A deliberate flip of the switch animates; first paint never does. */
@@ -197,7 +196,7 @@ button {
 }
 
 ::selection {
-  background: var(--acid);
+  background: var(--marigold-pale);
   color: #0c0d21;
 }
 
@@ -256,12 +255,13 @@ button {
   color: var(--fg-2);
 }
 
-/* the voice */
+/* the quieter voice: the same face, light, set against the heavy caps */
 .voice {
-  font-family: var(--font-voice);
-  font-style: italic;
-  font-weight: 400;
-  letter-spacing: 0;
+  font-family: var(--font-display);
+  font-stretch: 100%;
+  font-style: normal;
+  font-weight: 300;
+  letter-spacing: -0.022em;
   text-transform: none;
 }
 
@@ -475,7 +475,7 @@ button {
   z-index: 90;
   display: grid;
   align-content: center;
-  gap: 2vh;
+  gap: clamp(10px, 2vh, 22px);
   padding: 0 var(--gutter);
   background: var(--bg);
   color: var(--fg);
@@ -494,13 +494,24 @@ button {
   text-transform: uppercase;
 }
 
+/* a mask one line tall: the word comes up from underneath it */
+.jump__line {
+  display: block;
+  margin-top: -3vh;
+  padding-top: 5vh;
+  overflow: clip;
+}
+
 .jump__name {
+  --n: 6;
+  display: inline-block;
   font-family: var(--font-display);
-  font-size: clamp(72px, 19vw, 330px);
+  /* a 62%-wide capital is about half an em: n of them fill the measure, up to a cap */
+  font-size: min(30vw, 62vh, calc((100vw - 2 * var(--gutter)) / (var(--n) * 0.535)));
   font-stretch: 62%;
   font-weight: 900;
-  line-height: 0.78;
-  letter-spacing: -0.02em;
+  line-height: 0.8;
+  letter-spacing: -0.012em;
   text-transform: uppercase;
   white-space: nowrap;
 }

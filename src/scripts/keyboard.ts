@@ -165,6 +165,7 @@ export function initKeyboard(svg: SVGSVGElement) {
       c.pointer = true;
       press(c);
       c.spelling = input(c.def.id, c);
+      if (c.href && !c.spelling) onWall(destinationOf(c));
       if (c.def.id === 'SPARKLE') celebrate(c);
       if (c.def.id === 'HELP') hint('psst… tap the ✦');
     });
@@ -205,6 +206,8 @@ export function initKeyboard(svg: SVGSVGElement) {
     const list = byId.get(id);
     spelledOnDown.set(id, input(id, list?.[0]));
     if (!list) return;
+    const bound = list.find((c) => c.href);
+    if (bound && !spelledOnDown.get(id)) onWall(destinationOf(bound));
     held.add(id);
     list.forEach((c) => press(c));
   });
@@ -244,6 +247,9 @@ export function initKeyboard(svg: SVGSVGElement) {
     wallText.textContent = text;
     wallText.style.setProperty('--n', String(Math.max(4, text.length)));
   };
+
+  /** "E experience" on the key → "experience" on the wall */
+  const destinationOf = (c: Cap) => (c.el.getAttribute('aria-label') ?? c.def.legend).split(' ').slice(1).join(' ') || c.def.legend;
 
   const showBuffer = () => {
     if (screenText) screenText.textContent = buffer.toLowerCase();

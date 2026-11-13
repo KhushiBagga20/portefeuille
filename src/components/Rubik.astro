@@ -139,6 +139,8 @@ const STATES = '43,252,003,274,489,856,000';
     --through: 0.5;
     /* the room arrives as a dome rising out of the cover, then squares off */
     --dome: min(1, var(--enter) * 1.25);
+    --accent: var(--acid);
+    --on-accent: #0c0d21;
     display: flex;
     flex-direction: column;
     min-height: 100svh;
@@ -382,8 +384,9 @@ const STATES = '43,252,003,274,489,856,000';
 
   .cube__run i {
     color: var(--accent);
-    font: 400 0.3em/1 var(--font-voice);
-    font-style: italic;
+    font: 300 0.26em/1 var(--font-display);
+    font-style: normal;
+    letter-spacing: -0.02em;
     -webkit-text-stroke: 0;
   }
 
