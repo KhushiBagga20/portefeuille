@@ -5,7 +5,7 @@ import Arrow from './Arrow.astro';
 import ComingSoon from './ComingSoon.astro';
 import Computer from './Computer.astro';
 import PosterHead from './PosterHead.astro';
-import Seal from './Seal.astro';
+import Rosette from './Rosette.astro';
 import { chapter } from '../data/chapters';
 import { site } from '../data/site';
 
@@ -24,6 +24,18 @@ const year = new Date().getFullYear();
 ---
 
 <section id="contact" class="contact poster s-marigold" data-view data-kinetic {...c.attrs} aria-labelledby="contact-title">
+  <!-- the flower from the cover, grown to the size of the room and turning as you pass -->
+  <div class="sun" aria-hidden="true">
+    <Rosette
+      rings={[
+        { n: 22, at: 80, r: 12.5, fill: '#ff9a00', rate: 1 },
+        { n: 16, at: 58, r: 13, fill: '#ffc233', rate: -1.5 },
+        { n: 11, at: 36, r: 12.5, fill: '#ff8a00', rate: 2.2 },
+      ]}
+      core={{ r: 15, fill: '#ff6f00' }}
+    />
+  </div>
+
   <div class="wrap">
     <PosterHead id="contact" note="the last page" />
 
@@ -75,7 +87,6 @@ const year = new Date().getFullYear();
 
   <footer class="end">
     <p class="end__line label">
-      <span class="end__seal"><Seal /></span>
       <span>{site.fullName} — portfolio, {year}</span>
       <a class="link" href="#top">back to the top <Arrow dir="up" /></a>
     </p>
@@ -110,6 +121,15 @@ const year = new Date().getFullYear();
     overflow: clip;
     /* the same dome the site opened with, in the other colour */
     clip-path: ellipse(calc(56% + pow(var(--dome), 3) * 650%) calc(100% + pow(var(--dome), 8) * 60%) at 50% 100%);
+  }
+
+  .sun {
+    --spin: calc(var(--through, 0.5) * 240deg);
+    position: absolute;
+    top: clamp(10px, 4vw, 70px);
+    right: calc(-1 * clamp(60px, 9vw, 190px));
+    width: clamp(460px, 62vw, 1120px);
+    pointer-events: none;
   }
 
   .contact__grid {
@@ -211,7 +231,7 @@ const year = new Date().getFullYear();
   }
 
   .contact__link:hover {
-    color: var(--accent);
+    color: var(--cobalt);
   }
 
   .contact__link:hover :global(svg) {
@@ -243,10 +263,6 @@ const year = new Date().getFullYear();
     margin-left: auto;
   }
 
-  .end__seal {
-    width: 18px;
-  }
-
   /* the masthead again, sinking out of the bottom of the page */
   .end__name {
     margin: clamp(14px, 2vw, 30px) 0 -0.17em;
@@ -268,6 +284,13 @@ const year = new Date().getFullYear();
   @media (max-width: 859px) {
     .contact__grid {
       grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* behind the computer, not behind the words */
+    .sun {
+      top: clamp(250px, 74vw, 520px);
+      right: -30vw;
+      width: 118vw;
     }
 
     .contact__computer {

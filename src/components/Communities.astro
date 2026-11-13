@@ -1,109 +1,189 @@
 ---
-// Beyond projects: the clubs. Two names set as large as the page allows, the facts beside.
+// Experience: the clubs, set the same way as the project index — a number, a name as
+// large as the row allows, the facts beside it, and a flood of colour when you reach for it.
 import PosterHead from './PosterHead.astro';
 import { chapter } from '../data/chapters';
 import { communities } from '../data/profile';
 
 const c = chapter('experience');
+const no = (i: number) => String(i + 1).padStart(2, '0');
+// the pair, alternating
+const tones = [
+  { tone: 'var(--cobalt)', on: '#ffffff' },
+  { tone: 'var(--marigold)', on: '#0c0d21' },
+];
 ---
 
 <section id="experience" class="beyond poster s-paper" {...c.attrs} aria-labelledby="experience-title">
   <div class="wrap">
-    <PosterHead id="experience" note="communities & roles" />
-    <h2 id="experience-title" class="sr-only">Beyond projects</h2>
+    <PosterHead id="experience" note={`${communities.length} communities & roles`} />
 
-    <ul class="clubs">
+    <header class="beyond__head">
+      <h2 id="experience-title" class="beyond__title" data-reveal>Beyond<br />projects</h2>
+      <p class="beyond__lede voice" data-reveal>Clubs and societies I'm part of at university.</p>
+    </header>
+
+    <ol class="rows">
       {
         communities.map((club, i) => (
-          <li class="club" data-reveal style={`--i:${i}`}>
-            <h3 class="club__name">{club.name}</h3>
-            <div class="club__facts">
-              <p class="club__role">{club.role}</p>
-              <p class="label label--dim">
+          <li class="row" style={`--tone:${tones[i % tones.length].tone};--on-tone:${tones[i % tones.length].on}`}>
+            <span class="row__no">{no(i)}</span>
+            <h3 class="row__name">{club.name}</h3>
+            <div class="row__info">
+              <p class="row__role">{club.role}</p>
+              <p class="row__meta">
                 {club.org}
                 {club.since && <Fragment> · {club.since}</Fragment>}
               </p>
-              <p class="club__line">{club.line}</p>
+              <p class="row__line">{club.line}</p>
             </div>
           </li>
         ))
       }
-    </ul>
+    </ol>
   </div>
 </section>
 
 <style>
-  .beyond {
-    padding-bottom: clamp(40px, 6vw, 90px);
+  .beyond__head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 24px;
+    margin-top: clamp(28px, 4.4vw, 64px);
   }
 
-  .clubs {
-    margin: clamp(22px, 3vw, 44px) 0 0;
+  .beyond__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(60px, 11.4vw, 210px);
+    font-stretch: 62%;
+    font-weight: 900;
+    line-height: 0.76;
+    letter-spacing: -0.015em;
+    text-transform: uppercase;
+  }
+
+  .beyond__lede {
+    max-width: 15ch;
+    margin: 0 0 0.3em;
+    font-size: clamp(20px, 1.9vw, 30px);
+    line-height: 1.08;
+    text-align: right;
+  }
+
+  .rows {
+    margin: clamp(36px, 5vw, 80px) 0 0;
     padding: 0;
+    border-top: 1px solid var(--fg);
     list-style: none;
   }
 
-  .club {
+  .row {
+    position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
-    align-items: end;
-    gap: clamp(16px, 4vw, 70px);
-    padding: clamp(14px, 2vw, 26px) 0 clamp(16px, 2.2vw, 30px);
+    grid-template-columns: 4ch minmax(0, 1.7fr) minmax(0, 1fr);
+    align-items: center;
+    column-gap: clamp(14px, 2.4vw, 40px);
+    padding: clamp(18px, 2.4vw, 34px) 0;
     border-bottom: 1px solid var(--line);
+    isolation: isolate;
+    transition: color 0.25s ease;
   }
 
-  /* drawn in outline until you reach for it */
-  .club__name {
+  /* the same flood as the project index: bottom to top, in the row's own colour */
+  .row::before {
+    content: '';
+    position: absolute;
+    inset: 0 calc(var(--gutter) * -1);
+    z-index: -1;
+    background: var(--tone);
+    scale: 1 0;
+    transform-origin: bottom;
+    transition: scale 0.42s var(--ease-out);
+  }
+
+  .row__no {
+    align-self: start;
+    padding-top: 0.5em;
+    font: 600 semi-expanded 11px/1 var(--font-label);
+    letter-spacing: 0.09em;
+  }
+
+  .row__name {
     margin: 0;
-    color: transparent;
     font-family: var(--font-display);
-    font-size: clamp(58px, 13.6vw, 250px);
+    font-size: clamp(54px, 12.4vw, 220px);
     font-stretch: 62%;
     font-weight: 900;
-    line-height: 0.78;
+    line-height: 0.8;
     letter-spacing: -0.012em;
     text-transform: uppercase;
-    -webkit-text-stroke: 1.5px var(--fg);
+    white-space: nowrap;
     transition:
-      color 0.35s ease,
-      font-stretch 0.6s var(--ease-out);
+      font-stretch 0.5s var(--ease-out),
+      translate 0.5s var(--ease-out);
   }
 
-  .club:hover .club__name {
-    color: var(--accent);
-    font-stretch: 72%;
-    -webkit-text-stroke-color: var(--accent);
-  }
-
-  .club__facts {
-    padding-bottom: 0.4em;
-  }
-
-  .club__role {
-    margin: 0 0 8px;
+  .row__role {
+    margin: 0;
     font-size: clamp(20px, 1.9vw, 30px);
     font-stretch: 84%;
     font-weight: 700;
     line-height: 1.05;
   }
 
-  .club__line {
+  .row__meta {
+    margin: 8px 0 0;
+    font: 600 semi-expanded 10.5px/1.5 var(--font-label);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .row__line {
     max-width: 36ch;
     margin: 12px 0 0;
-    color: var(--fg-2);
     line-height: 1.45;
   }
 
-  @media (max-width: 699px) {
-    .club {
-      grid-template-columns: minmax(0, 1fr);
-      align-items: start;
+  @media (hover: hover) {
+    .row:hover {
+      color: var(--on-tone);
+    }
+
+    .row:hover::before {
+      scale: 1 1;
+    }
+
+    .row:hover .row__name {
+      font-stretch: 68%;
+      translate: 10px 0;
     }
   }
 
-  @media (hover: none) {
-    .club__name {
-      color: var(--fg);
+  @media (max-width: 899px) {
+    .beyond__head {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .beyond__lede {
+      max-width: 26ch;
+      text-align: left;
+    }
+
+    .row {
+      grid-template-columns: 3.4ch minmax(0, 1fr);
+      row-gap: 12px;
+    }
+
+    .row__info {
+      grid-column: 2;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .row__name {
+      transition: none;
     }
   }
 </style>

@@ -208,8 +208,10 @@ const diskFace = { w: DISK.w, h: DISK.d, r: 8 };
   }
 
   .crt__text text {
-    font-family: var(--font-mono);
-    font-weight: 500;
+    font-family: var(--font-label);
+    font-stretch: 108%;
+    font-weight: 650;
+    letter-spacing: 0.04em;
     fill: #ffc21a;
   }
 
@@ -249,7 +251,7 @@ const diskFace = { w: DISK.w, h: DISK.d, r: 8 };
 
   .crt__brand {
     fill: #8497d9;
-    font-family: var(--font-mono);
+    font-family: var(--font-label);
     font-size: 11px;
     letter-spacing: 0.08em;
   }
@@ -274,10 +276,12 @@ const diskFace = { w: DISK.w, h: DISK.d, r: 8 };
 
   .floppy__label {
     fill: #0c0d21;
-    font-family: var(--font-mono);
-    font-size: 19px;
-    font-weight: 500;
+    font-family: var(--font-display);
+    font-size: 23px;
+    font-stretch: 78%;
+    font-weight: 800;
     text-anchor: middle;
+    text-transform: uppercase;
   }
 
   @media (prefers-reduced-motion: reduce) {

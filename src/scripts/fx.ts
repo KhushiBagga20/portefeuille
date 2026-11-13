@@ -249,8 +249,18 @@ export async function jumpTo(hash: string): Promise<boolean> {
   const dest = target;
 
   const land = () => {
+    // A jump is a real step in history, so Back returns you to where you jumped from
+    // (the keyboard, usually) rather than to the top of the page. The place being left is
+    // written into its own entry first; the new entry is pushed before the page moves.
+    const here = Math.round(scrollY);
+    try {
+      history.replaceState({ ...(history.state ?? {}), y: here }, '');
+      history.pushState({ y: here }, '', hash);
+    } catch {}
     dest.scrollIntoView({ behavior: 'instant' as ScrollBehavior, block: 'start' });
-    history.replaceState(null, '', hash);
+    try {
+      history.replaceState({ y: Math.round(scrollY) }, '');
+    } catch {}
     dest.classList.remove('is-arrived');
     void dest.offsetWidth;
     dest.classList.add('is-arrived', 'is-seen');
@@ -315,7 +325,23 @@ function jumps() {
   });
 }
 
+/* ── 8 · going back ────────────────────────────
+   Back and Forward between jumps put the page exactly where that entry left it,
+   at once — not by scrolling the long way round. */
+function returns() {
+  addEventListener('popstate', (e) => {
+    const y = (e.state as { y?: unknown } | null)?.y;
+    if (typeof y !== 'number') return;
+    const root = document.documentElement;
+    root.style.scrollBehavior = 'auto';
+    scrollTo(0, y);
+    // the browser may restore the position itself a moment later; keep it instant for that too
+    requestAnimationFrame(() => requestAnimationFrame(() => (root.style.scrollBehavior = '')));
+  });
+}
+
 reveals();
+returns();
 views();
 pointers();
 tilts();

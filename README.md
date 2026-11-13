@@ -13,35 +13,46 @@ npm run preview  # serve the built site
 ## The idea: controlled chaos
 
 The site is a run of posters. Each section has one ground, one loud colour, one large
-gesture and its own way of being touched. What holds them together is strict: three
-typefaces, one hairline, one button, one index number in the corner of every sheet.
+gesture and its own way of being touched. What holds them together is strict: one typeface,
+one colour scheme, one hairline, one button, one index number in the corner of every sheet.
 
-**Three typefaces, three jobs**
+**One typeface, four cuts.** Everything is Archivo (variable: width 62–125, weight 100–900).
 
-| Face | Job |
+| Cut | Job |
 | --- | --- |
-| Archivo (variable: width 62–125, weight 100–900) | structure — from 11px labels to the 20vw masthead |
-| Instrument Serif, italic | the voice — asides, the human bits |
-| IBM Plex Mono | annotation — indices, metadata, instructions |
+| condensed black | structure — titles, names, numbers |
+| light | the quieter voice: asides, standfirsts |
+| wide small capitals | annotation — indices, metadata, instructions |
+| regular | reading |
+
+**One colour scheme.**
+
+| | |
+| --- | --- |
+| ink `#0c0d21` + paper `#f3f3ef` | every sheet starts here |
+| cobalt `#2238ff` + marigold `#ffae00` | the pair. Blue is structure; orange-yellow is the flower |
+| magenta `#ff2a85` | the spark, for one room only (milestones) |
+
+Acid green belongs to the cube room and nowhere else. Violet survives on a couple of objects
+(a disk, a sticker) and is never a ground. Project disks keep their own colours.
 
 **Schemes.** A section picks a scheme class and builds only from that scheme's variables
 (`--bg`, `--fg`, `--fg-2`, `--line`, `--accent`, `--on-accent`):
 
 | Class | Ground | Used by |
 | --- | --- | --- |
-| `s-paper`, `s-paper-2` | off-white (follows day/night) | cover, about, work, beyond, tools |
-| `s-ink` | blue-black | cube, records, 404 |
-| `s-cobalt` | `#2238ff` | keyboard |
-| `s-magenta` | `#ff2a85` | milestones |
-| `s-violet` | `#7a3cff` | résumé |
-| `s-acid` | `#d6ff3d` | contact |
+| `s-paper`, `s-paper-2` | off-white (follows day/night) | cover, about, projects, experience |
+| `s-ink` | blue-black | cube, skills, records, 404 |
+| `s-cobalt` | cobalt | keyboard, résumé |
+| `s-magenta` | magenta | milestones |
+| `s-marigold` | marigold | contact |
 
 All of it is in `src/styles/global.css`. Physical objects (index cards, the résumé sheet,
-the ID, the keyboard, the deck) keep their own colours on any ground.
+the ID, the keyboard, the deck, the computer) keep their own colours on any ground.
 
-**The marigold** survives as geometry: `Rosette.astro` draws rings of circles round a
-centre. It is the mark in the nav (`Seal.astro`), the favicon, and the large flower turning
-behind the portrait on the cover.
+**The marigold** is drawn as geometry: `Rosette.astro` makes rings of circles round a centre.
+It is the mark in the nav (`Seal.astro`), the favicon, the flower turning behind the portrait
+on the cover, the one you can spin in About, and the room-sized one behind the last poster.
 
 ## Running order
 
@@ -119,16 +130,24 @@ House rules, unchanged:
 
 How each section shows its data:
 
-- **About** — the first paragraph at headline size; the ID card leans toward the cursor and
-  turns over to show coursework and languages.
-- **Work** — the first project at full size, the rest as an index. A row floods with its
-  disk's colour and the disk rides under the cursor. Each project has a page at
-  `/projects/<slug>/`; where the browser supports it, the disk flies there.
+- **About** — a modular poster: one board of cells on a hairline grid. The sentence at
+  headline size, the graduation year and the grade as figures that count up, the ID card
+  (leans toward the cursor, turns over), the list, and a marigold you can spin.
+- **Projects** — the first project at full size, the rest as an index. A row floods with its
+  disk's colour and the disk rides under the cursor.
 - **Milestones** — index cards in a drawer. Tabs, arrow keys or the buttons pull a card to
   the front. A sideways row on phones; a plain list with no JS.
-- **Beyond** — the clubs.
-- **Tools** — a wiring diagram. One wire per real connection between a project's stack and a
-  tool. Nothing is rated.
+- **Experience** — the clubs, set like the project index: number, name, facts, flood.
+- **Skills** — a patch bay. One cable per real connection between a project's stack and a
+  tool; a live cable visibly carries current. Nothing is rated.
+
+**A project's own page** (`/projects/<slug>/`) is a poster and a spec sheet: a cover in the
+disk's colour with the name as wide as the page; the stack running past as a ticker; tiles
+with the numbers the data can honestly give (features working, technologies, sections
+written); then the write-up, with a contents rail that follows you. Feature groups are a
+counted grid, results are set large, and sections that aren't written yet are gathered into
+one list rather than shown as empty boxes. Where the browser supports it, the disk flies
+here from the index.
 
 ## 5. The résumé
 
@@ -149,6 +168,8 @@ The deck and its state machine are unchanged (`Turntable.astro`, `scripts/turnta
 pick a sleeve, the record flies to the platter, Spotify's own player streams it, and the
 platter follows what the player reports. New around it:
 
+- **The crate** holds six sleeves. *Dig deeper* turns them over to the next six and works
+  round the whole collection in order.
 - **The index** — all the tracks, searchable, with running times. Click a row to play it.
 - **Artists** — every artist, sized by how many of their songs are in the playlist; pick one
   to filter the index.
@@ -167,9 +188,8 @@ embed page the script may fail; the site keeps working on the last committed JSO
 
 ## 7. The rest
 
-- **Contact** — an acid dome rises over the record room; the address is set as large as it
-  goes; the masthead returns across the foot of the page.
-- **Case studies** — `src/pages/projects/[slug].astro`, covered in the disk's colour.
+- **Contact** — a marigold dome rises over the record room, with the flower turning in it;
+  the address is set as large as it goes; the masthead returns across the foot of the page.
 - **404** — `src/pages/404.astro`.
 - **Link preview** — `public/og.png` is a screenshot of `/og/`. With the dev server running:
   `npm run og`. Once there's a domain, set `site` in `astro.config.mjs`.
@@ -188,7 +208,10 @@ embed page the script may fail; the site keeps working on the last committed JSO
 | `data-chapter` | reported in the nav as "where you are" |
 
 **Jumps.** Nav links and keyboard keys don't scroll past six sections. A card in the
-destination's colours wipes across, the page moves behind it, the card leaves (`jumpTo`).
+destination's colours wipes across with its name sized to the screen, the page moves behind
+it, the card leaves (`jumpTo`). Every jump is a real step in history, so **Back returns you
+to where you jumped from** — press a key on the keyboard, go Back, and you're at the
+keyboard again, not at the top.
 
 ## Day and night
 
@@ -214,11 +237,12 @@ Daylight is the default for everyone — night only if the visitor has chosen it
 | Shared motion | `src/scripts/fx.ts` |
 | Nav, day/night, sound | `Nav`, `ThemeToggle`, `SoundToggle` |
 | Poster strip, arrow, tags | `PosterHead`, `Arrow`, `Badge`, `ComingSoon` |
-| Marigold | `Rosette`, `Seal`, `public/favicon.svg` |
+| Marigold | `Rosette`, `Seal`, `scripts/spin.ts`, `public/favicon.svg` |
 | Cover | `Hero`, `Collage`, `scripts/hero.ts`, `data/collage.ts` |
 | Cube | `Rubik`, `scripts/rubik.ts` |
 | Keyboard | `Keyboard`, `KeyboardScene`, `Garden`, `scripts/keyboard.ts`, `scripts/iso.ts`, `data/keyboard.ts` |
 | Sections | `About`, `Projects`, `Milestones`, `Communities`, `Skills`, `Resume`, `Contact` |
+| A project's page | `src/pages/projects/[slug].astro` |
 | Record room | `MusicRoom`, `Turntable`, `Sleeve`, `scripts/turntable.ts`, `data/music.ts` |
 | Objects | `FloppyDisk`, `Computer` |
 | Click sounds | `scripts/sound.ts` |

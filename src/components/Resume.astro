@@ -104,7 +104,13 @@ const contacts = [
           </div>
         </fieldset>
 
-        <p class="cv__status label" aria-live="polite" data-cv-status></p>
+        <p class="cv__count" aria-live="polite">
+          <b data-cv-words>{sizes.find((s) => s.depth === 2)?.words}</b>
+          <span>
+            words on the sheet<br />about <span data-cv-time>{sizes.find((s) => s.depth === 2)?.time}</span> to read
+            <span class="cv__focus" data-cv-focus></span>
+          </span>
+        </p>
 
         {
           site.links.resume && (
@@ -116,7 +122,10 @@ const contacts = [
         }
       </div>
 
-      <!-- ── the sheet ────────────────────── -->
+      <!-- ── the sheet, on top of a couple more ── -->
+      <div class="pile">
+        <span class="pile__under" aria-hidden="true"></span>
+        <span class="pile__under" aria-hidden="true"></span>
       <article class="sheet" aria-label={`Résumé of ${site.fullName}`}>
         <header class="sheet__top">
           <p class="sheet__name">{site.fullName}</p>
@@ -234,29 +243,50 @@ const contacts = [
           </div>
         </section>
       </article>
+      </div>
     </div>
   </div>
 </section>
 
 <script>
-  // The sheet itself needs no script. This only puts the current setting into words.
+  // The sheet itself needs no script. This only keeps the figure beside it honest.
   document.querySelectorAll<HTMLElement>('[data-cv]').forEach((cv) => {
-    const status = cv.querySelector<HTMLElement>('[data-cv-status]');
-    if (!status) return;
+    const words = cv.querySelector<HTMLElement>('[data-cv-words]');
+    const time = cv.querySelector<HTMLElement>('[data-cv-time]');
+    const focus = cv.querySelector<HTMLElement>('[data-cv-focus]');
+    if (!words || !time || !focus) return;
     const sizes: { depth: number; label: string; words: number; time: string }[] = JSON.parse(cv.dataset.sizes ?? '[]');
     const matches: Record<string, number> = JSON.parse(cv.dataset.matches ?? '{}');
     const total = Number(cv.dataset.total ?? 0);
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+    let shown = Number(words.textContent) || 0;
+    let raf = 0;
 
     const say = () => {
       const depth = Number(cv.querySelector<HTMLInputElement>('[name="cv-depth"]:checked')?.value ?? 2);
       const lens = cv.querySelector<HTMLInputElement>('[name="cv-lens"]:checked');
       const size = sizes.find((s) => s.depth === depth);
       if (!size) return;
-      const focus =
-        lens && lens.value !== 'all'
-          ? ` · ${matches[lens.value] ?? 0} of ${total} entries in focus`
-          : '';
-      status.textContent = `showing ${size.words} words · about ${size.time}${focus}`;
+      time.textContent = size.time;
+      focus.textContent = lens && lens.value !== 'all' ? ` · ${matches[lens.value] ?? 0} of ${total} entries in focus` : '';
+
+      // the number runs to its new value rather than switching
+      cancelAnimationFrame(raf);
+      const from = shown;
+      const to = size.words;
+      if (reduce.matches || from === to) {
+        shown = to;
+        words.textContent = String(to);
+        return;
+      }
+      const start = performance.now();
+      const tick = (now: number) => {
+        const k = Math.min(1, (now - start) / 520);
+        shown = Math.round(from + (to - from) * (1 - (1 - k) ** 3));
+        words.textContent = String(shown);
+        if (k < 1) raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
     };
     cv.addEventListener('change', say);
     say();
@@ -264,6 +294,11 @@ const contacts = [
 </script>
 
 <style>
+  /* the sheets underneath are rotated, so their corners would stick out past a phone screen */
+  .cv {
+    overflow: clip;
+  }
+
   .cv__grid {
     display: grid;
     grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.5fr);
@@ -363,7 +398,7 @@ const contacts = [
   }
 
   .opt i {
-    font: 500 10px/1 var(--font-mono);
+    font: 600 semi-expanded 10px/1 var(--font-label);
     font-style: normal;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -397,11 +432,28 @@ const contacts = [
     outline-offset: 2px;
   }
 
-  .cv__status {
-    min-height: 2.7em;
-    margin-top: clamp(16px, 2vw, 26px);
-    color: var(--fg-2);
-    line-height: 1.5;
+  /* how much is on the sheet right now, as a figure */
+  .cv__count {
+    display: flex;
+    align-items: flex-end;
+    gap: 14px;
+    margin: clamp(18px, 2.4vw, 32px) 0 clamp(14px, 1.8vw, 22px);
+    font: 600 semi-expanded 10.5px/1.6 var(--font-label);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .cv__count b {
+    min-width: 2.2ch;
+    color: var(--accent);
+    font-family: var(--font-display);
+    font-size: clamp(64px, 7.6vw, 128px);
+    font-stretch: 62%;
+    font-weight: 900;
+    line-height: 0.76;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    text-transform: none;
   }
 
   .cv__pdf {
@@ -409,7 +461,30 @@ const contacts = [
   }
 
   /* ── the sheet ──────────────────────── */
+  .pile {
+    position: relative;
+    isolation: isolate;
+  }
+
+  /* two more sheets underneath, not quite squared up */
+  .pile__under {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--sheet);
+    box-shadow: 0 30px 60px -40px rgb(12 13 33 / 0.6);
+    rotate: -1.6deg;
+    translate: -10px 8px;
+  }
+
+  .pile__under + .pile__under {
+    background: #e9ebf7;
+    rotate: 1.3deg;
+    translate: 12px 14px;
+  }
+
   .sheet {
+    position: relative;
     padding: clamp(22px, 3.6vw, 60px) clamp(18px, 3.6vw, 60px) clamp(26px, 4vw, 64px);
     background: var(--sheet);
     color: var(--on-sheet);
@@ -445,7 +520,7 @@ const contacts = [
     gap: 4px 18px;
     margin: 0;
     padding: 0;
-    font: 500 11px/1.5 var(--font-mono);
+    font: 600 semi-expanded 11px/1.5 var(--font-label);
     letter-spacing: 0.04em;
     list-style: none;
   }
@@ -485,7 +560,7 @@ const contacts = [
     margin: 0;
     padding-top: 3px;
     color: var(--on-sheet-2);
-    font: 500 10px/1.4 var(--font-mono);
+    font: 600 semi-expanded 10px/1.4 var(--font-label);
     letter-spacing: 0.1em;
     text-transform: uppercase;
   }
@@ -524,7 +599,7 @@ const contacts = [
   .entry__meta {
     margin: 5px 0 0;
     color: var(--on-sheet-2);
-    font: 400 11px/1.5 var(--font-mono);
+    font: 500 semi-expanded 11px/1.5 var(--font-label);
     letter-spacing: 0.02em;
   }
 

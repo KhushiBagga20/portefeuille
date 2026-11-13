@@ -1,8 +1,11 @@
 ---
-// About, set like an editorial spread: one sentence at headline size, the rest quiet,
-// and a student ID hanging off a lanyard that leans toward the cursor and turns over.
+// About, as a modular poster: one board of cells on a hairline grid, each cell a
+// different scale of the same few facts. The sentence at headline size, two numbers as
+// large as they'll go, an ID that leans toward the cursor and turns over, a list, and a
+// marigold you can spin.
 import { Image } from 'astro:assets';
 import PosterHead from './PosterHead.astro';
+import Rosette from './Rosette.astro';
 import { chapter } from '../data/chapters';
 import { about, education, languages } from '../data/profile';
 import { site } from '../data/site';
@@ -11,45 +14,35 @@ import drawing from '../assets/collage/illustration.png';
 const c = chapter('about');
 const [lead, ...more] = about.paragraphs;
 
-// The course name gets the serif voice wherever the lead sentence mentions it.
+// The course name is set in the quieter voice wherever the lead sentence mentions it.
 const at = lead.indexOf(education.focus);
 const parts = at < 0 ? [lead] : [lead.slice(0, at), education.focus, lead.slice(at + education.focus.length)];
+
+const [grade, outOf] = education.cgpa.split('/');
 ---
 
 <section id="about" class="about poster s-paper" {...c.attrs} aria-labelledby="about-title">
-  <span class="about__moon" aria-hidden="true"></span>
-
   <div class="wrap">
-    <PosterHead id="about" note={`class of ${education.graduation}`} />
+    <PosterHead id="about" note={`${site.fullName} · ${education.school}`} />
     <h2 id="about-title" class="sr-only">About</h2>
 
-    <div class="about__grid">
-      <div class="about__text">
-        <p class="about__say" data-reveal>
-          {parts.length === 3 ? <Fragment>{parts[0]}<em class="voice">{parts[1]}</em>{parts[2]}</Fragment> : lead}
+    <div class="board">
+      <!-- the sentence -->
+      <div class="cell cell--say">
+        <p class="say" data-reveal>
+          {parts.length === 3 ? <Fragment>{parts[0]}<em>{parts[1]}</em>{parts[2]}</Fragment> : lead}
         </p>
-
-        <div class="about__rest">
-          {more.map((p) => <p class="about__more" data-reveal>{p}</p>)}
-
-          <div class="about__list" data-reveal>
-            <p class="label label--dim">things I get excited about</p>
-            <ol class="interests">
-              {
-                about.interests.map((item, i) => (
-                  <li>
-                    <span class="interests__no">{String(i + 1).padStart(2, '0')}</span>
-                    <span class="interests__name">{item}</span>
-                  </li>
-                ))
-              }
-            </ol>
-          </div>
-        </div>
       </div>
 
-      <!-- ── the ID ─────────────────────────── -->
-      <div class="about__id">
+      <!-- class of -->
+      <div class="cell cell--year">
+        <p class="cell__label">class of</p>
+        <p class="figure" data-count data-from={education.started} data-to={education.graduation}>{education.graduation}</p>
+        <p class="cell__foot">{education.degree}</p>
+      </div>
+
+      <!-- the ID -->
+      <div class="cell cell--id">
         <span class="lanyard" aria-hidden="true"></span>
         <div class="id" data-id data-tilt>
           <div class="id__inner">
@@ -61,7 +54,7 @@ const parts = at < 0 ? [lead] : [lead.slice(0, at), education.focus, lead.slice(
               </header>
               <div class="id__body">
                 <div class="id__photo">
-                  <Image src={drawing} alt="" width={200} height={250} />
+                  <Image src={drawing} alt="" width={240} height={300} loading="eager" />
                 </div>
                 <dl class="id__facts">
                   <div>
@@ -82,16 +75,6 @@ const parts = at < 0 ? [lead] : [lead.slice(0, at), education.focus, lead.slice(
                   </div>
                 </dl>
               </div>
-              <dl class="id__row">
-                <div>
-                  <dt>expected grad</dt>
-                  <dd>{education.graduation}</dd>
-                </div>
-                <div>
-                  <dt>cgpa</dt>
-                  <dd>{education.cgpa}</dd>
-                </div>
-              </dl>
               <div class="id__barcode" aria-hidden="true"></div>
             </article>
 
@@ -122,11 +105,58 @@ const parts = at < 0 ? [lead] : [lead.slice(0, at), education.focus, lead.slice(
           <span data-id-flip-label>turn it over</span>
         </button>
       </div>
+
+      <!-- the rest of the thought -->
+      <div class="cell cell--more">
+        <p class="cell__label">in short</p>
+        {more.map((p) => <p class="more">{p}</p>)}
+      </div>
+
+      <!-- the grade -->
+      <div class="cell cell--grade">
+        <p class="cell__label">cgpa</p>
+        <p class="figure" data-count data-from="0" data-to={grade} data-step="0.1">{grade}</p>
+        <p class="cell__foot">out of {outOf}</p>
+      </div>
+
+      <!-- the list -->
+      <div class="cell cell--likes">
+        <p class="cell__label">things I get excited about</p>
+        <ol class="likes">
+          {
+            about.interests.map((item, i) => (
+              <li>
+                <span class="likes__no">{String(i + 1).padStart(2, '0')}</span>
+                <span class="likes__name">{item}</span>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+
+      <!-- the marigold -->
+      <div class="cell cell--bloom">
+        <p class="cell__label">spin it</p>
+        <div class="bloom" data-spin aria-hidden="true">
+          <Rosette
+            rings={[
+              { n: 18, at: 76, r: 14.5, fill: 'var(--marigold)', rate: 1 },
+              { n: 13, at: 52, r: 14, fill: 'var(--marigold-pale)', rate: -1.6 },
+              { n: 9, at: 30, r: 12.5, fill: 'var(--marigold-deep)', rate: 2.3 },
+            ]}
+            core={{ r: 11, fill: 'var(--signal)' }}
+          />
+        </div>
+      </div>
     </div>
   </div>
 </section>
 
 <script>
+  import { initSpin } from '../scripts/spin';
+
+  document.querySelectorAll<HTMLElement>('[data-spin]').forEach(initSpin);
+
   // The card turns over. Whichever face is away from you is taken out of the tab order.
   document.querySelectorAll<HTMLElement>('[data-id]').forEach((card) => {
     const button = card.parentElement?.querySelector<HTMLButtonElement>('[data-id-flip]');
@@ -145,115 +175,225 @@ const parts = at < 0 ? [lead] : [lead.slice(0, at), education.focus, lead.slice(
     button.addEventListener('click', () => set(!card.classList.contains('is-flipped')));
     card.addEventListener('click', () => set(!card.classList.contains('is-flipped')));
   });
+
+  // The two big figures count up to themselves the first time they're seen:
+  // the years from when she started to when she finishes, the grade from nought.
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  const counters = [...document.querySelectorAll<HTMLElement>('[data-count]')];
+  if (!reduce.matches && counters.length) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          io.unobserve(entry.target);
+          const el = entry.target as HTMLElement;
+          const from = Number(el.dataset.from);
+          const to = Number(el.dataset.to);
+          const step = Number(el.dataset.step ?? 1);
+          const places = step < 1 ? 1 : 0;
+          if (!Number.isFinite(from) || !Number.isFinite(to)) continue;
+          const start = performance.now();
+          const ms = 1100;
+          const tick = (now: number) => {
+            const t = Math.min(1, (now - start) / ms);
+            const eased = 1 - (1 - t) ** 3;
+            const value = from + Math.round(((to - from) * eased) / step) * step;
+            el.textContent = (t < 1 ? value : to).toFixed(places);
+            if (t < 1) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        }
+      },
+      { threshold: 0.7 },
+    );
+    counters.forEach((el) => io.observe(el));
+  }
 </script>
 
 <style>
-  .about {
+  /* ── the board: cells on a hairline grid ─────────────
+     The grid's own colour shows through 1px gaps, which is what draws the lines. */
+  .board {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-areas:
+      'say  say  say  say  say  say  say  say  year  year  year  year'
+      'id   id   id   id   more more more more grade grade grade grade'
+      'id   id   id   id   like like like like like  bloom bloom bloom';
+    gap: 1px;
+    margin-top: clamp(22px, 3vw, 44px);
+    border: 1px solid var(--fg);
+    background: var(--fg);
+  }
+
+  .cell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: clamp(16px, 2vw, 30px);
+    background: var(--bg);
+  }
+
+  .cell--say {
+    grid-area: say;
+    justify-content: center;
+    padding-block: clamp(24px, 4vw, 64px);
+  }
+
+  .cell--year {
+    grid-area: year;
+    background: var(--cobalt);
+    color: #ffffff;
+  }
+
+  .cell--id {
+    grid-area: id;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    padding-top: clamp(48px, 6vw, 90px);
+    background: var(--paper-2);
     overflow: clip;
   }
 
-  /* one large, quiet disc, cropped by the edge of the sheet */
-  .about__moon {
-    position: absolute;
-    top: calc(clamp(64px, 9vw, 132px) + clamp(70px, 9vw, 150px));
-    right: calc(-1 * clamp(120px, 15vw, 280px));
-    width: clamp(380px, 46vw, 820px);
-    aspect-ratio: 1;
-    border-radius: 50%;
-    background: var(--violet);
+  .cell--more {
+    grid-area: more;
   }
 
-  .about__grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
-    gap: clamp(32px, 6vw, 110px);
-    margin-top: clamp(36px, 6vw, 88px);
+  .cell--grade {
+    grid-area: grade;
+    background: var(--marigold);
+    color: var(--c-ink);
   }
 
-  .about__say {
+  .cell--likes {
+    grid-area: like;
+    background: var(--c-ink);
+    color: var(--c-paper);
+  }
+
+  .cell--bloom {
+    grid-area: bloom;
+    overflow: clip;
+  }
+
+  .cell__label,
+  .cell__foot {
+    margin: 0;
+    font: 600 semi-expanded 11px/1.3 var(--font-label);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .cell__foot {
+    margin-top: auto;
+  }
+
+  /* the sentence */
+  .say {
+    max-width: 21ch;
     margin: 0;
     font-family: var(--font-display);
-    font-size: clamp(31px, 4.5vw, 76px);
+    font-size: clamp(30px, 4.5vw, 76px);
     font-stretch: 82%;
-    font-weight: 700;
+    font-weight: 750;
     line-height: 0.98;
     letter-spacing: -0.022em;
     text-wrap: balance;
   }
 
-  .about__say em {
+  .say em {
     color: var(--accent);
-    font-size: 1.06em;
-    letter-spacing: -0.01em;
+    font-stretch: 100%;
+    font-style: normal;
+    font-weight: 300;
+    letter-spacing: -0.03em;
   }
 
-  /* the second voice starts a third of the way in, not flush left */
-  .about__rest {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
-    gap: clamp(24px, 4vw, 60px);
-    margin: clamp(32px, 5vw, 72px) 0 0 clamp(0px, 9vw, 150px);
+  /* a number as large as its cell */
+  .figure {
+    margin: auto 0 0;
+    padding: 0.14em 0 0.06em;
+    font-family: var(--font-display);
+    font-size: clamp(96px, 14.2vw, 250px);
+    font-stretch: 62%;
+    font-weight: 900;
+    line-height: 0.74;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
   }
 
-  .about__more {
-    margin: 0;
-    color: var(--fg-2);
-    font-size: clamp(17px, 1.3vw, 20px);
-    line-height: 1.5;
+  .cell--year .cell__foot,
+  .cell--grade .cell__foot {
+    margin-top: clamp(10px, 1.2vw, 16px);
   }
 
-  .interests {
-    margin: 12px 0 0;
+  .more {
+    margin: auto 0 0;
+    padding-top: 24px;
+    font-size: clamp(17px, 1.42vw, 21px);
+    line-height: 1.42;
+  }
+
+  /* the list */
+  .likes {
+    margin: clamp(14px, 1.8vw, 24px) 0 0;
     padding: 0;
-    border-top: 1px solid var(--line);
     list-style: none;
   }
 
-  .interests li {
+  .likes li {
     display: grid;
     grid-template-columns: 4ch 1fr;
     align-items: baseline;
-    padding: 9px 0 7px;
-    border-bottom: 1px solid var(--line);
-    transition: padding-left 0.3s var(--ease-out);
+    padding: 8px 0 6px;
+    border-top: 1px solid rgb(243 243 239 / 0.22);
+    transition:
+      padding-left 0.3s var(--ease-out),
+      color 0.2s ease;
   }
 
-  .interests li:hover {
+  .likes li:hover {
     padding-left: 12px;
+    color: var(--marigold);
   }
 
-  .interests__no {
-    color: var(--fg-2);
-    font: 500 10px/1 var(--font-mono);
+  .likes__no {
+    font: 600 semi-expanded 10px/1 var(--font-label);
     letter-spacing: 0.08em;
+    opacity: 0.7;
   }
 
-  .interests__name {
+  .likes__name {
     font-family: var(--font-display);
-    font-size: clamp(18px, 1.55vw, 24px);
-    font-stretch: 78%;
-    font-weight: 700;
-    line-height: 1.05;
+    font-size: clamp(19px, 2.05vw, 33px);
+    font-stretch: 70%;
+    font-weight: 800;
+    line-height: 1;
     text-transform: uppercase;
   }
 
-  /* ── the ID ─────────────────────────── */
-  .about__id {
-    position: relative;
-    display: grid;
-    justify-items: center;
-    align-content: start;
-    gap: 22px;
-    padding-top: clamp(40px, 6vw, 96px);
+  /* the marigold: too big for its cell on purpose */
+  .bloom {
+    width: 132%;
+    margin: auto -16% -30% auto;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
   }
 
+  .bloom:active {
+    cursor: grabbing;
+  }
+
+  /* ── the ID ─────────────────────────── */
   .lanyard {
-    --drop: calc(clamp(36px, 6vw, 88px) + 8px);
     position: absolute;
-    top: calc(-1 * var(--drop));
+    top: 0;
     left: 50%;
     width: 22px;
-    height: calc(var(--drop) + clamp(40px, 6vw, 96px) + 20px);
+    height: clamp(64px, 7vw, 108px);
     background: var(--fg);
     translate: -50% 0;
   }
@@ -263,7 +403,7 @@ const parts = at < 0 ? [lead] : [lead.slice(0, at), education.focus, lead.slice(
     --ty: 0;
     --lit: 0;
     position: relative;
-    width: min(100%, 400px);
+    width: min(100%, 380px);
     color: var(--on-sheet);
     cursor: pointer;
     perspective: 1100px;
@@ -304,7 +444,7 @@ const parts = at < 0 ? [lead] : [lead.slice(0, at), education.focus, lead.slice(
     margin: 13px 0 11px;
     border: 1px solid var(--c-ink);
     border-radius: 999px;
-    background: var(--c-paper);
+    background: var(--paper-2);
   }
 
   .id__back .id__bar {
@@ -315,10 +455,10 @@ const parts = at < 0 ? [lead] : [lead.slice(0, at), education.focus, lead.slice(
     display: flex;
     justify-content: space-between;
     gap: 12px;
-    padding: 11px 18px 10px;
+    padding: 11px 16px 10px;
     background: var(--cobalt);
     color: #ffffff;
-    font: 500 11px/1 var(--font-mono);
+    font: 600 semi-expanded 10.5px/1 var(--font-label);
     letter-spacing: 0.1em;
     text-transform: uppercase;
   }
@@ -326,14 +466,13 @@ const parts = at < 0 ? [lead] : [lead.slice(0, at), education.focus, lead.slice(
   .id__body {
     display: grid;
     flex: 1;
-    grid-template-columns: 146px 1fr;
+    grid-template-columns: 42% 1fr;
     align-items: start;
-    gap: 16px;
-    padding: 18px 18px 14px;
+    gap: 14px;
+    padding: 16px;
   }
 
   .id__photo {
-    align-self: start;
     overflow: hidden;
     border: 1px solid var(--c-ink);
     background: var(--periwinkle);
@@ -348,29 +487,26 @@ const parts = at < 0 ? [lead] : [lead.slice(0, at), education.focus, lead.slice(
 
   .id__facts {
     display: grid;
-    gap: 9px;
+    gap: 8px;
     margin: 0;
   }
 
   .id__row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
     margin: 0;
-    padding: 11px 18px;
+    padding: 10px 16px;
     border-top: 1px solid var(--sheet-line);
   }
 
   .id dt {
     color: var(--on-sheet-2);
-    font: 500 9px/1 var(--font-mono);
+    font: 600 semi-expanded 8.5px/1 var(--font-label);
     letter-spacing: 0.1em;
     text-transform: uppercase;
   }
 
   .id dd {
     margin: 4px 0 0;
-    font-size: 15px;
+    font-size: 14.5px;
     font-stretch: 92%;
     font-weight: 650;
     line-height: 1.2;
@@ -379,7 +515,7 @@ const parts = at < 0 ? [lead] : [lead.slice(0, at), education.focus, lead.slice(
   .id__courses {
     flex: 1;
     margin: 0;
-    padding: 12px 18px 10px;
+    padding: 12px 16px 8px;
     counter-reset: course;
     list-style: none;
   }
@@ -387,8 +523,8 @@ const parts = at < 0 ? [lead] : [lead.slice(0, at), education.focus, lead.slice(
   .id__courses li {
     display: grid;
     grid-template-columns: 3.4ch 1fr;
-    padding: 3.5px 0;
-    font-size: 13.5px;
+    padding: 3px 0;
+    font-size: 13px;
     font-stretch: 92%;
     font-weight: 600;
     line-height: 1.25;
@@ -398,14 +534,14 @@ const parts = at < 0 ? [lead] : [lead.slice(0, at), education.focus, lead.slice(
   .id__courses li::before {
     content: counter(course, decimal-leading-zero);
     color: var(--on-sheet-2);
-    font: 500 9px/1.9 var(--font-mono);
+    font: 600 semi-expanded 8.5px/1.9 var(--font-label);
     letter-spacing: 0.08em;
   }
 
   .id__barcode {
     flex: none;
-    height: 30px;
-    margin: 4px 18px 16px;
+    height: 28px;
+    margin: 4px 16px 14px;
     background: repeating-linear-gradient(
       90deg,
       var(--c-ink) 0 3px,
@@ -447,31 +583,48 @@ const parts = at < 0 ? [lead] : [lead.slice(0, at), education.focus, lead.slice(
     rotate: 180deg;
   }
 
-  @media (max-width: 420px) {
-    .id__body {
-      grid-template-columns: 104px 1fr;
+  /* ── narrower: the board re-cuts itself ─── */
+  @media (max-width: 1099px) {
+    .board {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-template-areas:
+        'say  say  say  say  say  say'
+        'year year year grade grade grade'
+        'id   id   id   more  more  more'
+        'id   id   id   like  like  like'
+        'bloom bloom bloom like like like';
+    }
+
+    .cell--bloom {
+      min-height: 220px;
     }
   }
 
-  @media (max-width: 899px) {
-    .about__grid {
-      grid-template-columns: minmax(0, 1fr);
+  @media (max-width: 699px) {
+    .board {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-areas:
+        'say   say'
+        'year  grade'
+        'more  more'
+        'id    id'
+        'like  like'
+        'bloom bloom';
     }
 
-    .about__rest {
-      grid-template-columns: minmax(0, 1fr);
-      margin-left: 0;
+    /* two figures share a row here: sized so four digits fit in half the width */
+    .figure {
+      font-size: clamp(56px, 18.4vw, 132px);
     }
 
-    .about__moon {
-      top: auto;
-      bottom: clamp(40px, 12vw, 120px);
-      right: -32vw;
-      width: 92vw;
+    .cell--bloom {
+      min-height: 0;
+      aspect-ratio: 2 / 1;
     }
 
-    .lanyard {
-      --drop: 30px;
+    .bloom {
+      width: 86%;
+      margin: auto -14% -34% auto;
     }
   }
 

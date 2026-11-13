@@ -20,10 +20,11 @@
    Paper sections follow the day/night switch. Coloured posters never change.
    Physical objects (cards, sheets, the keyboard, the deck) keep their own colours.
 
-   Two typefaces:
-     Archivo         everything, by changing its cut: condensed-black for
-                     structure, light for the quieter voice, regular for reading
-     IBM Plex Mono   annotation — indices, metadata, instructions
+   One typeface, Archivo, in four cuts:
+     condensed black      structure — titles, names, numbers
+     light                the quieter voice
+     wide small capitals  annotation — indices, metadata, instructions
+     regular              reading
    ───────────────────────────────────────────── */
 
 :root {
@@ -50,7 +51,8 @@
   /* ── type ── */
   --font-display: 'Archivo Variable', 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
   --font-body: 'Archivo Variable', 'Helvetica Neue', Arial, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  /* labels are the same face again: small, wide, tracked capitals */
+  --font-label: 'Archivo Variable', 'Helvetica Neue', Arial, sans-serif;
 
   /* ── measure ── */
   --gutter: clamp(16px, 3.4vw, 56px);
@@ -246,7 +248,7 @@ button {
 /* annotation */
 .label {
   margin: 0;
-  font: 500 11px/1.35 var(--font-mono);
+  font: 600 semi-expanded 11px/1.35 var(--font-label);
   letter-spacing: 0.09em;
   text-transform: uppercase;
 }
@@ -305,7 +307,7 @@ button {
   border-radius: 999px;
   background: var(--key-bg);
   color: var(--key-fg);
-  font: 500 12px/1 var(--font-mono);
+  font: 600 semi-expanded 12px/1 var(--font-label);
   letter-spacing: 0.08em;
   text-decoration: none;
   text-transform: uppercase;
@@ -426,7 +428,7 @@ button {
   padding: 4px 8px 3px;
   border: 1px solid currentColor;
   border-radius: 999px;
-  font: 500 10px/1.2 var(--font-mono);
+  font: 600 semi-expanded 10px/1.2 var(--font-label);
   letter-spacing: 0.07em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -489,7 +491,7 @@ button {
 }
 
 .jump__idx {
-  font: 500 clamp(12px, 1.2vw, 16px) / 1 var(--font-mono);
+  font: 600 semi-expanded clamp(12px, 1.2vw, 16px) / 1 var(--font-label);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }

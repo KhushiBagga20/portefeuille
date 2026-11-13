@@ -1,11 +1,18 @@
 ---
+// A project's own page, laid out as a poster and a spec sheet rather than a column of text:
+//   1. a cover in the disk's colour, the name as wide as the page, the disk lying across it
+//   2. the stack running past as a ticker
+//   3. the numbers the data can honestly give
+//   4. the write-up, each kind of section set its own way, with a contents rail that follows you
+// Sections that haven't been written yet are gathered into one honest list instead of
+// five empty boxes.
 import Base from '../../layouts/Base.astro';
 import Nav from '../../components/Nav.astro';
 import Arrow from '../../components/Arrow.astro';
 import Badge from '../../components/Badge.astro';
 import ComingSoon from '../../components/ComingSoon.astro';
 import FloppyDisk from '../../components/FloppyDisk.astro';
-import { diskTones, projects, type Project } from '../../data/projects';
+import { diskTones, projects, type CaseSection, type Project } from '../../data/projects';
 import { site } from '../../data/site';
 
 export function getStaticPaths() {
@@ -29,7 +36,22 @@ interface Props {
 
 const { project: p, index, prev, next } = Astro.props;
 const tone = diskTones[p.disk.tone];
+// on the dark ticker a dark disk colour would vanish: borrow the marigold instead
+const toneOnInk = p.disk.tone === 'mint' ? 'var(--marigold)' : tone.body;
 const no = (i: number) => String(i + 1).padStart(2, '0');
+
+const isWritten = (s: CaseSection) => Boolean(s.body || s.items || s.groups);
+const written = p.sections.filter(isWritten);
+const unwritten = p.sections.filter((s) => !isWritten(s));
+
+// ── the numbers the data can give, and no others ──
+const working = p.sections.filter((s) => s.kind === 'working');
+const featureCount = working.reduce((n, s) => n + (s.items?.length ?? 0) + (s.groups?.reduce((m, g) => m + g.items.length, 0) ?? 0), 0);
+const specs: { label: string; value: string; unit?: string }[] = [
+  ...(featureCount ? [{ label: 'working today', value: String(featureCount).padStart(2, '0'), unit: 'features' }] : []),
+  ...(p.stack ? [{ label: 'built with', value: String(p.stack.length).padStart(2, '0'), unit: 'technologies' }] : []),
+  { label: 'written up', value: `${written.length}/${p.sections.length}`, unit: 'sections' },
+];
 
 // Event and result only make sense for hackathon projects; elsewhere they'd read as "missing".
 const isHackathon = p.labels.includes('Hackathon');
@@ -47,35 +69,104 @@ const links = [
 ---
 
 <Base title={`${p.name} · ${site.fullName}`} description={p.oneLiner ?? `${p.name}: ${p.type}.`}>
-  <Nav here={`work / ${p.name}`} />
-  <main class="case">
-    <!-- ── the cover, in the disk's own colour ── -->
-    <header class="cover" style={`--tone:${tone.body};--on-tone:${tone.on}`}>
-      <div class="cover__inner">
-        <p class="cover__strip">
-          <a class="cover__back" href="/#projects"><Arrow dir="left" /> all work</a>
-          <span>{no(index)} / {no(projects.length - 1)}</span>
-          <span class="cover__kind">{[p.type, p.event].filter(Boolean).join(' · ')}</span>
-        </p>
+  <Nav here={`projects / ${p.name}`} />
+  <main class="case" style={`--tone:${tone.body};--on-tone:${tone.on};--tone-on-ink:${toneOnInk}`}>
+    <!-- ── 1 · the cover ─────────────────────── -->
+    <header class="cover" data-pointer>
+      <p class="cover__strip">
+        <a class="cover__back" href="/#projects"><Arrow dir="left" /> all projects</a>
+        <span>{no(index)} / {no(projects.length - 1)}</span>
+        <span class="cover__kind">{[p.type, p.event].filter(Boolean).join(' · ')}</span>
+      </p>
 
-        <h1 id="case-title" class="cover__name">{p.name}</h1>
-        {p.earlierName && <p class="cover__aka voice">earlier known as {p.earlierName}</p>}
-        {p.oneLiner ? <p class="cover__line">{p.oneLiner}</p> : <ComingSoon text="description coming soon" />}
-        <div class="cover__tags">
-          {p.labels.map((l) => <Badge label={l} />)}
-        </div>
+      <div class="cover__stage">
+        <h1 id="case-title" class="cover__name" style={`--n:${Math.max(5, p.name.length)}`}>{p.name}</h1>
 
-        <div class="drive" aria-hidden="true">
+        <div class="drive" aria-hidden="true" data-tilt>
           <span class="drive__plate"></span>
           <span class="vt-disk drive__disk" style={`--vt: disk-${p.slug}`}>
             <FloppyDisk tone={p.disk.tone} scribble={p.disk.scribble} />
           </span>
         </div>
       </div>
+
+      <div class="cover__foot">
+        <div class="cover__say">
+          {p.earlierName && <p class="cover__aka voice">earlier known as {p.earlierName}</p>}
+          {p.oneLiner ? <p class="cover__line">{p.oneLiner}</p> : <ComingSoon text="description coming soon" />}
+        </div>
+        <div class="cover__tags">
+          {p.labels.map((l) => <Badge label={l} />)}
+        </div>
+      </div>
     </header>
 
-    <div class="case__grid">
-      <aside class="side" aria-label="Project facts">
+    <!-- ── 2 · the stack, running past ───────── -->
+    {
+      p.stack && (
+        <div class="ticker" aria-hidden="true">
+          <div class="ticker__run">
+            {[0, 1].map(() => (
+              <span>
+                {p.stack!.map((s) => (
+                  <Fragment>
+                    <b>{s}</b>
+                    <i />
+                  </Fragment>
+                ))}
+              </span>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
+    <!-- ── 3 · the numbers ───────────────────── -->
+    <dl class="specs">
+      {
+        specs.map((s) => (
+          <div class="spec">
+            <dt>{s.label}</dt>
+            <dd>
+              <b>{s.value}</b>
+              {s.unit && <span>{s.unit}</span>}
+            </dd>
+          </div>
+        ))
+      }
+      {
+        p.outcome?.map((o) => (
+          <div class="spec spec--won">
+            <dt>result</dt>
+            <dd>
+              <b>{o}</b>
+            </dd>
+          </div>
+        ))
+      }
+    </dl>
+
+    <!-- ── 4 · the write-up ──────────────────── -->
+    <div class="doc">
+      <aside class="rail" aria-label="On this page, and the facts">
+        {
+          written.length > 0 && (
+            <nav class="toc" aria-label="On this page">
+              <p class="rail__label">on this disk</p>
+              <ol>
+                {written.map((s, i) => (
+                  <li>
+                    <a href={`#part-${i + 1}`} data-no-jump data-toc={`part-${i + 1}`}>
+                      <span>{no(i)}</span>
+                      {s.title}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </nav>
+          )
+        }
+
         <dl class="facts">
           {
             facts.map((f) => (
@@ -124,38 +215,64 @@ const links = [
 
       <article class="body" aria-labelledby="case-title">
         {
-          p.sections.map((s, i) => (
-            <section class:list={['block', s.kind && `block--${s.kind}`]}>
-              <p class="block__no">{no(i)}</p>
-              <div class="block__main">
+          written.map((s, i) => (
+            <section id={`part-${i + 1}`} class:list={['part', s.kind && `part--${s.kind}`, s.groups && 'part--grid']} data-part>
+              <header class="part__head">
+                <span class="part__no">{no(i)}</span>
                 <h2>{s.title}</h2>
-                {s.note && <p class="block__note">{s.note}</p>}
-                {s.body && <p class="block__body">{s.body}</p>}
-                {s.items && (
-                  <ul class="list">
-                    {s.items.map((item) => (
-                      <li>{item}</li>
-                    ))}
-                  </ul>
-                )}
-                {s.groups && (
-                  <div class="groups">
-                    {s.groups.map((g) => (
-                      <div class="group">
-                        <h3>{g.title}</h3>
-                        <ul class="list">
-                          {g.items.map((item) => (
-                            <li>{item}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {!s.body && !s.items && !s.groups && <ComingSoon />}
-              </div>
+              </header>
+
+              {s.note && <p class="part__note">{s.note}</p>}
+              {s.body && <p class="part__body">{s.body}</p>}
+
+              {s.items && (
+                <ul class="list">
+                  {s.items.map((item) => (
+                    <li>{item}</li>
+                  ))}
+                </ul>
+              )}
+
+              {s.groups && (
+                <div class="tiles">
+                  {s.groups.map((g) => (
+                    <div class="tile">
+                      <h3>
+                        {g.title}
+                        <sup>{String(g.items.length).padStart(2, '0')}</sup>
+                      </h3>
+                      <ul class="list">
+                        {g.items.map((item) => (
+                          <li>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
           ))
+        }
+
+        {
+          unwritten.length > 0 && (
+            <section class="part part--todo">
+              <header class="part__head">
+                <span class="part__no">{no(written.length)}</span>
+                <h2>{written.length ? 'Still to be written' : 'Not written up yet'}</h2>
+              </header>
+              <p class="part__body">
+                {written.length
+                  ? 'These parts of the write-up are on the way.'
+                  : "This project's write-up is on the way. It will cover:"}
+              </p>
+              <ul class="todo">
+                {unwritten.map((s) => (
+                  <li>{s.title}</li>
+                ))}
+              </ul>
+            </section>
+          )
         }
       </article>
     </div>
@@ -181,12 +298,32 @@ const links = [
   </main>
 </Base>
 
+<script>
+  // The contents rail lights whichever part is under the middle of the screen.
+  const links = [...document.querySelectorAll<HTMLAnchorElement>('[data-toc]')];
+  if (links.length) {
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          links.forEach((a) => {
+            if (a.dataset.toc === e.target.id) a.setAttribute('aria-current', 'true');
+            else a.removeAttribute('aria-current');
+          });
+        }
+      },
+      { rootMargin: '-40% 0px -55% 0px' },
+    );
+    document.querySelectorAll('[data-part]').forEach((part) => io.observe(part));
+  }
+</script>
+
 <style>
   .case {
     padding-top: var(--bar);
   }
 
-  /* ── cover ──────────────────────────── */
+  /* ── 1 · cover ──────────────────────── */
   .cover {
     --bg: var(--tone);
     --fg: var(--on-tone);
@@ -194,16 +331,15 @@ const links = [
     --line: var(--on-tone);
     --accent: var(--on-tone);
     --on-accent: var(--tone);
-    padding: clamp(18px, 2.4vw, 32px) var(--gutter) clamp(36px, 5vw, 80px);
+    --px: 0;
+    --py: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: min(calc(100svh - var(--bar)), 900px);
+    padding: clamp(16px, 2vw, 28px) var(--gutter) clamp(22px, 3vw, 40px);
     background: var(--tone);
     color: var(--on-tone);
     overflow: clip;
-  }
-
-  .cover__inner {
-    position: relative;
-    max-width: var(--wrap);
-    margin: 0 auto;
   }
 
   .cover__strip {
@@ -214,7 +350,7 @@ const links = [
     margin: 0;
     padding-bottom: 12px;
     border-bottom: 1px solid currentColor;
-    font: 500 11px/1.3 var(--font-mono);
+    font: 600 semi-expanded 11px/1.3 var(--font-label);
     letter-spacing: 0.09em;
     text-transform: uppercase;
   }
@@ -235,54 +371,41 @@ const links = [
     margin-left: auto;
   }
 
+  /* the name as wide as the page; the disk lies across the end of it */
+  .cover__stage {
+    position: relative;
+    display: grid;
+    flex: 1;
+    align-items: center;
+    container-type: inline-size;
+    margin: clamp(10px, 2vw, 30px) 0;
+  }
+
   .cover__name {
-    max-width: 62%;
-    margin: clamp(26px, 4.6vw, 76px) 0 0;
+    margin: 0;
     font-family: var(--font-display);
-    font-size: clamp(64px, 16vw, 300px);
+    font-size: min(31cqw, 62svh, calc(100cqw / (var(--n) * 0.54)));
     font-stretch: 62%;
     font-weight: 900;
     line-height: 0.76;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.015em;
     text-transform: uppercase;
+    white-space: nowrap;
   }
 
-  .cover__aka {
-    margin: 0.5em 0 0;
-    font-size: clamp(22px, 2.2vw, 36px);
-    line-height: 1;
-  }
-
-  .cover__line {
-    max-width: 30ch;
-    margin: clamp(18px, 2.6vw, 38px) 0 0;
-    font-size: clamp(20px, 2.1vw, 33px);
-    font-stretch: 88%;
-    font-weight: 600;
-    line-height: 1.14;
-    letter-spacing: -0.012em;
-  }
-
-  .cover__inner > :global(.soon) {
-    margin-top: 22px;
-  }
-
-  .cover__tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: clamp(16px, 2vw, 26px);
-  }
-
-  /* the disk that flew here from the index, lying on a paper plate */
   .drive {
+    --tx: 0;
+    --ty: 0;
     position: absolute;
-    top: clamp(60px, 7vw, 120px);
-    right: clamp(0px, 3vw, 60px);
+    right: clamp(0px, 2cqw, 40px);
+    bottom: clamp(-30px, -2cqw, 0px);
     display: grid;
     place-items: center;
-    width: clamp(200px, 30vw, 470px);
+    width: clamp(170px, 27cqw, 420px);
     aspect-ratio: 1;
+    perspective: 900px;
+    translate: calc(var(--px) * -14px) calc(var(--py) * -10px);
+    transition: translate 0.5s var(--ease-out);
   }
 
   .drive__plate {
@@ -297,13 +420,156 @@ const links = [
     display: block;
     width: 62%;
     filter: drop-shadow(0 22px 26px rgb(12 13 33 / 0.35));
-    rotate: -8deg;
+    transform: rotate(-8deg) rotateY(calc(var(--tx) * 18deg)) rotateX(calc(var(--ty) * -14deg));
+    transition: transform 0.5s var(--ease-out);
   }
 
-  /* ── body ───────────────────────────── */
-  .case__grid {
+  .cover__foot {
     display: grid;
-    grid-template-columns: minmax(230px, 0.5fr) minmax(0, 1.5fr);
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 16px 32px;
+    padding-top: clamp(14px, 1.8vw, 24px);
+    border-top: 1px solid currentColor;
+  }
+
+  .cover__aka {
+    margin: 0 0 0.5em;
+    font-size: clamp(18px, 1.7vw, 26px);
+    line-height: 1.1;
+  }
+
+  .cover__line {
+    max-width: 34ch;
+    margin: 0;
+    font-size: clamp(20px, 2.2vw, 34px);
+    font-stretch: 88%;
+    font-weight: 600;
+    line-height: 1.12;
+    letter-spacing: -0.014em;
+  }
+
+  .cover__tags {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+    max-width: 340px;
+  }
+
+  /* ── 2 · ticker ─────────────────────── */
+  .ticker {
+    padding: clamp(10px, 1.4vw, 20px) 0 clamp(8px, 1.2vw, 16px);
+    background: var(--c-ink);
+    color: var(--c-paper);
+    overflow: clip;
+    white-space: nowrap;
+  }
+
+  .ticker__run {
+    display: inline-flex;
+    animation: ticker 38s linear infinite;
+  }
+
+  .ticker__run > span {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .ticker b {
+    font-family: var(--font-display);
+    font-size: clamp(34px, 5.6vw, 92px);
+    font-stretch: 62%;
+    font-weight: 900;
+    line-height: 0.9;
+    text-transform: uppercase;
+  }
+
+  .ticker i {
+    flex: none;
+    width: clamp(10px, 1.3vw, 20px);
+    aspect-ratio: 1;
+    margin: 0 clamp(14px, 2vw, 34px);
+    border-radius: 50%;
+    background: var(--tone-on-ink);
+  }
+
+  @keyframes ticker {
+    to {
+      translate: -50% 0;
+    }
+  }
+
+  /* ── 3 · specs ──────────────────────── */
+  .specs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+    margin: 0;
+    border-bottom: 1px solid var(--fg);
+  }
+
+  .spec {
+    display: grid;
+    align-content: space-between;
+    gap: clamp(14px, 2.4vw, 36px);
+    padding: clamp(16px, 2vw, 28px) var(--gutter) clamp(16px, 2vw, 26px);
+    border-right: 1px solid var(--line);
+  }
+
+  .spec:last-child {
+    border-right: 0;
+  }
+
+  .spec dt {
+    color: var(--fg-2);
+    font: 600 semi-expanded 10px/1 var(--font-label);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .spec dd {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 10px;
+    margin: 0;
+  }
+
+  .spec b {
+    font-family: var(--font-display);
+    font-size: clamp(54px, 7.4vw, 124px);
+    font-stretch: 62%;
+    font-weight: 900;
+    line-height: 0.78;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .spec span {
+    font: 600 semi-expanded 11px/1.2 var(--font-label);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  /* a result is a sentence, not a number: it gets the tone and a smaller cut */
+  .spec--won {
+    background: var(--tone);
+    color: var(--on-tone);
+  }
+
+  .spec--won dt {
+    color: inherit;
+  }
+
+  .spec--won b {
+    font-size: clamp(28px, 3.3vw, 54px);
+    line-height: 0.9;
+    text-transform: uppercase;
+  }
+
+  /* ── 4 · write-up ───────────────────── */
+  .doc {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.42fr) minmax(0, 1.5fr);
     align-items: start;
     gap: clamp(28px, 5vw, 90px);
     max-width: calc(var(--wrap) + 2 * var(--gutter));
@@ -311,9 +577,72 @@ const links = [
     padding: clamp(36px, 5vw, 80px) var(--gutter) clamp(56px, 8vw, 120px);
   }
 
-  .side {
+  .rail {
     position: sticky;
-    top: calc(var(--bar) + 24px);
+    top: calc(var(--bar) + 22px);
+    display: grid;
+    gap: clamp(22px, 3vw, 36px);
+  }
+
+  .rail__label {
+    margin: 0 0 8px;
+    color: var(--fg-2);
+    font: 600 semi-expanded 10px/1 var(--font-label);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .toc ol {
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--fg);
+    list-style: none;
+  }
+
+  .toc a {
+    position: relative;
+    display: grid;
+    grid-template-columns: 3.4ch 1fr;
+    align-items: baseline;
+    padding: 9px 0 8px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-stretch: 76%;
+    font-weight: 800;
+    line-height: 1.1;
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: padding-left 0.3s var(--ease-out);
+  }
+
+  .toc a span {
+    color: var(--fg-2);
+    font: 600 semi-expanded 10px/1 var(--font-label);
+    letter-spacing: 0.08em;
+  }
+
+  .toc a::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 8px;
+    height: 8px;
+    background: var(--tone);
+    outline: 1px solid var(--fg);
+    scale: 0;
+    translate: 0 -50%;
+    transition: scale 0.3s var(--spring);
+  }
+
+  .toc a:hover,
+  .toc a[aria-current] {
+    padding-left: 16px;
+  }
+
+  .toc a[aria-current]::before {
+    scale: 1;
   }
 
   .facts {
@@ -323,18 +652,18 @@ const links = [
   }
 
   .fact {
-    padding: 12px 0 13px;
+    padding: 11px 0 12px;
     border-bottom: 1px solid var(--line);
   }
 
-  dt {
+  .fact dt {
     color: var(--fg-2);
-    font: 500 10px/1 var(--font-mono);
+    font: 600 semi-expanded 10px/1 var(--font-label);
     letter-spacing: 0.1em;
     text-transform: uppercase;
   }
 
-  dd {
+  .fact dd {
     margin: 7px 0 0;
     font-stretch: 92%;
     font-weight: 650;
@@ -364,106 +693,202 @@ const links = [
     gap: 8px;
   }
 
-  .block {
-    display: grid;
-    grid-template-columns: 4ch minmax(0, 1fr);
-    column-gap: clamp(12px, 2vw, 28px);
-    padding: clamp(20px, 2.6vw, 36px) 0 clamp(22px, 3vw, 42px);
+  /* each part: a rule, a number, a headline */
+  .part {
+    padding: clamp(18px, 2.4vw, 32px) 0 clamp(34px, 5vw, 76px);
     border-top: 1px solid var(--fg);
+    scroll-margin-top: calc(var(--bar) + 12px);
   }
 
-  .block__no {
-    margin: 0;
-    padding-top: 0.75em;
+  .part__head {
+    display: grid;
+    grid-template-columns: 4ch minmax(0, 1fr);
+    align-items: baseline;
+  }
+
+  .part__no {
     color: var(--fg-2);
-    font: 500 11px/1 var(--font-mono);
+    font: 600 semi-expanded 11px/1 var(--font-label);
     letter-spacing: 0.09em;
   }
 
-  .block h2 {
+  .part h2 {
     margin: 0;
     font-family: var(--font-display);
-    font-size: clamp(32px, 4vw, 64px);
-    font-stretch: 64%;
+    font-size: clamp(38px, 5.6vw, 96px);
+    font-stretch: 62%;
     font-weight: 900;
-    line-height: 0.9;
+    line-height: 0.84;
     text-transform: uppercase;
   }
 
-  .block__main > :global(.soon) {
-    margin-top: 16px;
+  .part__note,
+  .part__body,
+  .part > .list,
+  .tiles,
+  .todo {
+    margin-left: clamp(0px, 4ch, 4ch);
   }
 
-  .block__note {
-    margin: 14px 0 0;
+  .part__note {
+    max-width: 62ch;
+    margin-top: 18px;
+    margin-bottom: 0;
     padding-left: 12px;
-    border-left: 3px solid var(--accent);
+    border-left: 3px solid var(--tone);
     color: var(--fg-2);
     font-size: 15px;
     font-weight: 600;
     line-height: 1.4;
   }
 
-  .block__body {
-    max-width: 60ch;
-    margin: 14px 0 0;
-    font-size: clamp(17px, 1.35vw, 20px);
-    line-height: 1.5;
+  /* a section that is only a paragraph is set as a statement */
+  .part__body {
+    max-width: 30em;
+    margin-top: clamp(16px, 2vw, 26px);
+    margin-bottom: 0;
+    font-size: clamp(20px, 2vw, 30px);
+    font-stretch: 92%;
+    font-weight: 500;
+    line-height: 1.24;
+    letter-spacing: -0.012em;
+    text-wrap: pretty;
   }
 
   .list {
-    margin: 14px 0 0;
+    margin-top: 16px;
+    margin-bottom: 0;
     padding: 0;
     list-style: none;
   }
 
-  .list li {
-    position: relative;
-    padding-left: 22px;
-    line-height: 1.42;
+  .part > .list {
+    max-width: 62ch;
+    columns: 2 260px;
+    column-gap: clamp(20px, 3vw, 44px);
   }
 
-  .list li + li {
-    margin-top: 8px;
+  .list li {
+    position: relative;
+    padding: 0 0 9px 22px;
+    line-height: 1.38;
+    break-inside: avoid;
   }
 
   .list li::before {
     content: '';
     position: absolute;
-    top: 0.68em;
+    top: 0.66em;
     left: 0;
     width: 10px;
     height: 1.5px;
     background: currentColor;
   }
 
-  /* things that already work get a solid mark */
-  .block--working .list li::before {
+  /* what already works: four panels, each counted */
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: clamp(18px, 2.4vw, 32px);
+    border: 1px solid var(--fg);
+  }
+
+  .tile {
+    padding: clamp(14px, 1.8vw, 24px) clamp(14px, 1.8vw, 24px) clamp(10px, 1.4vw, 18px);
+    border-bottom: 1px solid var(--fg);
+  }
+
+  .tile:nth-child(odd) {
+    border-right: 1px solid var(--fg);
+  }
+
+  .tile:nth-last-child(-n + 2):nth-child(odd),
+  .tile:last-child {
+    border-bottom: 0;
+  }
+
+  .tile h3 {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(24px, 2.6vw, 42px);
+    font-stretch: 66%;
+    font-weight: 900;
+    line-height: 0.95;
+    text-transform: uppercase;
+  }
+
+  .tile h3 sup {
+    padding: 4px 7px 3px;
+    background: var(--tone);
+    color: var(--on-tone);
+    font: 600 semi-expanded 11px/1 var(--font-label);
+    letter-spacing: 0.06em;
+  }
+
+  .part--working .list li::before,
+  .tile .list li::before {
     top: 0.42em;
     width: 9px;
     height: 9px;
-    background: var(--accent);
+    background: var(--tone);
+    outline: 1px solid var(--fg);
   }
 
-  .block--history .block__main {
-    padding: 16px 18px 18px;
-    border: 1px dashed var(--fg);
+  /* results: said out loud */
+  .part--outcome > .list {
+    max-width: none;
+    columns: auto;
   }
 
-  .groups {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 24px 36px;
-    margin-top: 20px;
-  }
-
-  .group h3 {
-    margin: 0;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--line);
-    font: 500 11px/1 var(--font-mono);
-    letter-spacing: 0.1em;
+  .part--outcome > .list li {
+    padding: 0 0 0.3em;
+    font-family: var(--font-display);
+    font-size: clamp(26px, 3.4vw, 56px);
+    font-stretch: 68%;
+    font-weight: 800;
+    line-height: 0.96;
     text-transform: uppercase;
+  }
+
+  .part--outcome > .list li::before {
+    display: none;
+  }
+
+  /* history: a note clipped to the file */
+  .part--history .part__body {
+    padding: clamp(14px, 1.8vw, 24px);
+    border: 1px dashed var(--fg);
+    font-size: clamp(17px, 1.5vw, 21px);
+  }
+
+  .todo {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 18px;
+    margin-bottom: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .todo li {
+    padding: 9px 14px 8px;
+    border: 1px dashed var(--fg);
+    font-family: var(--font-display);
+    font-size: clamp(17px, 1.6vw, 24px);
+    font-stretch: 72%;
+    font-weight: 800;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .part--todo .part__body {
+    color: var(--fg-2);
+    font-size: clamp(17px, 1.5vw, 21px);
   }
 
   /* ── pager ──────────────────────────── */
@@ -525,36 +950,71 @@ const links = [
   }
 
   @media (max-width: 899px) {
-    .cover__name {
-      max-width: none;
+    .cover {
+      min-height: 0;
+    }
+
+    .cover__stage {
+      align-items: start;
+      padding-bottom: clamp(120px, 34vw, 240px);
     }
 
     .drive {
-      position: relative;
-      top: auto;
-      right: auto;
-      width: min(64vw, 300px);
-      margin-top: 28px;
+      right: 0;
+      bottom: 0;
+      width: clamp(150px, 44vw, 260px);
+    }
+
+    .cover__foot {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .cover__tags {
+      justify-content: flex-start;
     }
 
     .cover__kind {
       margin-left: 0;
     }
 
-    .case__grid {
+    .doc {
       grid-template-columns: minmax(0, 1fr);
     }
 
-    /* phones: the case study first, then the fact sheet */
-    .side {
+    /* phones: the write-up first, the fact sheet after it */
+    .rail {
       position: static;
       order: 2;
+    }
+
+    .toc {
+      display: none;
+    }
+
+    .part__note,
+    .part__body,
+    .part > .list,
+    .tiles,
+    .todo {
+      margin-left: 0;
+    }
+
+    .spec {
+      border-bottom: 1px solid var(--line);
     }
   }
 
   @media (max-width: 599px) {
-    .groups {
+    .tiles {
       grid-template-columns: minmax(0, 1fr);
+    }
+
+    .tile:nth-child(odd) {
+      border-right: 0;
+    }
+
+    .tile:nth-last-child(-n + 2):nth-child(odd) {
+      border-bottom: 1px solid var(--fg);
     }
 
     .pager {
@@ -564,6 +1024,12 @@ const links = [
     .pager__link + .pager__link {
       border-top: 1px solid var(--fg);
       border-left: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ticker__run {
+      animation: none;
     }
   }
 </style>
