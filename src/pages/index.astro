@@ -9,10 +9,12 @@ import Projects from '../components/Projects.astro';
 import Milestones from '../components/Milestones.astro';
 import Communities from '../components/Communities.astro';
 import Skills from '../components/Skills.astro';
-import Contact from '../components/Contact.astro';
+import Resume from '../components/Resume.astro';
 import MusicRoom from '../components/MusicRoom.astro';
+import Contact from '../components/Contact.astro';
 ---
 
+<!-- The running order lives in src/data/chapters.ts: keep the two in step. -->
 <Base>
   <Nav />
   <main>
@@ -24,6 +26,7 @@ import MusicRoom from '../components/MusicRoom.astro';
     <Milestones />
     <Communities />
     <Skills />
+    <Resume />
     <MusicRoom level="h2" />
     <Contact />
   </main>

@@ -1,0 +1,57 @@
+---
+// A marigold, reduced to geometry: rings of circles round a centre.
+// Flat colour, no outline. Each ring turns at its own rate off one `--spin` angle,
+// so the petals slide against each other when the thing is spun.
+//
+// Decorative: hidden from assistive tech.
+
+export interface Ring {
+  /** how many petals */
+  n: number;
+  /** how far from the centre they sit (viewBox units, the box is ±100) */
+  at: number;
+  /** petal radius */
+  r: number;
+  fill: string;
+  /** turn rate relative to --spin; alternate signs to make rings counter-rotate */
+  rate?: number;
+}
+
+interface Props {
+  rings: Ring[];
+  core?: { r: number; fill: string };
+  class?: string;
+}
+
+const { rings, core, class: className } = Astro.props;
+const f = (n: number) => n.toFixed(2);
+---
+
+<svg class:list={['rosette', className]} viewBox="-100 -100 200 200" aria-hidden="true" focusable="false">
+  {
+    rings.map((ring, i) => (
+      <g class="rosette__ring" style={`--rate:${ring.rate ?? (i % 2 ? -0.6 : 1)};fill:${ring.fill}`}>
+        <circle r={ring.at} />
+        {Array.from({ length: ring.n }, (_, k) => {
+          const a = (k / ring.n) * Math.PI * 2;
+          return <circle cx={f(Math.cos(a) * ring.at)} cy={f(Math.sin(a) * ring.at)} r={ring.r} />;
+        })}
+      </g>
+    ))
+  }
+  {core && <circle r={core.r} style={`fill:${core.fill}`} />}
+</svg>
+
+<style>
+  .rosette {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  /* SVG elements rotate about the user-space origin, which is the middle of this viewBox. */
+  .rosette__ring {
+    rotate: calc(var(--spin, 0deg) * var(--rate));
+  }
+</style>

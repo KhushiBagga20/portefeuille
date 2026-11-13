@@ -1,0 +1,62 @@
+---
+// The strip that runs along the top of every poster: index, name, a hairline, and one
+// true annotation about what's below.
+import { chapter, type ChapterId } from '../data/chapters';
+
+interface Props {
+  id: ChapterId;
+  note?: string;
+  class?: string;
+}
+const { id, note, class: className } = Astro.props;
+const c = chapter(id);
+---
+
+<div class:list={['ph', className]}>
+  <span class="ph__idx">({c.index})</span>
+  <span class="ph__name">{c.name}</span>
+  <span class="ph__rule" aria-hidden="true"></span>
+  {note && <span class="ph__note">{note}</span>}
+</div>
+
+<style>
+  .ph {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font: 500 11px/1.3 var(--font-mono);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .ph__rule {
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+    transform-origin: left;
+  }
+
+  .ph__note {
+    color: var(--fg-2);
+    text-align: right;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    :global(.js) .ph__rule {
+      scale: 0 1;
+      transition: scale 1.1s var(--ease-out) 0.1s;
+    }
+
+    :global(.js .is-seen) .ph__rule,
+    :global(.js .is-arrived) .ph__rule {
+      scale: 1 1;
+    }
+  }
+
+  @media (max-width: 599px) {
+    .ph {
+      gap: 10px;
+      font-size: 10px;
+    }
+  }
+</style>

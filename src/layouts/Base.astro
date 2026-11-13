@@ -1,9 +1,11 @@
 ---
-import '@fontsource/bagel-fat-one/latin-400.css';
-import '@fontsource-variable/bricolage-grotesque';
-import '@fontsource/silkscreen/latin-400.css';
-import '@fontsource/delicious-handrawn/latin-400.css';
+import '@fontsource-variable/archivo/wdth.css';
+import '@fontsource/instrument-serif/latin-400-italic.css';
+import '@fontsource/ibm-plex-mono/latin-400.css';
+import '@fontsource/ibm-plex-mono/latin-500.css';
 import '../styles/global.css';
+// The masthead is set in this file at 20vw, so it's worth fetching before the CSS asks for it.
+import archivo from '@fontsource-variable/archivo/files/archivo-latin-wdth-normal.woff2?url';
 import { site } from '../data/site';
 import { about, education } from '../data/profile';
 
@@ -39,9 +41,10 @@ const person = {
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="author" content={site.fullName} />
-    <meta name="theme-color" content="#b9c6ff" />
+    <meta name="theme-color" content="#f3f3ef" />
     {noindex && <meta name="robots" content="noindex" />}
     {canonical && <link rel="canonical" href={canonical} />}
+    <link rel="preload" href={archivo} as="font" type="font/woff2" crossorigin />
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={site.fullName} />
@@ -57,19 +60,28 @@ const person = {
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <script is:inline>
       document.documentElement.classList.add('js');
-      // Pick the time of day before the first paint, so the castle never flickers.
+      // Daylight is the design. Night only if this visitor has flipped the switch before.
       (() => {
         let saved = null;
         try {
-          saved = localStorage.getItem('khushi:theme');
+          saved = localStorage.getItem('khushi:mode');
         } catch {}
-        const night = saved ? saved === 'night' : matchMedia('(prefers-color-scheme: dark)').matches;
-        document.documentElement.dataset.theme = night ? 'night' : 'day';
+        document.documentElement.dataset.theme = saved === 'night' ? 'night' : 'day';
       })();
     </script>
     <script type="application/ld+json" set:html={JSON.stringify(person)} />
   </head>
   <body>
     <slot />
+
+    <!-- the card that wipes across when you jump between sections -->
+    <div class="jump" data-jump aria-hidden="true">
+      <span class="jump__idx" data-jump-idx></span>
+      <span class="jump__name" data-jump-name></span>
+    </div>
+
+    <script>
+      import '../scripts/fx';
+    </script>
   </body>
 </html>

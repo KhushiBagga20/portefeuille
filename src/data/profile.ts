@@ -15,9 +15,24 @@ export const education = {
   school: 'Chitkara University',
   degree: 'B.E. Computer Science Engineering',
   focus: 'AI & Future Technologies',
+  started: '2025',
   graduation: '2029',
   cgpa: '9.1/10',
+  // from the résumé
+  coursework: [
+    'Data Structures & Algorithms',
+    'Artificial Intelligence',
+    'Python Programming',
+    'Java Programming',
+    'Object-Oriented Programming',
+    'Linear Algebra',
+    'Calculus',
+    'Digital Electronics & Computer Architecture',
+    'Foundations of Computer Science',
+  ],
 };
+
+export const languages = ['English', 'Hindi'];
 
 // Keep these short and true. Add real responsibilities once they're confirmed.
 export const communities = [
@@ -25,17 +40,17 @@ export const communities = [
     name: 'EvolveAI',
     org: 'AI club, Chitkara University',
     role: 'Graphics member',
+    since: '2025 — present',
     line: 'Visual communication and creative work with EvolveAI.',
-    tone: 'lilac',
   },
   {
     name: 'DebSoc',
     org: 'Debating Society, Chitkara University',
     role: 'Member',
+    since: undefined,
     line: 'Exploring argument, communication and ideas.',
-    tone: 'lemon',
   },
-] as const;
+];
 
 // Skills come from confirmed project stacks. `from` is worked out automatically.
 const groups: { title: string; items: string[] }[] = [

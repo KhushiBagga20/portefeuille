@@ -1,73 +1,119 @@
 ---
-import Shapes from './Shapes.astro';
+// Work, as an index rather than a wall of cards: one project at full size, the rest as
+// rows of type that fill with their disk's colour when you reach for them.
+import Arrow from './Arrow.astro';
 import Badge from './Badge.astro';
 import ComingSoon from './ComingSoon.astro';
 import FloppyDisk from './FloppyDisk.astro';
-import SectionHead from './SectionHead.astro';
-import { archive, projects } from '../data/projects';
+import PosterHead from './PosterHead.astro';
+import { chapter } from '../data/chapters';
+import { archive, diskTones, projects } from '../data/projects';
 
-const tilts = [-4, 3, -2, 4, -3, 2];
+const c = chapter('projects');
+const [lead, ...rest] = projects;
+const no = (i: number) => String(i + 1).padStart(2, '0');
+const meta = (p: (typeof projects)[number]) => [p.type, p.event].filter(Boolean).join(' · ');
 ---
 
-<section id="projects" class="section section--deep" aria-labelledby="projects-title">
-  <Shapes variant="projects" />
-  <div class="section__inner">
-    <SectionHead
-      eyebrow="projects/ · featured"
-      title="things I've built"
-      id="projects-title"
-      lede="Each disk holds one project. Open one to read the case study."
-    />
+<section id="projects" class="work poster s-paper-2" {...c.attrs} aria-labelledby="projects-title">
+  <div class="wrap">
+    <PosterHead id="projects" note={`${projects.length} projects · ${archive.length} in the archive`} />
 
-    <ul class="disks">
+    <header class="work__head">
+      <h2 id="projects-title" class="work__title" data-reveal>Selected<br />work<sup>{projects.length}</sup></h2>
+      <p class="work__lede voice" data-reveal>Each disk holds one project. Open one to read the case study.</p>
+    </header>
+
+    <!-- ── 01, at full size ─────────────── -->
+    <article class="feature" style={`--tone:${diskTones[lead.disk.tone].body}`}>
+      <div class="feature__text">
+        <p class="feature__no label">
+          <span>{no(0)}</span>
+          <span>featured</span>
+          <span class="label--dim">{meta(lead)}</span>
+        </p>
+        <h3 class="feature__name">
+          <a href={`/projects/${lead.slug}/`}>{lead.name}</a>
+        </h3>
+        {
+          lead.earlierName && (
+            <p class="feature__aka voice">
+              earlier known as {lead.earlierName}
+            </p>
+          )
+        }
+        {lead.oneLiner ? <p class="feature__line">{lead.oneLiner}</p> : <ComingSoon text="write-up coming soon" />}
+        {lead.preview && <p class="feature__more">{lead.preview}</p>}
+      </div>
+
+      <div class="feature__side">
+        <a class="feature__disk" href={`/projects/${lead.slug}/`} tabindex="-1" aria-hidden="true" data-tilt>
+          <span class="vt-disk" style={`--vt: disk-${lead.slug}`}>
+            <FloppyDisk tone={lead.disk.tone} scribble={lead.disk.scribble} />
+          </span>
+        </a>
+        {
+          lead.stack && (
+            <div class="feature__stack">
+              <p class="label label--dim">built with</p>
+              <p class="feature__tech">{lead.stack.join(' / ')}</p>
+            </div>
+          )
+        }
+        <a class="key key--solid" href={`/projects/${lead.slug}/`}>
+          open case study<span class="sr-only">: {lead.name}</span>
+          <Arrow />
+        </a>
+      </div>
+    </article>
+
+    <!-- ── 02 onward, as an index ────────── -->
+    <ol class="index" start="2" data-index>
       {
-        projects.map((p, i) => {
-          const href = `/projects/${p.slug}/`;
+        rest.map((p, i) => {
+          const tone = diskTones[p.disk.tone];
           return (
-            <li class="card">
-              <a class="card__disk" href={href} tabindex="-1" aria-hidden="true" style={`--r:${tilts[i % tilts.length]}deg`}>
-                <span class="vt-disk" style={`--vt: disk-${p.slug}`}>
-                  <FloppyDisk tone={p.disk.tone} scribble={p.disk.scribble} />
+            <li class="row" style={`--tone:${tone.body};--on-tone:${tone.on}`}>
+              <a class="row__link" href={`/projects/${p.slug}/`}>
+                <span class="row__no">{no(i + 1)}</span>
+                <span class="row__name">{p.name}</span>
+                <span class="row__info">
+                  <span class="row__meta">{meta(p)}</span>
+                  {p.oneLiner ? <span class="row__line">{p.oneLiner}</span> : <ComingSoon text="write-up coming soon" />}
+                  {p.outcome && (
+                    <span class="row__won">
+                      {p.outcome.map((o) => (
+                        <span class="tag">{o}</span>
+                      ))}
+                    </span>
+                  )}
+                </span>
+                <span class="row__go">
+                  <Arrow dir="out" />
+                </span>
+                <span class="row__disk" aria-hidden="true">
+                  <span class="vt-disk" style={`--vt: disk-${p.slug}`}>
+                    <FloppyDisk tone={p.disk.tone} scribble={p.disk.scribble} />
+                  </span>
                 </span>
               </a>
-
-              <div class="card__body">
-                <p class="card__type">{[p.type, p.event].filter(Boolean).join(' · ')}</p>
-                <h3 class="card__name">{p.name}</h3>
-                {p.outcome && (
-                  <ul class="card__outcome" aria-label="Result">
-                    {p.outcome.map((o) => (
-                      <li>{o}</li>
-                    ))}
-                  </ul>
-                )}
-                {p.oneLiner ? <p class="card__line">{p.oneLiner}</p> : <ComingSoon text="write-up coming soon" />}
-                {p.preview && <p class="card__preview">{p.preview}</p>}
-                <div class="badges">
-                  {p.labels.map((l) => (
-                    <Badge label={l} />
-                  ))}
-                </div>
-                <a class="key key--sm card__open" href={href}>
-                  open case study<span class="sr-only">: {p.name}</span>
-                  <span aria-hidden="true">→</span>
-                </a>
-              </div>
             </li>
           );
         })
       }
-    </ul>
+    </ol>
 
+    <!-- ── the archive ───────────────────── -->
     <div class="archive">
-      <p class="eyebrow">archive/</p>
-      <h3 class="archive__title">more things I built</h3>
-      <ul class="notes">
+      <header class="archive__head">
+        <h3 class="archive__title head">Also built</h3>
+        <p class="label label--dim">archive / smaller things</p>
+      </header>
+      <ul class="archive__list">
         {
-          archive.map((a, i) => (
-            <li class="note" style={`--r:${[1.2, -1, 0.8][i % 3]}deg`}>
-              <span class="note__tape" aria-hidden="true" />
-              <p class="card__type">{a.type}</p>
+          archive.map((a) => (
+            <li class="note" data-reveal>
+              <p class="label label--dim">{a.type}</p>
               <h4 class="note__name">{a.name}</h4>
               {a.description && <p class="note__desc">{a.description}</p>}
               {a.points ? (
@@ -79,8 +125,8 @@ const tilts = [-4, 3, -2, 4, -3, 2];
               ) : (
                 <ComingSoon />
               )}
-              {a.stack && <p class="note__stack">{a.stack.join(' · ')}</p>}
-              <div class="badges">
+              {a.stack && <p class="note__stack label">{a.stack.join(' / ')}</p>}
+              <div class="note__tags">
                 {a.labels.map((l) => (
                   <Badge label={l} />
                 ))}
@@ -107,200 +153,382 @@ const tilts = [-4, 3, -2, 4, -3, 2];
   </div>
 </section>
 
+<script>
+  // In the index, each row's disk rides along under the cursor.
+  const fine = matchMedia('(hover: hover) and (pointer: fine)');
+  document.querySelectorAll<HTMLElement>('[data-index] .row__link').forEach((row) => {
+    row.addEventListener(
+      'pointermove',
+      (e) => {
+        if (!fine.matches) return;
+        const r = row.getBoundingClientRect();
+        row.style.setProperty('--cx', `${(e.clientX - r.left).toFixed(0)}px`);
+        row.style.setProperty('--cy', `${(e.clientY - r.top).toFixed(0)}px`);
+      },
+      { passive: true },
+    );
+  });
+</script>
+
 <style>
-  /* ── Featured disks ─────────────────── */
-  .disks {
+  .work__head {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 84px 30px;
-    margin: 96px 0 0;
-    padding: 0;
-    list-style: none;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 24px;
+    margin-top: clamp(28px, 4.4vw, 64px);
   }
 
-  .card {
-    position: relative;
+  .work__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(64px, 13.4vw, 250px);
+    font-stretch: 62%;
+    font-weight: 900;
+    line-height: 0.76;
+    letter-spacing: -0.015em;
+    text-transform: uppercase;
+  }
+
+  .work__title sup {
+    margin-left: 0.12em;
+    color: var(--accent);
+    font: 500 0.13em/1 var(--font-mono);
+    letter-spacing: 0;
+    vertical-align: top;
+  }
+
+  .work__lede {
+    max-width: 15ch;
+    margin: 0 0 0.3em;
+    font-size: clamp(22px, 2.1vw, 34px);
+    line-height: 1.05;
+    text-align: right;
+  }
+
+  /* ── the feature ────────────────────── */
+  .feature {
+    display: grid;
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+    gap: clamp(28px, 5vw, 90px);
+    margin-top: clamp(40px, 6vw, 96px);
+    padding-top: clamp(20px, 2.6vw, 36px);
+    border-top: 1px solid var(--fg);
+  }
+
+  .feature__no {
     display: flex;
-    flex-direction: column;
-    padding: 104px 22px 22px;
-    border: var(--line) solid var(--ink);
-    border-radius: 20px;
-    background: var(--cream);
-    box-shadow: 8px 9px 0 var(--shadow);
+    flex-wrap: wrap;
+    gap: 6px 18px;
   }
 
-  .card__disk {
-    position: absolute;
-    top: -56px;
-    left: 18px;
-    width: 146px;
-    rotate: var(--r);
-    transition:
-      translate 0.45s var(--spring),
-      rotate 0.45s var(--spring);
+  .feature__name {
+    margin: clamp(14px, 2vw, 28px) 0 0;
+    font-family: var(--font-display);
+    font-size: clamp(64px, 14.5vw, 270px);
+    font-stretch: 62%;
+    font-weight: 900;
+    line-height: 0.76;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
   }
 
-  .card__disk .vt-disk {
+  .feature__name a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.3s ease;
+  }
+
+  .feature__name a:hover {
+    color: var(--tone);
+  }
+
+  .feature__aka {
+    margin: 0.5em 0 0;
+    color: var(--fg-2);
+    font-size: clamp(20px, 1.8vw, 28px);
+    line-height: 1;
+  }
+
+  .feature__line {
+    max-width: 30ch;
+    margin: clamp(18px, 2.4vw, 34px) 0 0;
+    font-size: clamp(20px, 2vw, 31px);
+    font-stretch: 88%;
+    font-weight: 600;
+    line-height: 1.14;
+    letter-spacing: -0.012em;
+  }
+
+  .feature__more {
+    max-width: 56ch;
+    margin: 16px 0 0;
+    color: var(--fg-2);
+    line-height: 1.5;
+  }
+
+  .feature__side {
+    display: grid;
+    align-content: start;
+    justify-items: start;
+    gap: clamp(18px, 2.4vw, 30px);
+  }
+
+  .feature__disk {
+    --tx: 0;
+    --ty: 0;
     display: block;
+    width: min(100%, 360px);
+    perspective: 900px;
+    rotate: -7deg;
+    transition: rotate 0.6s var(--spring);
   }
 
-  .card:hover .card__disk,
-  .card:focus-within .card__disk {
-    translate: 0 -10px;
-    rotate: calc(var(--r) - 6deg);
+  .feature__disk .vt-disk {
+    display: block;
+    filter: drop-shadow(0 30px 34px rgb(12 13 33 / 0.3));
+    transform: rotateY(calc(var(--tx) * 16deg)) rotateX(calc(var(--ty) * -14deg));
+    transition: transform 0.5s var(--ease-out);
   }
 
-  .card:hover :global(.disk__shutter),
-  .card:focus-within :global(.disk__shutter) {
+  .feature__disk:hover {
+    rotate: -2deg;
+  }
+
+  .feature:hover :global(.disk__shutter) {
     transform: translateX(26px);
   }
 
-  .card__outcome {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin: 12px 0 2px;
+  .feature__tech {
+    margin: 8px 0 0;
+    font-size: 15px;
+    font-stretch: 88%;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  /* ── the index ──────────────────────── */
+  .index {
+    margin: clamp(48px, 7vw, 110px) 0 0;
     padding: 0;
+    border-top: 1px solid var(--fg);
     list-style: none;
   }
 
-  .card__outcome li {
-    padding: 5px 8px 4px;
-    border: 2px solid var(--ink);
-    border-radius: 8px;
-    background: var(--lemon);
-    box-shadow: 2px 2px 0 var(--shadow);
-    color: var(--on-accent);
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1.2;
+  .row__link {
+    --cx: 78%;
+    --cy: 50%;
+    position: relative;
+    display: grid;
+    grid-template-columns: 4ch minmax(0, 1.7fr) minmax(0, 1fr) 34px;
+    align-items: center;
+    column-gap: clamp(14px, 2.4vw, 40px);
+    padding: clamp(16px, 2vw, 28px) 0;
+    border-bottom: 1px solid var(--line);
+    color: inherit;
+    text-decoration: none;
+    isolation: isolate;
+    transition: color 0.25s ease;
   }
 
-  .card__outcome li:nth-child(2) {
-    rotate: -2deg;
-    background: var(--mint);
+  /* the row floods with its disk's colour, bottom to top */
+  .row__link::before {
+    content: '';
+    position: absolute;
+    inset: 0 calc(var(--gutter) * -1);
+    z-index: -1;
+    background: var(--tone);
+    scale: 1 0;
+    transform-origin: bottom;
+    transition: scale 0.42s var(--ease-out);
   }
 
-  .card__body {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    align-items: flex-start;
+  .row__no {
+    align-self: start;
+    padding-top: 0.5em;
+    font: 500 11px/1 var(--font-mono);
+    letter-spacing: 0.09em;
   }
 
-  .card__type {
-    margin: 0;
-    color: var(--ink-soft);
-    font: 400 10px/1.4 var(--font-pixel);
-    letter-spacing: 0.04em;
+  .row__name {
+    font-family: var(--font-display);
+    font-size: clamp(40px, 7vw, 118px);
+    font-stretch: 62%;
+    font-weight: 900;
+    line-height: 0.82;
+    letter-spacing: -0.012em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition:
+      font-stretch 0.5s var(--ease-out),
+      translate 0.5s var(--ease-out);
+  }
+
+  .row__info {
+    display: grid;
+    justify-items: start;
+    gap: 7px;
+  }
+
+  .row__meta {
+    font: 500 10px/1.4 var(--font-mono);
+    letter-spacing: 0.09em;
     text-transform: uppercase;
   }
 
-  .card__name {
-    margin: 6px 0 0;
-    font: 400 clamp(30px, 2.6vw, 38px) / 1 var(--font-display);
-  }
-
-  .card__line {
-    margin: 10px 0 0;
-    font-weight: 650;
+  .row__line {
+    font-size: 15px;
     line-height: 1.4;
   }
 
-  .card__body > :global(.soon) {
-    margin-top: 12px;
-  }
-
-  .card__preview {
-    margin: 8px 0 0;
-    color: var(--text-soft);
-    font-size: 15px;
-    line-height: 1.45;
-  }
-
-  .badges {
+  .row__won {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    margin: 16px 0 0;
+    margin-top: 2px;
   }
 
-  .card__open {
-    margin-top: auto;
+  .row__go {
+    font-size: 26px;
+    transition: rotate 0.4s var(--spring);
   }
 
-  .card__body .badges {
-    margin-bottom: 20px;
+  .row__disk {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    width: clamp(120px, 12vw, 176px);
+    opacity: 0;
+    pointer-events: none;
+    translate: calc(var(--cx) - 50%) calc(var(--cy) - 50%);
+    rotate: -14deg;
+    scale: 0.5;
+    transition:
+      opacity 0.2s ease,
+      scale 0.45s var(--spring),
+      rotate 0.45s var(--spring),
+      translate 0.22s var(--ease-out);
   }
 
-  /* ── Archive ────────────────────────── */
+  .row__disk :global(.disk) {
+    filter: drop-shadow(0 18px 20px rgb(12 13 33 / 0.35));
+  }
+
+  .row__link:hover,
+  .row__link:focus-visible {
+    color: var(--on-tone);
+  }
+
+  .row__link:hover::before,
+  .row__link:focus-visible::before {
+    scale: 1 1;
+  }
+
+  .row__link:hover .row__name,
+  .row__link:focus-visible .row__name {
+    font-stretch: 70%;
+    translate: 10px 0;
+  }
+
+  .row__link:hover .row__go,
+  .row__link:focus-visible .row__go {
+    rotate: 45deg;
+  }
+
+  .row__link:hover .row__disk,
+  .row__link:focus-visible .row__disk {
+    opacity: 1;
+    rotate: 7deg;
+    scale: 1;
+  }
+
+  .row__link:hover :global(.disk__shutter),
+  .row__link:focus-visible :global(.disk__shutter) {
+    transform: translateX(26px);
+  }
+
+  .row__link:focus-visible {
+    outline-offset: -3px;
+    box-shadow: none;
+  }
+
+  /* ── archive ────────────────────────── */
   .archive {
-    margin-top: clamp(88px, 10vw, 140px);
+    margin-top: clamp(64px, 9vw, 140px);
   }
 
-  .eyebrow {
-    margin: 0;
-    font: 400 11px/1 var(--font-pixel);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+  .archive__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px 24px;
   }
 
   .archive__title {
-    margin: 10px 0 0;
-    font: 400 clamp(30px, 3vw, 44px) / 1 var(--font-display);
+    font-size: clamp(40px, 5.4vw, 92px);
   }
 
-  .notes {
+  .archive__list {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 28px;
-    margin: 36px 0 0;
+    margin: clamp(20px, 2.6vw, 34px) 0 0;
     padding: 0;
+    border-top: 1px solid var(--fg);
     list-style: none;
   }
 
   .note {
-    position: relative;
-    padding: 26px 20px 20px;
-    border: 2px solid var(--ink);
-    border-radius: 6px;
-    background:
-      linear-gradient(transparent 30px, rgb(79 111 227 / 0.14) 30px 31px, transparent 31px) 0 14px / 100% 28px,
-      var(--cream);
-    box-shadow: 5px 6px 0 var(--shadow);
-    rotate: var(--r);
+    padding: clamp(18px, 2.2vw, 30px) clamp(16px, 2.2vw, 32px) 4px 0;
   }
 
-  .note__tape {
-    position: absolute;
-    top: -12px;
-    left: 50%;
-    width: 84px;
-    height: 24px;
-    background: rgb(203 184 255 / 0.85);
-    translate: -50% 0;
-    rotate: -3deg;
+  .note + .note {
+    padding-left: clamp(16px, 2.2vw, 32px);
+    border-left: 1px solid var(--line);
   }
 
   .note__name {
-    margin: 6px 0 0;
-    font: 400 24px/1.05 var(--font-display);
+    margin: 10px 0 0;
+    font-family: var(--font-display);
+    font-size: clamp(24px, 2.3vw, 36px);
+    font-stretch: 72%;
+    font-weight: 800;
+    line-height: 0.95;
+    text-transform: uppercase;
   }
 
   .note__desc {
-    margin: 10px 0 0;
+    margin: 12px 0 0;
     font-weight: 600;
+    line-height: 1.35;
   }
 
   .note__points {
     margin: 10px 0 0;
-    padding-left: 18px;
-    color: var(--text-soft);
+    padding: 0;
+    color: var(--fg-2);
     font-size: 15px;
+    list-style: none;
+  }
+
+  .note__points li {
+    position: relative;
+    padding-left: 16px;
+  }
+
+  .note__points li::before {
+    content: '';
+    position: absolute;
+    top: 0.62em;
+    left: 0;
+    width: 7px;
+    height: 1px;
+    background: currentColor;
   }
 
   .note__points li + li {
-    margin-top: 4px;
+    margin-top: 5px;
   }
 
   .note > :global(.soon) {
@@ -308,53 +536,89 @@ const tilts = [-4, 3, -2, 4, -3, 2];
   }
 
   .note__stack {
-    margin: 12px 0 0;
-    font: 400 10px/1.5 var(--font-pixel);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    margin-top: 14px;
+    line-height: 1.6;
   }
 
-  .note .badges {
-    margin-top: 12px;
+  .note__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 14px;
   }
 
   .note__links {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     margin-top: 14px;
   }
 
-  @media (max-width: 1023px) {
-    .disks {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* ── narrower ───────────────────────── */
+  @media (max-width: 899px) {
+    .work__head {
+      grid-template-columns: minmax(0, 1fr);
     }
 
-    .notes {
+    .work__lede {
+      max-width: 24ch;
+      text-align: left;
+    }
+
+    .feature {
       grid-template-columns: minmax(0, 1fr);
-      max-width: 640px;
+    }
+
+    .feature__disk {
+      width: min(62%, 280px);
+    }
+
+    .row__link {
+      grid-template-columns: 3.4ch minmax(0, 1fr) 26px;
+      row-gap: 12px;
+    }
+
+    .row__name {
+      white-space: normal;
+    }
+
+    .row__info {
+      grid-column: 2 / -1;
+      grid-row: 2;
+    }
+
+    .archive__list {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .note,
+    .note + .note {
+      padding: 22px 0 18px;
+      border-left: 0;
+      border-bottom: 1px solid var(--line);
     }
   }
 
-  @media (max-width: 639px) {
-    .disks {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 72px;
-      margin-top: 80px;
+  /* no hover: the disk can't follow anything, so it simply sits at the end of the row */
+  @media (hover: none) {
+    .row__disk {
+      top: 14px;
+      right: 34px;
+      left: auto;
+      width: 64px;
+      opacity: 1;
+      translate: none;
+      rotate: 8deg;
+      scale: 1;
     }
 
-    .card {
-      padding-top: 84px;
+    .row__name {
+      padding-right: 76px;
     }
-
-    .card__disk {
-      top: -46px;
-      width: 118px;
-    }
-
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .card__disk {
+    .row__disk,
+    .row__name {
       transition: none;
     }
   }

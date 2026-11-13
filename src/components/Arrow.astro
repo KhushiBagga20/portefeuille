@@ -1,0 +1,24 @@
+---
+// One arrow, drawn rather than typed, so it never falls back to a system font.
+interface Props {
+  dir?: 'right' | 'down' | 'up' | 'left' | 'out';
+  class?: string;
+}
+const { dir = 'right', class: className } = Astro.props;
+const turn = { right: 0, down: 90, left: 180, up: -90, out: -45 }[dir];
+---
+
+<svg class:list={['arrow', className]} viewBox="0 0 24 24" aria-hidden="true" focusable="false" style={`--turn:${turn}deg`}>
+  <path d="M3 12h17M13.5 5.5 20 12l-6.5 6.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"></path>
+</svg>
+
+<style>
+  .arrow {
+    display: inline-block;
+    flex: none;
+    width: 1em;
+    height: 1em;
+    rotate: var(--turn);
+    vertical-align: -0.12em;
+  }
+</style>

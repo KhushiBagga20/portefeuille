@@ -9,7 +9,7 @@ import { KEY } from '../scripts/keycap';
 
 const KEY_PLATE = KEY.plate;
 
-export type Tone = 'base' | 'lemon' | 'tomato' | 'lilac' | 'mint' | 'pink' | 'cream' | 'sky';
+export type Tone = 'base' | 'lemon' | 'tomato' | 'lilac' | 'mint' | 'pink' | 'cream' | 'sky' | 'ink';
 
 export const sections: { key: string; label: string; href: string; tone: Tone }[] = [
   { key: 'A', label: 'about', href: '#about', tone: 'lemon' },
@@ -19,6 +19,7 @@ export const sections: { key: string; label: string; href: string; tone: Tone }[
   { key: 'E', label: 'experience', href: '#experience', tone: 'pink' },
   { key: 'C', label: 'contact', href: '#contact', tone: 'cream' },
   { key: 'V', label: 'records', href: '#records', tone: 'sky' },
+  { key: 'R', label: 'résumé', href: '#resume', tone: 'ink' },
 ];
 
 // Top face, light side, dark side, legend.
@@ -31,6 +32,7 @@ export const tones: Record<Tone, [string, string, string, string]> = {
   pink: ['#ffadd0', '#ff7eb3', '#e0528f', '#1b1526'],
   cream: ['#fffaf0', '#f1dfc3', '#d2b98f', '#1b1526'],
   sky: ['#a9ccff', '#7fabf4', '#5a85d8', '#1b1526'],
+  ink: ['#2b2f63', '#1c1f47', '#0c0d21', '#f3f3ef'],
 };
 
 export type KeyDef = {

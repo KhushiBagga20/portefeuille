@@ -1,6 +1,7 @@
 ---
-// A chunky 3.5" floppy with a handwritten label. Decorative: the text next to it carries the meaning.
-import type { DiskTone } from '../data/projects';
+// A 3.5" floppy with a typed label. Flat plastic, one thin line.
+// Decorative: the text next to it carries the meaning.
+import { diskTones, type DiskTone } from '../data/projects';
 
 interface Props {
   tone: DiskTone;
@@ -8,49 +9,40 @@ interface Props {
   class?: string;
 }
 
-const bodies: Record<DiskTone, [string, string]> = {
-  tomato: ['#ff6a3d', '#e2522a'],
-  pink: ['#ff8fc0', '#ea6fa6'],
-  lilac: ['#b9a3fb', '#9b83ef'],
-  lemon: ['#ffd84a', '#f0bd1c'],
-  sky: ['#86b4f7', '#6a98e6'],
-  mint: ['#63d3a0', '#43b784'],
-};
-
 const { tone, scribble, class: className } = Astro.props;
-const [body, shade] = bodies[tone];
+const { body, shade } = diskTones[tone];
+const dark = tone === 'mint';
 ---
 
 <svg class:list={['disk', className]} viewBox="0 0 200 200" aria-hidden="true">
   <path
-    d="M16 3 H172 L197 28 V184 Q197 197 184 197 H16 Q3 197 3 184 V16 Q3 3 16 3 Z"
+    d="M12 2 H172 L198 28 V188 Q198 198 188 198 H12 Q2 198 2 188 V12 Q2 2 12 2 Z"
     fill={body}
-    stroke="#1b1526"
-    stroke-width="5"
+    stroke={dark ? '#f3f3ef' : '#0c0d21'}
+    stroke-width="1.5"
     stroke-linejoin="round"></path>
-  <path d="M10 186 H186 Q192 186 192 180 V36" fill="none" stroke={shade} stroke-width="7" stroke-linecap="round"></path>
-  <path d="M18 12 H164 M12 18 V170" fill="none" stroke="#fff" stroke-opacity="0.4" stroke-width="4" stroke-linecap="round"></path>
+  <path d="M8 191 H188 Q192 191 192 187 V34" fill="none" stroke={shade} stroke-width="6" stroke-linecap="square"></path>
 
-  <rect x="72" y="12" width="46" height="48" rx="4" fill="#3a2f55"></rect>
+  <rect x="72" y="10" width="46" height="50" fill="#0c0d21"></rect>
   <g class="disk__shutter">
-    <rect x="50" y="3" width="104" height="66" rx="4" fill="#e3e7f1" stroke="#1b1526" stroke-width="4.5"></rect>
-    <rect x="112" y="14" width="24" height="44" rx="3" fill="#1b1526"></rect>
-    <path d="M60 15 V57" stroke="#b9bfce" stroke-width="3" stroke-linecap="round"></path>
+    <rect x="50" y="2" width="104" height="66" fill="#dcdeea" stroke="#0c0d21" stroke-width="1.5"></rect>
+    <rect x="112" y="13" width="24" height="44" fill="#0c0d21"></rect>
+    <path d="M60 14 V56" stroke="#a9adc2" stroke-width="2"></path>
   </g>
 
-  <rect x="22" y="88" width="156" height="98" rx="8" fill="#fffaf0" stroke="#1b1526" stroke-width="4.5"></rect>
-  <path d="M34 128 H166 M34 150 H166 M34 172 H166" stroke="#c9d6ff" stroke-width="2"></path>
-  <text class="disk__brand" x="100" y="106">HD · 1.44 MB</text>
+  <rect x="22" y="88" width="156" height="100" fill="#ffffff" stroke="#0c0d21" stroke-width="1.5"></rect>
+  <path d="M22 110 H178" stroke="#0c0d21" stroke-width="1.5"></path>
+  <path d="M34 150 H166 M34 170 H166" stroke="#0c0d21" stroke-opacity="0.16" stroke-width="1"></path>
+  <text class="disk__brand" x="30" y="103">HD · 1.44 MB</text>
   <text
     class="disk__scribble"
     x="100"
-    y="148"
-    transform="rotate(-4 100 148)"
-    textLength={scribble.length > 9 ? 138 : undefined}
+    y="146"
+    textLength={scribble.length > 9 ? 136 : undefined}
     lengthAdjust="spacingAndGlyphs">{scribble}</text
   >
 
-  <rect x="10" y="170" width="10" height="13" rx="2" fill="#1b1526"></rect>
+  <rect x="10" y="172" width="9" height="13" fill={dark ? '#f3f3ef' : '#0c0d21'}></rect>
 </svg>
 
 <style>
@@ -66,17 +58,18 @@ const [body, shade] = bodies[tone];
   }
 
   .disk__brand {
-    fill: #1b1526;
-    font-family: var(--font-pixel);
-    font-size: 9px;
-    letter-spacing: 0.08em;
-    text-anchor: middle;
+    fill: #0c0d21;
+    font-family: var(--font-mono);
+    font-size: 8px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
   }
 
   .disk__scribble {
-    fill: #1b1526;
-    font-family: var(--font-hand);
-    font-size: 36px;
+    fill: #0c0d21;
+    font-family: var(--font-voice);
+    font-size: 34px;
+    font-style: italic;
     text-anchor: middle;
   }
 </style>

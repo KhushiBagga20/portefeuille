@@ -1,12 +1,12 @@
 ---
-// Speaker keycap in the nav. Also gives every keycap-style button on the site its click.
+// Sound on / off. Also gives every button on the site its key click.
 ---
 
-<button class="key key--nav sound" type="button" aria-pressed="true" data-sound-toggle>
-  <svg class="sound__icon" viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M3.5 9.2h3.8L12 5.3v13.4l-4.7-3.9H3.5z" fill="currentColor" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
-    <path class="sound__waves" d="M15.4 9.3a4 4 0 0 1 0 5.4M18 6.6a7.6 7.6 0 0 1 0 10.8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path>
-    <path class="sound__off" d="M15.5 9.5l5 5M20.5 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path>
+<button class="tool sound" type="button" aria-pressed="true" data-sound-toggle>
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M4 9.5h3.4L12 5.8v12.4l-4.6-3.7H4z" fill="currentColor"></path>
+    <path class="sound__waves" d="M15.2 9.2a4 4 0 0 1 0 5.6M17.8 6.6a7.6 7.6 0 0 1 0 10.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"></path>
+    <path class="sound__off" d="M15.5 9.5l5 5M20.5 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"></path>
   </svg>
   <span class="sr-only">Keyboard sounds</span>
 </button>
@@ -36,24 +36,12 @@
 </script>
 
 <style>
-  .sound {
-    --key-depth: 4px;
-    width: 44px;
-    min-height: 40px;
-    padding: 0;
-  }
-
-  .sound__icon {
-    width: 22px;
-    height: 22px;
-  }
-
   .sound[aria-pressed='true'] .sound__off,
   .sound[aria-pressed='false'] .sound__waves {
     display: none;
   }
 
   .sound[aria-pressed='false'] {
-    --key-face: var(--paper-deep);
+    color: var(--fg-2);
   }
 </style>

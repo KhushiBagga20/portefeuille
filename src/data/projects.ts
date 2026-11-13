@@ -22,6 +22,16 @@ export type Label =
 
 export type DiskTone = 'tomato' | 'pink' | 'lilac' | 'lemon' | 'sky' | 'mint';
 
+/** Disk plastic, its shaded edge, and the ink that reads on it. Rows and case studies borrow these. */
+export const diskTones: Record<DiskTone, { body: string; shade: string; on: string }> = {
+  tomato: { body: '#ff4d1f', shade: '#d83a10', on: '#0c0d21' },
+  pink: { body: '#ff2a85', shade: '#d81a6b', on: '#0c0d21' },
+  lilac: { body: '#7a3cff', shade: '#5c22e0', on: '#ffffff' },
+  lemon: { body: '#d6ff3d', shade: '#b2dc1a', on: '#0c0d21' },
+  sky: { body: '#2238ff', shade: '#1426d4', on: '#ffffff' },
+  mint: { body: '#0c0d21', shade: '#000000', on: '#f3f3ef' },
+};
+
 /** A case-study block. Leave `body`/`items`/`groups` out to show "details coming soon". */
 export type CaseSection = {
   title: string;
@@ -61,7 +71,7 @@ export const projects: Project[] = [
       'Screen mirroring with hardware H.264 decoding, mouse, trackpad and keyboard control, two-way clipboard, phone audio on the Mac, and automatic reconnection.',
     labels: ['Personal project', 'Native software'],
     stack: ['Swift', 'SwiftUI', 'macOS', 'Android', 'VideoToolbox', 'H.264', 'AVFoundation', 'ADB', 'Socket programming'],
-    disk: { tone: 'tomato', scribble: 'conduit' },
+    disk: { tone: 'sky', scribble: 'conduit' },
     sections: [
       {
         title: 'What it is',
@@ -162,7 +172,7 @@ export const projects: Project[] = [
     labels: ['Hackathon', 'Recognition', 'AI', 'Product design'],
     event: 'HackNWin Hackathon · CGC · 2025',
     outcome: ['Top 15 of ~400 teams', 'Shoutout from GDG Jalandhar'],
-    disk: { tone: 'lilac', scribble: 'mind pop' },
+    disk: { tone: 'lemon', scribble: 'mind pop' },
     sections: [
       { title: 'The idea', body: 'An AI study tool, designed in a neo-brutalist style.' },
       { title: 'Features' },
@@ -182,7 +192,7 @@ export const projects: Project[] = [
     type: 'Agentic AI hackathon project',
     labels: ['Hackathon', 'Recognition', 'AI'],
     outcome: ['₹6000 prize'],
-    disk: { tone: 'lemon', scribble: 'kinetic' },
+    disk: { tone: 'lilac', scribble: 'kinetic' },
     sections: [
       { title: 'The idea' },
       { title: 'What it does' },
@@ -207,7 +217,7 @@ export const projects: Project[] = [
     oneLiner: 'An AI system for identifying and analysing bias in decision-making, such as job and loan applications.',
     labels: ['Hackathon', 'AI'],
     event: 'Hack Helix 6.0 · Thapar · ~100 teams',
-    disk: { tone: 'sky', scribble: 'verifai' },
+    disk: { tone: 'mint', scribble: 'verifai' },
     sections: [
       {
         title: 'The idea',
@@ -227,7 +237,7 @@ export const projects: Project[] = [
     type: 'Hackathon project',
     labels: ['Hackathon'],
     event: 'Finvasia Hackathon',
-    disk: { tone: 'mint', scribble: 'kinetic city' },
+    disk: { tone: 'tomato', scribble: 'kinetic city' },
     sections: [{ title: 'The idea' }, { title: 'What it does' }, { title: 'My role' }, { title: 'Demo' }, { title: 'Outcome', kind: 'outcome' }],
     links: {},
     todo: ['Description / problem statement', 'Features', 'Technologies', 'Your contribution', 'Demo link', 'Outcome'],

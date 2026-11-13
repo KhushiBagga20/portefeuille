@@ -1,6 +1,4 @@
 ---
-import Shapes from './Shapes.astro';
-import Garland from './Garland.astro';
 import Computer from './Computer.astro';
 import ComingSoon from './ComingSoon.astro';
 import SectionHead from './SectionHead.astro';
@@ -16,9 +14,7 @@ const links = [
 ].filter((l) => l.href);
 ---
 
-<section id="contact" class="section has-garland section--deep" aria-labelledby="contact-title">
-  <Garland class="garland-hang" />
-  <Shapes variant="contact" />
+<section id="contact" class="section section--deep" aria-labelledby="contact-title">
   <div class="section__inner contact">
     <div class="contact__text">
       <SectionHead eyebrow="contact.eml" title="say hi" id="contact-title" />

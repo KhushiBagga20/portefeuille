@@ -1,28 +1,46 @@
 ---
+// The keyboard, shown as the site's one big object: a cobalt room, the board floating in
+// it, and a wall of type behind that repeats whatever you press.
+//
+// The board itself (KeyboardScene, Garden, scripts/keyboard.ts) is unchanged.
 import KeyboardScene from './KeyboardScene.astro';
+import PosterHead from './PosterHead.astro';
+import { chapter } from '../data/chapters';
 import { desk, pad, sections } from '../data/keyboard';
+
+const c = chapter('keyboard');
+const IDLE = 'press any key';
 ---
 
-<section id="keyboard" class="keyboard" aria-labelledby="keyboard-title">
+<section id="keyboard" class="keyboard poster s-cobalt" {...c.attrs} aria-labelledby="keyboard-title">
+  <!-- behind the board: the idle line, or your own typing -->
+  <div class="wall" data-wall aria-hidden="true">
+    <span class="wall__idle" style={`--n:${IDLE.length}`}>{IDLE}</span>
+    <span class="wall__live" data-wall-text></span>
+  </div>
+
   <div class="scene">
     <KeyboardScene scene={desk} class="scene__desk" />
     <KeyboardScene scene={pad} fit="meet" class="scene__pad" />
   </div>
 
+  <div class="strip">
+    <PosterHead id="keyboard" note="the coloured keys go places" />
+  </div>
+
   <div class="head">
-    <p class="eyebrow">chapter 02 · explore</p>
-    <h2 id="keyboard-title">press a key</h2>
+    <h2 id="keyboard-title" class="sr-only">Press a key</h2>
     <div class="screen" data-screen aria-hidden="true">
       <span class="screen__prompt">&gt;</span>
       <span class="screen__text" data-typed></span>
       <span class="screen__cursor"></span>
     </div>
-    <p class="hint hint--desk">
+    <p class="hint hint--desk label">
       or type {sections.map((s) => <kbd>{s.key}</kbd>)} on your own keyboard
     </p>
-    <p class="hint hint--desk psst">(psst… spell hello)</p>
-    <p class="hint hint--pad">tap a colourful key</p>
-    <p class="hint hint--pad psst">(psst… the ✦ key does something)</p>
+    <p class="hint hint--pad label">tap a coloured key</p>
+    <p class="psst voice hint--desk">psst — spell hello</p>
+    <p class="psst voice hint--pad">psst — the ✦ key does something</p>
   </div>
 </section>
 
@@ -33,15 +51,62 @@ import { desk, pad, sections } from '../data/keyboard';
 
 <style>
   .keyboard {
+    --cut: clamp(48px, 9vw, 150px);
     position: relative;
-    min-height: max(700px, 100svh);
+    z-index: 1;
+    min-height: max(720px, 100svh);
+    margin-top: calc(var(--cut) * -1);
+    padding: 0;
     overflow: clip;
-    border-top: var(--line) solid var(--ink);
-    background:
-      radial-gradient(90% 70% at 62% 42%, rgb(255 255 255 / 0.32), transparent 70%),
-      var(--paper-deep);
+    /* the room arrives on the slant, cutting across the foot of the one above */
+    clip-path: polygon(0 var(--cut), 100% 0, 100% 100%, 0 100%);
   }
 
+  /* ── the wall of type ───────────────── */
+  .wall {
+    position: absolute;
+    top: calc(var(--cut) + clamp(50px, 7svh, 90px));
+    right: var(--gutter);
+    left: var(--gutter);
+    font-family: var(--font-display);
+    font-stretch: 62%;
+    font-weight: 900;
+    line-height: 0.78;
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .wall span {
+    display: block;
+    /* a 62%-wide capital averages about half an em, so n of them fill the measure */
+    font-size: min(22vw, calc((100vw - 2 * var(--gutter)) / (var(--n) * 0.5)));
+    transition:
+      opacity 0.25s ease,
+      translate 0.5s var(--ease-out);
+  }
+
+  .wall__live {
+    position: absolute;
+    top: 0;
+    right: 0;
+    color: var(--accent);
+    text-align: right;
+    opacity: 0;
+    translate: 0 0.12em;
+  }
+
+  .wall.is-typing .wall__idle {
+    opacity: 0;
+    translate: 0 -0.12em;
+  }
+
+  .wall.is-typing .wall__live {
+    opacity: 1;
+    translate: 0 0;
+  }
+
+  /* ── the board ──────────────────────── */
   .scene {
     position: absolute;
     inset: 0;
@@ -56,56 +121,39 @@ import { desk, pad, sections } from '../data/keyboard';
     display: none;
   }
 
-  .head {
+  .strip {
     position: absolute;
+    top: calc(var(--cut) + 18px);
+    right: var(--gutter);
     left: var(--gutter);
-    bottom: clamp(28px, 7vh, 72px);
-    z-index: 2;
-    max-width: 34ch;
     pointer-events: none;
   }
 
-  .eyebrow {
-    margin: 0;
-    font: 400 11px/1 var(--font-pixel);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  h2 {
-    margin: 10px 0 0;
-    color: var(--bone);
-    font: 400 clamp(44px, 4.8vw, 84px) / 0.9 var(--font-display);
-    white-space: nowrap;
-    -webkit-text-stroke: 0.07em var(--ink);
-    paint-order: stroke fill;
-    text-shadow:
-      0.035em 0.045em 0 var(--shadow),
-      0.065em 0.08em 0 var(--tomato);
+  /* ── the console ────────────────────── */
+  .head {
+    position: absolute;
+    left: var(--gutter);
+    bottom: clamp(26px, 6svh, 64px);
+    z-index: 2;
+    max-width: 36ch;
+    pointer-events: none;
   }
 
   .screen {
     display: flex;
     align-items: center;
-    gap: 8px;
-    width: min(320px, 100%);
-    height: 48px;
-    margin-top: 18px;
+    gap: 10px;
+    width: min(330px, 100%);
+    height: 46px;
     padding: 0 16px;
-    border: var(--line) solid var(--ink);
-    border-radius: 12px;
-    background: #211b36;
-    box-shadow:
-      inset 0 0 0 4px #302a4d,
-      0 5px 0 var(--shadow);
-    color: var(--mint);
-    font: 400 16px/1 var(--font-pixel);
-    letter-spacing: 0.06em;
-    text-shadow: 0 0 10px rgb(127 224 176 / 0.55);
+    background: var(--c-ink);
+    color: var(--acid);
+    font: 500 15px/1 var(--font-mono);
+    letter-spacing: 0.08em;
   }
 
   .screen__prompt {
-    color: var(--lemon);
+    color: #ffffff;
   }
 
   .screen__text {
@@ -115,8 +163,8 @@ import { desk, pad, sections } from '../data/keyboard';
 
   .screen__cursor {
     flex: none;
-    width: 10px;
-    height: 18px;
+    width: 9px;
+    height: 17px;
     background: currentColor;
     animation: cursor 1s steps(2, jump-none) infinite;
   }
@@ -131,26 +179,21 @@ import { desk, pad, sections } from '../data/keyboard';
     animation: party 0.5s linear 5;
   }
 
-  .screen.is-party .screen__text {
-    color: var(--lemon);
-  }
-
   @keyframes party {
     0%,
     100% {
-      border-color: var(--pink);
+      background: var(--c-ink);
+      color: var(--acid);
     }
-    33% {
-      border-color: var(--lemon);
-    }
-    66% {
-      border-color: var(--mint);
+    50% {
+      background: var(--acid);
+      color: var(--c-ink);
     }
   }
 
   .hint {
-    margin: 14px 0 0;
-    font: 400 24px/1.3 var(--font-hand);
+    margin-top: 16px;
+    line-height: 2;
   }
 
   .hint--pad {
@@ -158,23 +201,23 @@ import { desk, pad, sections } from '../data/keyboard';
   }
 
   .psst {
-    margin-top: 2px;
-    font-size: 19px;
-    opacity: 0.75;
-    rotate: -2deg;
-    width: max-content;
+    margin: 6px 0 0;
+    color: var(--accent);
+    font-size: 24px;
+    line-height: 1.1;
   }
 
   kbd {
-    display: inline-block;
+    display: inline-grid;
+    place-items: center;
+    min-width: 20px;
+    height: 20px;
     margin: 0 2px;
-    padding: 4px 6px 3px;
-    border: 2px solid var(--ink);
-    border-radius: 6px;
-    background: var(--cream);
-    box-shadow: 0 2px 0 var(--shadow);
-    font: 400 11px/1 var(--font-pixel);
-    vertical-align: 3px;
+    padding: 0 4px;
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    font: inherit;
+    line-height: 1;
   }
 
   @media (max-width: 699px) {
@@ -182,7 +225,19 @@ import { desk, pad, sections } from '../data/keyboard';
       display: flex;
       flex-direction: column;
       min-height: 0;
-      padding: 56px var(--gutter) 28px;
+      padding: calc(var(--cut) + 18px) var(--gutter) 30px;
+    }
+
+    .strip {
+      position: static;
+    }
+
+    .wall {
+      position: relative;
+      top: auto;
+      right: auto;
+      left: auto;
+      margin-top: 22px;
     }
 
     .scene {
@@ -199,20 +254,25 @@ import { desk, pad, sections } from '../data/keyboard';
       display: block;
       width: 100%;
       height: auto;
-      margin-top: 28px;
+      margin-top: 6px;
     }
 
     .head {
       position: relative;
       left: auto;
       bottom: auto;
-      order: -1;
       max-width: none;
-      margin-bottom: 8px;
+      margin-top: 6px;
     }
 
     .hint--pad {
       display: block;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .screen.is-party {
+      animation: none;
     }
   }
 </style>

@@ -1,51 +1,131 @@
 ---
-// The cube on the desk. A real 3×3 you can orbit and actually turn.
-// Saturated ground, because this one is meant to shout.
-const stickers = [
-  'var(--lemon)', // +x
-  'var(--mint)', // -x
-  'var(--bone)', // +y
-  'var(--sea)', // -y
-  'var(--tomato)', // +z
-  'var(--lilac)', // -z
+// The cube room. A real 3×3 you can orbit and turn, shown the way a gallery shows a
+// kinetic sculpture: object in the middle, wall text on one side, instruments on the other.
+//
+// The mechanics live in scripts/rubik.ts. Everything the panel reads out — the move
+// count, the state, the last turn — comes from the cube itself.
+import PosterHead from './PosterHead.astro';
+import { chapter } from '../data/chapters';
+
+const c = chapter('cube');
+
+// one colour per face, in the engine's order: +x −x +y −y +z −z
+const stickers = ['#f3f3ef', 'var(--periwinkle)', 'var(--magenta)', 'var(--violet)', 'var(--cobalt)', 'var(--signal)'];
+
+// Standard notation. Each is [axis, layer, direction] for a clockwise quarter-turn
+// seen from outside that face.
+const faces: [string, string, string][] = [
+  ['U', 'up', '1,1,-1'],
+  ['D', 'down', '1,-1,1'],
+  ['L', 'left', '0,-1,1'],
+  ['R', 'right', '0,1,-1'],
+  ['F', 'front', '2,1,-1'],
+  ['B', 'back', '2,-1,1'],
 ];
 
-// a few one-tap moves for anyone not using a mouse
-const moves: [string, string][] = [
-  ['top', '1,1,1'],
-  ['front', '2,1,1'],
-  ['right', '0,1,1'],
-  ['left', '0,-1,-1'],
-];
+const STATES = '43,252,003,274,489,856,000';
 ---
 
-<section class="cube" data-rubik data-colors={JSON.stringify(stickers)} data-plastic="#1b1526" aria-labelledby="cube-title">
-  <div class="cube__grid">
-    <div class="cube__copy">
-      <p class="eyebrow">chapter 00 · the fidget</p>
-      <h2 id="cube-title">turn it</h2>
-      <p class="cube__note">twenty-six little boxes, forty-three quintillion ways to be wrong</p>
-      <p class="cube__how">
-        <strong>drag the cube</strong> to spin it. <strong>drag a sticker</strong> to turn that layer.
-      </p>
+<section
+  id="cube"
+  class="cube poster s-ink"
+  data-rubik
+  data-view
+  data-colors={JSON.stringify(stickers)}
+  data-plastic="#0c0d21"
+  {...c.attrs}
+  aria-labelledby="cube-title"
+>
+  <div class="cube__frame">
+    <PosterHead id="cube" note="fig. 01 — 3×3×3 · 26 cubies · 54 stickers" />
 
-      <div class="cube__controls">
-        <button class="key key--sm key--tomato" type="button" data-scramble>scramble</button>
-        <button class="key key--sm" type="button" data-reset>solve it for me</button>
+    <div class="cube__grid">
+      <div class="cube__copy">
+        <h2 id="cube-title" class="cube__title">Turn<br />it.</h2>
+        <p class="cube__voice voice">Twenty-six little boxes, forty-three quintillion ways to be wrong.</p>
+        <p class="cube__how label">
+          Drag the cube to spin it.<br />
+          Drag a sticker to turn that layer.
+          <span class="cube__keys"><br />Or type U D L R F B — shift goes the other way.</span>
+        </p>
       </div>
 
-      <div class="cube__moves" role="group" aria-label="Turn a layer">
-        {moves.map(([label, m]) => <button class="chip" type="button" data-move={m}>{label}</button>)}
+      <div class="cube__stage">
+        <span class="cube__disc" aria-hidden="true"></span>
+        <svg class="cube__dial" viewBox="-200 -200 400 400" aria-hidden="true">
+          <g data-dial>
+            <circle r="188" class="cube__ticks"></circle>
+            <circle r="188" class="cube__ticks cube__ticks--major"></circle>
+            <path d="M0 -200 V-172" class="cube__needle"></path>
+          </g>
+        </svg>
+        <svg
+          class="cube__svg"
+          data-cube
+          viewBox="-340 -340 680 680"
+          role="img"
+          aria-label="An interactive Rubik's cube. Drag to spin it, or drag a sticker to turn a layer."
+        >
+          <g data-cubies></g>
+        </svg>
       </div>
-    </div>
 
-    <div class="cube__stage">
-      <svg class="cube__svg" data-cube viewBox="-340 -340 680 680" role="img" aria-label="An interactive Rubik's cube. Drag to spin it, or drag a sticker to turn a layer.">
-        <ellipse class="cube__shadow" cx="18" cy="268" rx="214" ry="34"></ellipse>
-        <g data-cubies></g>
-      </svg>
+      <div class="cube__panel">
+        <dl class="cube__read" aria-live="polite">
+          <div>
+            <dt>moves</dt>
+            <dd data-moves>000</dd>
+          </div>
+          <div>
+            <dt>state</dt>
+            <dd data-state>solved</dd>
+          </div>
+          <div>
+            <dt>last</dt>
+            <dd data-last>—</dd>
+          </div>
+          <div aria-hidden="true">
+            <dt>rot</dt>
+            <dd data-rot>000°</dd>
+          </div>
+        </dl>
+
+        <div class="cube__pad" role="group" aria-label="Turn a face a quarter-turn">
+          {
+            faces.map(([letter, word, move]) => (
+              <button class="cube__face" type="button" data-move={move} data-letter={letter} aria-label={`Turn the ${word} face`}>
+                {letter}
+              </button>
+            ))
+          }
+          <button class="cube__face cube__face--prime" type="button" data-prime aria-pressed="false" aria-label="Turn counter-clockwise instead">
+            ′
+          </button>
+        </div>
+
+        <div class="cube__controls">
+          <button class="key key--accent" type="button" data-scramble>scramble</button>
+          <button class="key" type="button" data-reset>solve it for me</button>
+        </div>
+      </div>
     </div>
   </div>
+
+  <!-- the number of states a cube can be in. it is a real number. -->
+  <p class="cube__count" aria-label={`${STATES} possible states`}>
+    <span class="cube__run" aria-hidden="true">
+      {
+        [0, 1].map(() => (
+          <span>
+            {STATES}
+            <i>possible states</i>
+            {STATES}
+            <i>you only need one</i>
+          </span>
+        ))
+      }
+    </span>
+  </p>
 </section>
 
 <script>
@@ -55,111 +135,119 @@ const moves: [string, string][] = [
 
 <style>
   .cube {
-    position: relative;
-    padding: clamp(40px, 6vw, 80px) var(--gutter) clamp(44px, 6vw, 84px);
-    border-top: var(--line) solid var(--ink);
-    /* the loud one */
-    background:
-      radial-gradient(60% 70% at 78% 40%, rgb(255 255 255 / 0.16), transparent 70%),
-      var(--shout);
+    --enter: 1;
+    --through: 0.5;
+    /* the room arrives as a dome rising out of the cover, then squares off */
+    --dome: min(1, var(--enter) * 1.4);
+    display: flex;
+    flex-direction: column;
+    min-height: 100svh;
+    padding: clamp(22px, 3vw, 40px) 0 0;
     overflow: clip;
+    clip-path: ellipse(calc(56% + var(--dome) * 70%) calc(100% + var(--dome) * 55%) at 50% 100%);
+  }
+
+  .cube__frame {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    width: 100%;
+    max-width: calc(var(--wrap) + 2 * var(--gutter));
+    margin: 0 auto;
+    padding: 0 var(--gutter);
   }
 
   .cube__grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    flex: 1;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
-    gap: clamp(24px, 4vw, 64px);
-    max-width: 1180px;
-    margin: 0 auto;
+    gap: clamp(16px, 3vw, 48px);
+    padding: clamp(8px, 2svh, 24px) 0;
   }
 
-  .eyebrow {
+  /* ── wall text ──────────────────────── */
+  .cube__title {
     margin: 0;
-    color: var(--on-shout);
-    font: 400 11px/1 var(--font-pixel);
-    letter-spacing: 0.06em;
+    font-family: var(--font-display);
+    font-size: clamp(72px, 10.5vw, 190px);
+    font-stretch: 62%;
+    font-weight: 900;
+    line-height: 0.78;
+    letter-spacing: -0.015em;
     text-transform: uppercase;
-    opacity: 0.75;
   }
 
-  h2 {
-    margin: 10px 0 0;
-    color: var(--lemon);
-    font: 400 clamp(52px, 7vw, 110px) / 0.88 var(--font-display);
-    -webkit-text-stroke: 0.07em var(--ink);
-    paint-order: stroke fill;
-    text-shadow:
-      0.035em 0.045em 0 var(--ink),
-      0.07em 0.085em 0 var(--sea);
-  }
-
-  .cube__note {
-    max-width: 24ch;
-    margin: 14px 0 0;
-    color: var(--on-shout);
-    font: 400 clamp(21px, 2vw, 27px) / 1.15 var(--font-hand);
-    rotate: -1.2deg;
+  .cube__voice {
+    max-width: 17ch;
+    margin: clamp(16px, 2.6svh, 30px) 0 0;
+    color: var(--accent);
+    font-size: clamp(23px, 2.2vw, 36px);
+    line-height: 1.05;
   }
 
   .cube__how {
-    margin: 18px 0 0;
-    color: var(--on-shout);
-    font-size: 16px;
-    line-height: 1.5;
+    margin-top: clamp(16px, 3svh, 34px);
+    color: var(--fg-2);
+    line-height: 1.7;
   }
 
-  .cube__how strong {
-    font-weight: 750;
+  @media not ((hover: hover) and (pointer: fine)) {
+    .cube__keys {
+      display: none;
+    }
   }
 
-  .cube__controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 22px;
-  }
-
-  .cube__moves {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 14px;
-  }
-
-  .chip {
-    padding: 7px 12px 6px;
-    border: 2px solid var(--ink);
-    border-radius: 999px;
-    background: var(--bone);
-    box-shadow: 0 3px 0 var(--ink);
-    color: var(--on-accent);
-    font: 400 10px/1 var(--font-pixel);
-    text-transform: uppercase;
-    cursor: pointer;
-    transition:
-      translate 0.12s ease,
-      box-shadow 0.12s ease;
-  }
-
-  .chip:hover {
-    translate: 0 -2px;
-    box-shadow: 0 5px 0 var(--ink);
-  }
-
-  .chip:active {
-    translate: 0 3px;
-    box-shadow: 0 0 0 var(--ink);
-  }
-
+  /* ── the object ─────────────────────── */
   .cube__stage {
+    --size: min(74svh, 46vw, 700px);
+    position: relative;
     display: grid;
     place-items: center;
+    width: var(--size);
+    aspect-ratio: 1;
+  }
+
+  .cube__disc {
+    position: absolute;
+    inset: 9%;
+    border-radius: 50%;
+    background: var(--accent);
+    translate: 0 calc((var(--through) - 0.5) * -70px);
+  }
+
+  .cube__dial {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    translate: 0 calc((var(--through) - 0.5) * -70px);
+  }
+
+  .cube__ticks {
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 7;
+    stroke-dasharray: 1 8.843; /* 120 ticks round a 188 circle */
+    opacity: 0.5;
+  }
+
+  .cube__ticks--major {
+    stroke-width: 15;
+    stroke-dasharray: 1.6 96.84; /* 12 long ones */
+    opacity: 1;
+  }
+
+  .cube__needle {
+    stroke: var(--signal);
+    stroke-width: 3;
   }
 
   .cube__svg {
+    position: relative;
     display: block;
-    width: min(100%, 560px);
+    width: 100%;
     height: auto;
     overflow: visible;
     touch-action: none;
@@ -171,23 +259,211 @@ const moves: [string, string][] = [
     cursor: grabbing;
   }
 
-  .cube__shadow {
-    fill: var(--ink);
-    opacity: 0.22;
+  /* ── instruments ────────────────────── */
+  .cube__panel {
+    display: grid;
+    gap: clamp(16px, 2.6svh, 28px);
+    justify-self: end;
+    width: min(100%, 300px);
   }
 
-  @media (max-width: 859px) {
+  .cube__read {
+    display: grid;
+    margin: 0;
+    border-top: 1px solid var(--line);
+    font: 500 11px/1 var(--font-mono);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .cube__read div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0 9px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .cube__read dt {
+    color: var(--fg-2);
+  }
+
+  .cube__read dd {
+    margin: 0;
+    font-size: 13px;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .cube__read [data-state] {
+    color: var(--accent);
+  }
+
+  .cube__pad {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .cube__face {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    min-width: 0;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: none;
+    font: 500 14px/1 var(--font-mono);
+    cursor: pointer;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease,
+      border-color 0.15s ease,
+      translate 0.1s ease;
+  }
+
+  .cube__face:hover {
+    border-color: var(--fg);
+  }
+
+  .cube__face:active,
+  .cube__face.is-hit {
+    background: var(--fg);
+    color: var(--bg);
+    translate: 0 2px;
+  }
+
+  .cube__face--prime {
+    border-style: dashed;
+    font-size: 18px;
+  }
+
+  .cube__face--prime[aria-pressed='true'] {
+    border-color: var(--accent);
+    border-style: solid;
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+
+  .cube__controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  /* ── forty-three quintillion ────────── */
+  .cube__count {
+    margin: 0 0 -0.09em;
+    overflow: clip;
+    font-family: var(--font-display);
+    font-size: clamp(64px, 11.5vw, 210px);
+    font-stretch: 62%;
+    font-weight: 900;
+    line-height: 0.8;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cube__run {
+    display: inline-flex;
+    animation: run 60s linear infinite;
+  }
+
+  .cube__run > span {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.22em;
+    padding-right: 0.22em;
+    color: transparent;
+    -webkit-text-stroke: 1.5px var(--fg);
+  }
+
+  .cube__run i {
+    color: var(--accent);
+    font: 400 0.3em/1 var(--font-voice);
+    font-style: italic;
+    -webkit-text-stroke: 0;
+  }
+
+  @keyframes run {
+    to {
+      translate: -50% 0;
+    }
+  }
+
+  /* a hand-made solve earns a small ceremony */
+  .cube.is-won .cube__disc {
+    animation: won 1.1s var(--spring);
+  }
+
+  @keyframes won {
+    35% {
+      scale: 1.14;
+    }
+  }
+
+  /* ── narrower ───────────────────────── */
+  @media (max-width: 1099px) {
     .cube__grid {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 20px;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-areas:
+        'stage stage'
+        'copy panel';
+      align-items: start;
     }
 
     .cube__stage {
-      order: -1;
+      --size: min(60svh, 78vw, 620px);
+      grid-area: stage;
+      justify-self: center;
     }
 
-    .cube__svg {
-      width: min(100%, 400px);
+    .cube__copy {
+      grid-area: copy;
+    }
+
+    .cube__panel {
+      grid-area: panel;
+    }
+  }
+
+  @media (max-width: 639px) {
+    .cube__grid {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas:
+        'stage'
+        'copy'
+        'panel';
+      gap: 26px;
+    }
+
+    .cube__stage {
+      --size: min(92vw, 56svh);
+    }
+
+    .cube__panel {
+      justify-self: stretch;
+      width: 100%;
+    }
+
+    .cube__title br {
+      display: none;
+    }
+
+    .cube__voice {
+      max-width: 22ch;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cube {
+      clip-path: none;
+    }
+
+    .cube__run {
+      animation: none;
     }
   }
 </style>

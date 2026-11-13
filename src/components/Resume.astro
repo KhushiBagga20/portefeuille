@@ -1,0 +1,668 @@
+---
+// The résumé, as a document that listens.
+//
+// It is one sheet with three reading lengths and four lenses. "Skim" leaves the headlines,
+// "read" adds the first line of each entry, "everything" is the PDF in full. A lens keeps
+// the sheet intact but lets the entries that aren't about that subject fall back.
+//
+// All of it is plain CSS: the controls are radio buttons and the sheet reacts with :has().
+// With no JS it still works; the script only writes the status line.
+import Arrow from './Arrow.astro';
+import PosterHead from './PosterHead.astro';
+import { chapter } from '../data/chapters';
+import { lenses, levels, resume, type Depth, type Entry } from '../data/resume';
+import { site } from '../data/site';
+
+const c = chapter('resume');
+const { education } = resume;
+const groups: { label: string; entries: Entry[] }[] = [
+  { label: 'projects', entries: resume.projects },
+  { label: 'experience & leadership', entries: resume.experience },
+  { label: 'hackathons & competitions', entries: resume.hackathons },
+];
+const entries = groups.flatMap((g) => g.entries);
+
+// ── honest reading times: count the words each length actually shows ──
+const words = (s: string) => s.split(/\s+/).filter(Boolean).length;
+const always = [site.fullName, education.school, education.degree, ...education.facts, ...entries.flatMap((e) => [e.title, e.sub ?? '', e.meta ?? ''])];
+const byDepth = (d: Depth) => [
+  ...resume.summary.filter((l) => l.depth === d).map((l) => l.text),
+  ...resume.skills.filter((s) => s.depth === d).flatMap((s) => [s.title, ...s.items]),
+  ...entries.flatMap((e) => e.lines.filter((l) => l.depth === d).map((l) => l.text)),
+  ...(d === 2 ? [...resume.interests, ...resume.languages] : []),
+  ...(d === 3 ? education.coursework : []),
+];
+const count = (upTo: Depth) =>
+  [...always, ...([1, 2, 3] as Depth[]).filter((d) => d <= upTo).flatMap(byDepth)].reduce((n, s) => n + words(s), 0);
+const time = (n: number) => {
+  const sec = (n / 230) * 60;
+  return sec < 50 ? `${Math.max(10, Math.round(sec / 5) * 5)} sec` : `${Math.max(1, Math.round(sec / 60))} min`;
+};
+const sizes = levels.map((l) => ({ ...l, words: count(l.depth), time: time(count(l.depth)) }));
+const matches = Object.fromEntries(lenses.map((l) => [l.id, entries.filter((e) => e.tags.includes(l.id)).length]));
+
+const contacts = [
+  { label: site.links.email, href: `mailto:${site.links.email}` },
+  { label: 'LinkedIn', href: site.links.linkedin },
+  { label: 'GitHub', href: site.links.github },
+].filter((l) => l.href && l.label);
+---
+
+<section
+  id="resume"
+  class="cv poster s-violet"
+  data-cv
+  data-sizes={JSON.stringify(sizes)}
+  data-matches={JSON.stringify(matches)}
+  data-total={entries.length}
+  {...c.attrs}
+  aria-labelledby="resume-title"
+>
+  <div class="wrap">
+    <PosterHead id="resume" note="the same facts as the PDF — at whatever length you have time for" />
+
+    <div class="cv__grid">
+      <!-- ── the controls ─────────────────── -->
+      <div class="cv__rail">
+        <h2 id="resume-title" class="cv__title">Résumé</h2>
+        <p class="cv__lede voice">One sheet, three lengths. Tell it how long you've got.</p>
+
+        <fieldset class="pick">
+          <legend class="label">how long have you got?</legend>
+          <div class="pick__opts">
+            {
+              sizes.map((s) => (
+                <label class="opt">
+                  <input type="radio" name="cv-depth" value={s.depth} checked={s.depth === 2} />
+                  <span class="opt__face">
+                    <b>{s.label}</b>
+                    <i>{s.time}</i>
+                  </span>
+                </label>
+              ))
+            }
+          </div>
+        </fieldset>
+
+        <fieldset class="pick">
+          <legend class="label">read it as</legend>
+          <div class="pick__opts pick__opts--wrap">
+            <label class="opt opt--chip">
+              <input type="radio" name="cv-lens" value="all" checked />
+              <span class="opt__face"><b>the whole person</b></span>
+            </label>
+            {
+              lenses.map((l) => (
+                <label class="opt opt--chip">
+                  <input type="radio" name="cv-lens" value={l.id} />
+                  <span class="opt__face">
+                    <b>{l.label}</b>
+                  </span>
+                </label>
+              ))
+            }
+          </div>
+        </fieldset>
+
+        <p class="cv__status label" aria-live="polite" data-cv-status></p>
+
+        {
+          site.links.resume && (
+            <a class="key key--accent cv__pdf" href={site.links.resume} target="_blank" rel="noopener">
+              get the PDF<span class="sr-only"> (opens in a new tab)</span>
+              <Arrow dir="down" />
+            </a>
+          )
+        }
+      </div>
+
+      <!-- ── the sheet ────────────────────── -->
+      <article class="sheet" aria-label={`Résumé of ${site.fullName}`}>
+        <header class="sheet__top">
+          <p class="sheet__name">{site.fullName}</p>
+          <ul class="sheet__contact">
+            {
+              contacts.map((l) => (
+                <li>
+                  <a class="link" href={l.href} target={l.href.startsWith('mailto:') ? undefined : '_blank'} rel="noopener">
+                    {l.label}
+                  </a>
+                </li>
+              ))
+            }
+          </ul>
+        </header>
+
+        <section class="part">
+          <h3 class="part__label">summary</h3>
+          <div class="part__body">
+            <p class="summary">
+              {resume.summary.map((l) => <span class="fold fold--inline" data-depth={l.depth}>{l.text} </span>)}
+            </p>
+          </div>
+        </section>
+
+        <section class="part">
+          <h3 class="part__label">education</h3>
+          <div class="part__body">
+            <p class="entry__title">
+              {education.school} <span class="entry__sub voice">{education.place}</span>
+            </p>
+            <p class="entry__degree">{education.degree}</p>
+            <p class="entry__meta">{education.facts.join('  ·  ')}</p>
+            <div class="fold" data-depth="3">
+              <p class="entry__course"><b>Relevant coursework</b> {education.coursework.join(', ')}</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="part">
+          <h3 class="part__label">technical skills</h3>
+          <div class="part__body">
+            <dl class="skills">
+              {
+                resume.skills.map((s) => (
+                  <div class="fold" data-depth={s.depth} data-tags={s.tags.join(' ') || undefined}>
+                    <div class="skills__row">
+                      <dt>{s.title}</dt>
+                      <dd>{s.items.join(', ')}</dd>
+                    </div>
+                  </div>
+                ))
+              }
+            </dl>
+          </div>
+        </section>
+
+        {
+          groups.map((g) => (
+            <section class="part">
+              <h3 class="part__label">{g.label}</h3>
+              <div class="part__body">
+                {g.entries.map((e) => (
+                  <div class="entry" data-tags={e.tags.join(' ')}>
+                    <p class="entry__title">
+                      {e.href ? (
+                        <a class="link" href={e.href}>
+                          {e.title}
+                        </a>
+                      ) : (
+                        e.title
+                      )}
+                      {e.sub && <span class="entry__sub voice"> {e.sub}</span>}
+                    </p>
+                    {e.meta && <p class="entry__meta">{e.meta}</p>}
+                    <ul class="entry__lines">
+                      {e.lines.map((l) => (
+                        <li class="fold" data-depth={l.depth}>
+                          <span>{l.text}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))
+        }
+
+        <section class="part fold" data-depth="2">
+          <div class="part__fold">
+            <h3 class="part__label">additional</h3>
+            <div class="part__body">
+              <dl class="skills">
+                <div class="skills__row">
+                  <dt>Areas of interest</dt>
+                  <dd>{resume.interests.join(', ')}</dd>
+                </div>
+                <div class="skills__row">
+                  <dt>Languages</dt>
+                  <dd>{resume.languages.join(', ')}</dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+        </section>
+      </article>
+    </div>
+  </div>
+</section>
+
+<script>
+  // The sheet itself needs no script. This only puts the current setting into words.
+  document.querySelectorAll<HTMLElement>('[data-cv]').forEach((cv) => {
+    const status = cv.querySelector<HTMLElement>('[data-cv-status]');
+    if (!status) return;
+    const sizes: { depth: number; label: string; words: number; time: string }[] = JSON.parse(cv.dataset.sizes ?? '[]');
+    const matches: Record<string, number> = JSON.parse(cv.dataset.matches ?? '{}');
+    const total = Number(cv.dataset.total ?? 0);
+
+    const say = () => {
+      const depth = Number(cv.querySelector<HTMLInputElement>('[name="cv-depth"]:checked')?.value ?? 2);
+      const lens = cv.querySelector<HTMLInputElement>('[name="cv-lens"]:checked');
+      const size = sizes.find((s) => s.depth === depth);
+      if (!size) return;
+      const focus =
+        lens && lens.value !== 'all'
+          ? ` · ${matches[lens.value] ?? 0} of ${total} entries in focus`
+          : '';
+      status.textContent = `showing ${size.words} words · about ${size.time}${focus}`;
+    };
+    cv.addEventListener('change', say);
+    say();
+  });
+</script>
+
+<style>
+  .cv__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.5fr);
+    align-items: start;
+    gap: clamp(28px, 5vw, 88px);
+    margin-top: clamp(32px, 5vw, 76px);
+  }
+
+  /* ── controls ───────────────────────── */
+  .cv__rail {
+    position: sticky;
+    top: calc(var(--bar) + 26px);
+  }
+
+  .cv__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(60px, 9vw, 168px);
+    font-stretch: 62%;
+    font-weight: 900;
+    line-height: 0.8;
+    letter-spacing: -0.012em;
+    text-transform: uppercase;
+  }
+
+  .cv__lede {
+    max-width: 17ch;
+    margin: clamp(14px, 2vw, 26px) 0 0;
+    color: var(--accent);
+    font-size: clamp(23px, 2.1vw, 34px);
+    line-height: 1.05;
+  }
+
+  .pick {
+    margin: clamp(20px, 2.6vw, 34px) 0 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .pick legend {
+    padding: 0;
+  }
+
+  .pick__opts {
+    display: grid;
+    grid-auto-columns: 1fr;
+    grid-auto-flow: column;
+    margin-top: 10px;
+    border: 1.5px solid var(--fg);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .pick__opts--wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+  }
+
+  .opt {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .opt input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .opt__face {
+    display: grid;
+    gap: 5px;
+    height: 100%;
+    padding: 12px 12px 10px;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .opt + .opt .opt__face {
+    border-left: 1.5px solid var(--fg);
+  }
+
+  .opt b {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-stretch: 74%;
+    font-weight: 800;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .opt i {
+    font: 500 10px/1 var(--font-mono);
+    font-style: normal;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .opt--chip .opt__face {
+    padding: 9px 13px 8px;
+    border: 1.5px solid var(--fg);
+    border-radius: 999px;
+  }
+
+  .opt--chip + .opt--chip .opt__face {
+    border-left: 1.5px solid var(--fg);
+  }
+
+  .opt--chip b {
+    font-size: 15px;
+  }
+
+  .opt:hover .opt__face {
+    background: rgb(255 255 255 / 0.16);
+  }
+
+  .opt input:checked + .opt__face {
+    background: var(--fg);
+    color: var(--bg);
+  }
+
+  .opt input:focus-visible + .opt__face {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .cv__status {
+    min-height: 2.7em;
+    margin-top: clamp(16px, 2vw, 26px);
+    color: var(--fg-2);
+    line-height: 1.5;
+  }
+
+  .cv__pdf {
+    margin-top: 6px;
+  }
+
+  /* ── the sheet ──────────────────────── */
+  .sheet {
+    padding: clamp(22px, 3.6vw, 60px) clamp(18px, 3.6vw, 60px) clamp(26px, 4vw, 64px);
+    background: var(--sheet);
+    color: var(--on-sheet);
+    box-shadow: 0 40px 80px -40px rgb(12 13 33 / 0.7);
+    font-size: 15.5px;
+    line-height: 1.46;
+  }
+
+  .sheet__top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px 24px;
+    padding-bottom: clamp(14px, 1.8vw, 22px);
+    border-bottom: 2px solid var(--on-sheet);
+  }
+
+  .sheet__name {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(34px, 4.6vw, 68px);
+    font-stretch: 112%;
+    font-weight: 900;
+    line-height: 0.84;
+    letter-spacing: -0.04em;
+    text-transform: uppercase;
+  }
+
+  .sheet__contact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+    margin: 0;
+    padding: 0;
+    font: 500 11px/1.5 var(--font-mono);
+    letter-spacing: 0.04em;
+    list-style: none;
+  }
+
+  .part {
+    display: grid;
+    grid-template-columns: clamp(96px, 11vw, 150px) minmax(0, 1fr);
+    column-gap: clamp(14px, 2vw, 30px);
+    padding: clamp(14px, 1.7vw, 22px) 0;
+    border-bottom: 1px solid var(--sheet-line);
+  }
+
+  .part:last-child {
+    border-bottom: 0;
+  }
+
+  /* the last block folds away as a whole, so its grid lives one level down */
+  .part.fold {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    padding: 0;
+  }
+
+  .part__fold {
+    display: grid;
+    grid-template-columns: clamp(96px, 11vw, 150px) minmax(0, 1fr);
+    column-gap: clamp(14px, 2vw, 30px);
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .part__fold > * {
+    padding: clamp(14px, 1.7vw, 22px) 0;
+  }
+
+  .part__label {
+    margin: 0;
+    padding-top: 3px;
+    color: var(--on-sheet-2);
+    font: 500 10px/1.4 var(--font-mono);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .summary {
+    margin: 0;
+    font-size: 1.06em;
+  }
+
+  .entry + .entry {
+    margin-top: clamp(14px, 1.6vw, 20px);
+  }
+
+  .entry {
+    transition: opacity 0.35s ease;
+  }
+
+  .entry__title {
+    margin: 0;
+    font-size: 1.16em;
+    font-stretch: 90%;
+    font-weight: 750;
+    line-height: 1.2;
+  }
+
+  .entry__sub {
+    color: var(--on-sheet-2);
+    font-size: 1.08em;
+    font-weight: 400;
+  }
+
+  .entry__degree {
+    margin: 3px 0 0;
+  }
+
+  .entry__meta {
+    margin: 5px 0 0;
+    color: var(--on-sheet-2);
+    font: 400 11px/1.5 var(--font-mono);
+    letter-spacing: 0.02em;
+  }
+
+  .entry__course {
+    margin: 7px 0 0;
+  }
+
+  .entry__course b {
+    font-weight: 700;
+  }
+
+  .entry__lines {
+    margin: 2px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .entry__lines span {
+    position: relative;
+    display: block;
+    padding: 5px 0 0 18px;
+  }
+
+  .entry__lines span::before {
+    content: '';
+    position: absolute;
+    top: 1em;
+    left: 0;
+    width: 9px;
+    height: 1.5px;
+    background: var(--violet);
+  }
+
+  .skills {
+    margin: 0;
+  }
+
+  .skills__row {
+    display: grid;
+    grid-template-columns: minmax(0, 0.42fr) minmax(0, 1fr);
+    column-gap: 14px;
+    padding: 2.5px 0;
+    transition: opacity 0.35s ease;
+  }
+
+  .skills dt {
+    font-weight: 700;
+  }
+
+  .skills dd {
+    margin: 0;
+  }
+
+  /* ── folding ────────────────────────────
+     A line that isn't part of the chosen length closes to nothing, smoothly:
+     a one-row grid going from 1fr to 0fr is the only honest way to animate height. */
+  .fold {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition:
+      grid-template-rows 0.5s var(--ease-out),
+      opacity 0.35s ease,
+      visibility 0s;
+  }
+
+  .fold > * {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .fold--inline {
+    display: inline;
+    transition: opacity 0.35s ease;
+  }
+
+  .cv:has([name='cv-depth'][value='1']:checked) .fold:is([data-depth='2'], [data-depth='3']),
+  .cv:has([name='cv-depth'][value='2']:checked) .fold[data-depth='3'] {
+    grid-template-rows: 0fr;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      grid-template-rows 0.5s var(--ease-out),
+      opacity 0.25s ease,
+      visibility 0s 0.5s;
+  }
+
+  .cv:has([name='cv-depth'][value='1']:checked) .fold--inline:is([data-depth='2'], [data-depth='3']),
+  .cv:has([name='cv-depth'][value='2']:checked) .fold--inline[data-depth='3'] {
+    display: none;
+  }
+
+  /* ── lenses ─────────────────────────────
+     Nothing is removed. What isn't about the chosen subject steps back. */
+  .cv:has([name='cv-lens'][value='ai']:checked) [data-tags]:not([data-tags~='ai']),
+  .cv:has([name='cv-lens'][value='systems']:checked) [data-tags]:not([data-tags~='systems']),
+  .cv:has([name='cv-lens'][value='web']:checked) [data-tags]:not([data-tags~='web']),
+  .cv:has([name='cv-lens'][value='design']:checked) [data-tags]:not([data-tags~='design']) {
+    opacity: 0.22;
+  }
+
+  .cv:has([name='cv-lens']:not([value='all']):checked) .entry .entry__title {
+    transition: background-size 0.4s var(--ease-out);
+  }
+
+  /* the entries in focus get a highlighter across the title */
+  .cv:has([name='cv-lens'][value='ai']:checked) .entry[data-tags~='ai'] .entry__title,
+  .cv:has([name='cv-lens'][value='systems']:checked) .entry[data-tags~='systems'] .entry__title,
+  .cv:has([name='cv-lens'][value='web']:checked) .entry[data-tags~='web'] .entry__title,
+  .cv:has([name='cv-lens'][value='design']:checked) .entry[data-tags~='design'] .entry__title,
+  .cv:has([name='cv-lens'][value='ai']:checked) .fold[data-tags~='ai'] dt,
+  .cv:has([name='cv-lens'][value='systems']:checked) .fold[data-tags~='systems'] dt,
+  .cv:has([name='cv-lens'][value='web']:checked) .fold[data-tags~='web'] dt,
+  .cv:has([name='cv-lens'][value='design']:checked) .fold[data-tags~='design'] dt {
+    background: linear-gradient(var(--acid), var(--acid)) 0 78% / 100% 0.62em no-repeat;
+  }
+
+  @media (max-width: 899px) {
+    .cv__grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .cv__rail {
+      position: static;
+    }
+
+    .part,
+    .part__fold {
+      grid-template-columns: minmax(0, 1fr);
+      row-gap: 6px;
+    }
+
+    .part__fold > * {
+      padding: 0;
+    }
+
+    .part__fold {
+      padding: clamp(14px, 1.7vw, 22px) 0;
+    }
+
+    .skills__row {
+      grid-template-columns: minmax(0, 1fr);
+      padding: 4px 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fold {
+      transition: none;
+    }
+  }
+</style>

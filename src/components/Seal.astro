@@ -1,0 +1,18 @@
+---
+// The marigold, as a mark. The only literal flower on the site.
+import Rosette from './Rosette.astro';
+
+interface Props {
+  class?: string;
+}
+const { class: className } = Astro.props;
+---
+
+<Rosette
+  class={className}
+  rings={[
+    { n: 12, at: 62, r: 19, fill: 'var(--marigold)', rate: 1 },
+    { n: 8, at: 34, r: 15, fill: '#ff7a00', rate: -1.6 },
+  ]}
+  core={{ r: 13, fill: 'var(--signal)' }}
+/>

@@ -1,172 +1,515 @@
 ---
-import Shapes from './Shapes.astro';
+// Milestones, kept the way you'd keep them in a drawer: index cards behind tabs.
+// Pick a tab and that card is pulled out and laid on top. On a phone the cards sit in
+// a row you can push sideways; with no JS they are simply a list.
+import Arrow from './Arrow.astro';
 import Badge from './Badge.astro';
-import SectionHead from './SectionHead.astro';
+import PosterHead from './PosterHead.astro';
 import { achievements } from '../data/achievements';
+import { chapter } from '../data/chapters';
 
-const stubColor = (labels: string[]) =>
-  labels.includes('Recognition')
-    ? 'var(--tomato)'
-    : labels.includes('Ongoing')
-      ? 'var(--mint)'
-      : labels.includes('Workshop')
-        ? 'var(--lilac)'
-        : 'var(--lemon)';
-const tilts = [-1.2, 0.8, -0.6, 1, -0.9];
+const c = chapter('milestones');
+const total = String(achievements.length).padStart(2, '0');
+const no = (i: number) => String(i + 1).padStart(2, '0');
+
+// what the stamp says: the most telling of the card's labels
+const stampOf = (labels: string[]) =>
+  labels.includes('Recognition') ? 'recognition' : labels.includes('Ongoing') ? 'ongoing' : labels.includes('Workshop') ? 'workshop' : 'competed';
 ---
 
-<section id="milestones" class="section" aria-labelledby="milestones-title">
-  <Shapes variant="milestones" />
-  <div class="section__inner">
-    <SectionHead eyebrow="milestones.log · achievements & recognition" title="milestones" id="milestones-title" fill="mint" />
+<section id="milestones" class="files poster s-magenta" {...c.attrs} aria-labelledby="milestones-title">
+  <div class="wrap">
+    <PosterHead id="milestones" note={`${achievements.length} cards on file`} />
 
-    <ol class="tickets">
-      {
-        achievements.map((a, i) => (
-          <li class="ticket" style={`--stub:${stubColor(a.labels)};--r:${tilts[i % tilts.length]}deg`}>
-            <div class="ticket__stub" aria-hidden="true">
-              <span>#{String(i + 1).padStart(2, '0')}</span>
-            </div>
-            <div class="ticket__main">
-              {(a.where || a.year) && <p class="ticket__where">{[a.where, a.year].filter(Boolean).join(' · ')}</p>}
-              <h3 class="ticket__event">{a.event}</h3>
-              <ul class="ticket__highlights">
-                {a.highlights.map((h) => (
-                  <li>{h}</li>
-                ))}
-              </ul>
-              {a.project.slug && (
-                <p class="ticket__project">
-                  project: <a href={`/projects/${a.project.slug}/`}>{a.project.name}</a>
-                </p>
-              )}
-              <div class="badges">
-                {a.labels.map((l) => (
-                  <Badge label={l} />
-                ))}
-              </div>
-            </div>
-          </li>
-        ))
-      }
-    </ol>
+    <div class="files__grid">
+      <header class="files__head">
+        <h2 id="milestones-title" class="files__title">Mile<wbr />stones</h2>
+        <p class="files__lede voice">Hackathons, recognition and workshops. Pull a card.</p>
+
+        <div class="files__turn">
+          <button class="tool files__step" type="button" data-file-prev aria-label="Previous card">
+            <Arrow dir="left" />
+          </button>
+          <p class="files__count" aria-hidden="true"><span data-file-now>01</span><i>/</i>{total}</p>
+          <button class="tool files__step" type="button" data-file-next aria-label="Next card">
+            <Arrow />
+          </button>
+        </div>
+      </header>
+
+      <div class="drawer" data-files>
+        <div class="tabs" role="tablist" aria-label="Milestones">
+          {
+            achievements.map((a, i) => (
+              <button
+                class="tab"
+                type="button"
+                role="tab"
+                id={`file-tab-${i}`}
+                aria-controls={`file-${i}`}
+                aria-selected={i === 0 ? 'true' : 'false'}
+                tabindex={i === 0 ? 0 : -1}
+                data-file-tab={i}
+              >
+                <span class="tab__no">{no(i)}</span>
+                <span class="tab__name">{a.tab}</span>
+              </button>
+            ))
+          }
+        </div>
+
+        <div class="stack">
+          {
+            achievements.map((a, i) => (
+              <article class="card" id={`file-${i}`} role="tabpanel" aria-labelledby={`file-tab-${i}`} data-file={i} style={`--d:${i}`}>
+                <header class="card__top">
+                  <span>
+                    file {no(i)} / {total}
+                  </span>
+                  <span>{[a.where, a.year].filter(Boolean).join(' · ')}</span>
+                </header>
+
+                <h3 class="card__event">{a.event}</h3>
+
+                <ul class="card__facts">
+                  {a.highlights.map((h) => (
+                    <li>{h}</li>
+                  ))}
+                </ul>
+
+                <footer class="card__foot">
+                  <div class="card__tags">
+                    {a.labels.map((l) => (
+                      <Badge label={l} />
+                    ))}
+                  </div>
+                  <p class="card__project">
+                    <span class="label">project</span>
+                    {a.project.slug ? (
+                      <a class="link" href={`/projects/${a.project.slug}/`}>
+                        {a.project.name} <Arrow dir="out" />
+                      </a>
+                    ) : (
+                      <span>{a.project.name}</span>
+                    )}
+                  </p>
+                </footer>
+
+                <span class="card__stamp" aria-hidden="true">
+                  {stampOf(a.labels)}
+                </span>
+                <span class="card__hole" aria-hidden="true" />
+              </article>
+            ))
+          }
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
+<script>
+  // The drawer. `order` is front-to-back; pulling a card moves it to the front.
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  const stacked = matchMedia('(min-width: 800px)');
+
+  document.querySelectorAll<HTMLElement>('[data-files]').forEach((drawer) => {
+    const section = drawer.closest('section')!;
+    const cards = [...drawer.querySelectorAll<HTMLElement>('[data-file]')];
+    const tabs = [...drawer.querySelectorAll<HTMLButtonElement>('[data-file-tab]')];
+    const now = section.querySelector<HTMLElement>('[data-file-now]');
+    let order = cards.map((_, i) => i);
+    let busy = false;
+
+    const apply = () => {
+      const front = order[0];
+      order.forEach((card, depth) => {
+        const el = cards[card];
+        el.style.setProperty('--d', String(depth));
+        // cards further back are still on show, but not for reading or tabbing through
+        el.toggleAttribute('inert', stacked.matches && depth > 0);
+        if (stacked.matches && depth > 0) el.setAttribute('aria-hidden', 'true');
+        else el.removeAttribute('aria-hidden');
+      });
+      tabs.forEach((tab, i) => {
+        tab.setAttribute('aria-selected', String(i === front));
+        tab.tabIndex = i === front ? 0 : -1;
+      });
+      if (now) now.textContent = String(front + 1).padStart(2, '0');
+    };
+
+    async function pull(i: number) {
+      if (busy || order[0] === i) return;
+      const card = cards[i];
+
+      if (!stacked.matches) {
+        // on a phone the cards are a row: go to it
+        order = [i, ...order.filter((n) => n !== i)];
+        apply();
+        card.scrollIntoView({ behavior: reduce.matches ? 'auto' : 'smooth', inline: 'center', block: 'nearest' });
+        return;
+      }
+
+      if (reduce.matches || !card.animate) {
+        order = [i, ...order.filter((n) => n !== i)];
+        apply();
+        return;
+      }
+
+      busy = true;
+      // out of the drawer to the right…
+      const away = { translate: '106% -3%', rotate: '5deg' };
+      const out = card.animate([away], { duration: 250, easing: 'cubic-bezier(0.5, 0, 0.85, 0.4)', fill: 'forwards' });
+      await out.finished.catch(() => undefined);
+      // …the pile closes up behind it…
+      order = [i, ...order.filter((n) => n !== i)];
+      apply();
+      // …and it is laid back down on top.
+      const back = card.animate([{ ...away, offset: 0 }], {
+        duration: 560,
+        easing: 'cubic-bezier(0.2, 0.9, 0.25, 1.08)',
+      });
+      out.cancel();
+      await back.finished.catch(() => undefined);
+      busy = false;
+    }
+
+    const step = (by: number) => pull((order[0] + by + cards.length) % cards.length);
+
+    tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => void pull(i));
+      tab.addEventListener('keydown', (e) => {
+        const move = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+        if (!move) return;
+        e.preventDefault();
+        const next = (i + move + tabs.length) % tabs.length;
+        tabs[next].focus();
+        void pull(next);
+      });
+    });
+    section.querySelector('[data-file-prev]')?.addEventListener('click', () => void step(-1));
+    section.querySelector('[data-file-next]')?.addEventListener('click', () => void step(1));
+
+    // a click on the pile itself brings the next card up
+    cards.forEach((card) =>
+      card.addEventListener('click', (e) => {
+        if (!stacked.matches || (e.target as Element).closest('a')) return;
+        if (order[0] !== Number(card.dataset.file)) void pull(Number(card.dataset.file));
+      }),
+    );
+
+    stacked.addEventListener('change', apply);
+    apply();
+  });
+</script>
+
 <style>
-  .tickets {
+  .files {
+    overflow: clip;
+  }
+
+  .files__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
-    gap: 26px;
-    margin: 56px 0 0;
-    padding: 0;
-    list-style: none;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.5fr);
+    align-items: start;
+    gap: clamp(28px, 5vw, 90px);
+    margin-top: clamp(32px, 5vw, 76px);
   }
 
-  .ticket {
-    position: relative;
-    display: grid;
-    grid-template-columns: 58px 1fr;
-    border: var(--line) solid var(--ink);
-    border-radius: 16px;
-    background: var(--cream);
-    box-shadow: 6px 7px 0 var(--shadow);
-    rotate: var(--r);
-  }
-
-  /* punched notches on the perforation */
-  .ticket::before,
-  .ticket::after {
-    content: '';
-    position: absolute;
-    left: 45px;
-    width: 22px;
-    height: 22px;
-    border: var(--line) solid var(--ink);
-    border-radius: 50%;
-    background: var(--paper);
-  }
-
-  .ticket::before {
-    top: -13px;
-    clip-path: inset(50% 0 0 0);
-  }
-
-  .ticket::after {
-    bottom: -13px;
-    clip-path: inset(0 0 50% 0);
-  }
-
-  .ticket__stub {
-    display: grid;
-    place-items: center;
-    border-right: 3px dashed var(--ink);
-    border-radius: 13px 0 0 13px;
-    background: var(--stub);
-    color: var(--on-accent);
-  }
-
-  .ticket__stub span {
-    font: 400 20px/1 var(--font-display);
-    writing-mode: vertical-rl;
-    rotate: 180deg;
-  }
-
-  .ticket__main {
-    padding: 18px 20px 20px;
-  }
-
-  .ticket__where {
-    margin: 0 0 6px;
-    color: var(--ink-soft);
-    font: 400 10px/1.3 var(--font-pixel);
-    letter-spacing: 0.05em;
+  .files__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(60px, 9.6vw, 180px);
+    font-stretch: 62%;
+    font-weight: 900;
+    line-height: 0.78;
+    letter-spacing: -0.015em;
     text-transform: uppercase;
   }
 
-  .ticket__event {
-    margin: 0;
-    font: 400 24px/1.05 var(--font-display);
+  .files__lede {
+    max-width: 16ch;
+    margin: clamp(16px, 2.2vw, 30px) 0 0;
+    font-size: clamp(23px, 2.2vw, 36px);
+    line-height: 1.04;
   }
 
-  .ticket__highlights {
-    margin: 12px 0 0;
+  .files__turn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: clamp(22px, 3.4vw, 50px);
+  }
+
+  .files__step {
+    width: 46px;
+    height: 46px;
+    border: 1.5px solid var(--fg);
+    font-size: 20px;
+  }
+
+  .files__count {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(38px, 4.4vw, 70px);
+    font-stretch: 62%;
+    font-weight: 900;
+    line-height: 0.8;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .files__count i {
+    margin: 0 0.12em;
+    font-style: normal;
+    font-weight: 300;
+  }
+
+  /* ── tabs ───────────────────────────── */
+  .tabs {
+    position: relative;
+    z-index: 20;
+    display: flex;
+    gap: 3px;
+    padding-left: 14px;
+  }
+
+  .tab {
+    display: flex;
+    flex: 0 1 auto;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+    padding: 11px 14px 9px;
+    border: 1px solid var(--c-ink);
+    border-bottom: 0;
+    border-radius: 9px 9px 0 0;
+    background: rgb(12 13 33 / 0.12);
+    color: var(--c-ink);
+    cursor: pointer;
+    translate: 0 4px;
+    transition:
+      background-color 0.2s ease,
+      translate 0.3s var(--ease-out);
+  }
+
+  .tab:hover {
+    background: rgb(255 255 255 / 0.45);
+    translate: 0 1px;
+  }
+
+  .tab[aria-selected='true'] {
+    background: var(--sheet);
+    translate: 0 1px;
+  }
+
+  .tab__no {
+    font: 500 10px/1 var(--font-mono);
+    letter-spacing: 0.08em;
+  }
+
+  .tab__name {
+    overflow: hidden;
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-stretch: 72%;
+    font-weight: 800;
+    line-height: 1;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  /* ── the pile ───────────────────────── */
+  .stack {
+    display: grid;
+    /* room for the cards behind to show their edges */
+    padding: 0 calc((var(--n, 5) - 1) * 14px) calc((var(--n, 5) - 1) * 13px) 0;
+  }
+
+  .card {
+    --d: 0;
+    position: relative;
+    z-index: calc(10 - var(--d));
+    grid-area: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    min-height: clamp(360px, 34vw, 470px);
+    padding: clamp(18px, 2.2vw, 30px) clamp(18px, 2.4vw, 34px) clamp(18px, 2vw, 26px);
+    border: 1px solid var(--c-ink);
+    background:
+      linear-gradient(var(--sheet-line), var(--sheet-line)) 0 100% / 100% 1px no-repeat,
+      repeating-linear-gradient(transparent 0 31px, rgb(34 56 255 / 0.11) 31px 32px) 0 74px / 100% calc(100% - 74px) no-repeat,
+      var(--sheet);
+    color: var(--on-sheet);
+    translate: calc(var(--d) * 14px) calc(var(--d) * 13px);
+    transition: translate 0.5s var(--ease-out);
+  }
+
+  .card__top {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--magenta);
+    font: 500 10px/1 var(--font-mono);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .card__event {
+    margin: clamp(16px, 2vw, 26px) 0 0;
+    color: var(--on-sheet-2);
+    font: 500 12px/1.3 var(--font-mono);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* what actually happened, at the size it deserves */
+  .card__facts {
+    flex: 1;
+    max-width: 16ch;
+    margin: 10px 0 0;
     padding: 0;
     list-style: none;
   }
 
-  .ticket__highlights li {
-    position: relative;
-    padding-left: 22px;
-    font-size: 17px;
-    font-weight: 700;
+  .card__facts li {
+    font-family: var(--font-display);
+    font-size: clamp(34px, 4.5vw, 76px);
+    font-stretch: 64%;
+    font-weight: 900;
+    line-height: 0.86;
+    letter-spacing: -0.012em;
+    text-transform: uppercase;
   }
 
-  .ticket__highlights li + li {
-    margin-top: 4px;
+  .card__facts li + li {
+    margin-top: 0.34em;
+    color: var(--on-sheet-2);
+    font-size: clamp(20px, 2.1vw, 34px);
+    font-weight: 800;
+    line-height: 0.95;
   }
 
-  .ticket__highlights li::before {
-    content: '✦';
-    position: absolute;
-    left: 0;
-    color: var(--tomato);
+  .card__foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 14px 20px;
+    margin-top: 22px;
+    padding-left: 44px;
   }
 
-  .ticket__project {
-    margin: 12px 0 0;
-    font: 400 21px/1.1 var(--font-hand);
-  }
-
-  .ticket__project a {
-    text-decoration-thickness: 2px;
-    text-underline-offset: 3px;
-  }
-
-  .badges {
+  .card__tags {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    margin-top: 14px;
+  }
+
+  .card__project {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin: 0;
+    font-size: 17px;
+    font-stretch: 88%;
+    font-weight: 700;
+  }
+
+  .card__project .label {
+    color: var(--on-sheet-2);
+  }
+
+  .card__stamp {
+    position: absolute;
+    top: clamp(62px, 6vw, 92px);
+    right: clamp(16px, 2.4vw, 36px);
+    padding: 8px 12px 6px;
+    border: 2px solid var(--magenta);
+    border-radius: 6px;
+    color: var(--magenta);
+    font: 500 12px/1 var(--font-mono);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    rotate: 8deg;
+  }
+
+  .card__hole {
+    position: absolute;
+    bottom: clamp(18px, 2vw, 26px);
+    left: clamp(18px, 2.4vw, 34px);
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--c-ink);
+    border-radius: 50%;
+    background: var(--magenta);
+  }
+
+  /* tags on the card sit on white, not on the poster */
+  .card :global(.tag--loud) {
+    border-color: var(--c-ink);
+    background: var(--c-ink);
+    color: #ffffff;
+  }
+
+  /* ── without JS: no drawer, just the cards ── */
+  :global(html:not(.js)) .tabs,
+  :global(html:not(.js)) .files__turn {
+    display: none;
+  }
+
+  :global(html:not(.js)) .stack {
+    gap: 16px;
+    padding: 0;
+  }
+
+  :global(html:not(.js)) .card {
+    grid-area: auto;
+    translate: none;
+  }
+
+  /* ── phones: a row to push sideways ─── */
+  @media (max-width: 799px) {
+    .files__grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .tabs {
+      display: none;
+    }
+
+    .stack {
+      display: flex;
+      gap: 12px;
+      margin: 0 calc(var(--gutter) * -1);
+      padding: 4px var(--gutter) 16px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-padding: 0 var(--gutter);
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .card {
+      flex: 0 0 min(84vw, 420px);
+      min-height: 380px;
+      scroll-snap-align: start;
+      translate: none;
+    }
+
+    :global(html:not(.js)) .stack {
+      flex-direction: column;
+      overflow: visible;
+    }
+
+    :global(html:not(.js)) .card {
+      flex: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card {
+      transition: none;
+    }
   }
 </style>

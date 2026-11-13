@@ -1,68 +1,111 @@
 ---
+// The cover. A masthead the width of the page, a portrait standing in front of it, and
+// one large flower turning behind — laid out like the front of a magazine.
+//
+// The collage and its three scroll acts live in Collage.astro and scripts/hero.ts and are
+// untouched; this file only decides where everything sits around them.
+import Arrow from './Arrow.astro';
 import Collage from './Collage.astro';
-import Doodle from './Doodle.astro';
+import Rosette from './Rosette.astro';
+import { chapter } from '../data/chapters';
 import { site } from '../data/site';
 
+const c = chapter('top');
+const letters = [...site.name.toUpperCase()];
 const [first, ...rest] = site.headline.split(', ');
-const wobble = [-4, 3, -2, 4, -3, 2];
+const now = site.currently.replace(/^currently:\s*/i, '');
 ---
 
-<section class="hero" data-hero aria-labelledby="hero-title">
-  <div class="stage" data-stage data-act="1">
-    <div class="copy">
-      <div class="copy__top">
-        <p class="hello" aria-hidden="true">{site.hello}</p>
-        <h1 id="hero-title" class="name">
-          <span class="name__word" aria-hidden="true">
-            {[...site.name.toUpperCase()].map((ch, i) => (
-              <span class="name__letter" style={`--i:${i};--r:${wobble[i % wobble.length]}deg`}>{ch}</span>
-            ))}
-          </span>
-          <span class="sr-only">{site.name} ({site.fullName})</span>
-        </h1>
-      </div>
+<section id="top" class="hero s-paper" data-hero {...c.attrs} aria-labelledby="hero-title">
+  <div class="stage" data-stage data-act="1" data-kinetic>
+    <div class="lines" aria-hidden="true"></div>
 
-      <div class="copy__bottom">
-        <p class="aka"><span class="aka__tag">{site.tag}</span> {site.fullName}<span class="aka__role"><span class="aka__dot"> · </span>{site.program}</span></p>
-        <p class="headline">{first},<br /><mark>{rest.join(', ')}</mark></p>
-        <p class="intro">{site.intro}</p>
-        <div class="cta">
-          <span class="cta__main">
-            <a class="key key--tomato" href="#projects">see my work <span aria-hidden="true">↓</span></a>
-            <span class="sticker s-cursor"><Doodle kind="cursor" color="var(--cream)" /></span>
-          </span>
-          <a class="key" href="#contact">say hi</a>
-        </div>
-      </div>
+    <div class="mast-box">
+      <h1 id="hero-title" class="mast">
+        <span class="mast__word" aria-hidden="true">
+          {letters.map((ch, i) => <span class="mast__l" data-k={i} style={`--i:${i}`}>{ch}</span>)}
+        </span>
+        <span class="sr-only">{site.name} ({site.fullName})</span>
+      </h1>
+      <p class="hello voice" aria-hidden="true">{site.hello}</p>
+    </div>
+
+    <div class="bloom" aria-hidden="true">
+      <Rosette
+        rings={[
+          { n: 16, at: 74, r: 15.5, fill: 'var(--cobalt)', rate: 1 },
+          { n: 11, at: 47, r: 15, fill: 'color-mix(in srgb, var(--cobalt) 80%, white)', rate: -1.5 },
+          { n: 7, at: 23, r: 12.5, fill: 'color-mix(in srgb, var(--cobalt) 86%, black)', rate: 2.4 },
+        ]}
+        core={{ r: 8.5, fill: 'var(--acid)' }}
+      />
     </div>
 
     <div class="art">
-      <p class="captions" aria-hidden="true">
-        <span data-caption="1">me, drawn</span>
-        <span data-caption="2">me, for real</span>
-        <span data-caption="3">(usually both at once)</span>
-        <span class="captions__arrow"><Doodle kind="arrow" color="var(--ink)" /></span>
-      </p>
-
       <Collage />
+
+      <p class="fig" aria-hidden="true">
+        <span class="fig__no">fig. {c.index}</span>
+        <span class="fig__caps voice">
+          <span data-caption="1">me, drawn</span>
+          <span data-caption="2">me, for real</span>
+          <span data-caption="3">usually both at once</span>
+        </span>
+      </p>
 
       <div class="acts" role="group" aria-label="Collage view">
         <button class="key key--sm" type="button" data-act-to="0" aria-pressed="true">drawn</button>
         <button class="key key--sm" type="button" data-act-to="0.7" aria-pressed="false">real</button>
         <button class="key key--sm" type="button" data-act-to="1" aria-pressed="false">both</button>
       </div>
+    </div>
 
-      <span class="sticker s-star" style="--d:1.4"><Doodle kind="star" color="var(--yellow)" seed={7} /></span>
-      <span class="sticker s-spark-pink" style="--d:-1"><Doodle kind="sparkle" color="var(--pink)" /></span>
-      <span class="sticker s-spark-cream" style="--d:0.8"><Doodle kind="sparkle" color="var(--cream)" /></span>
-      <span class="sticker s-squiggle" style="--d:-0.7"><Doodle kind="squiggle" color="var(--cyan)" /></span>
-      <p class="note" style="--d:0.5">
-        <span class="note__tape"><Doodle kind="tape" color="var(--purple)" /></span>
-        {site.currently}
+    <!-- the same masthead again, as an outline, so the name still reads across the portrait -->
+    <div class="mast-box mast-box--ghost" aria-hidden="true">
+      <p class="mast">
+        <span class="mast__word">
+          {letters.map((ch, i) => <span class="mast__l" data-k={i} style={`--i:${i}`}>{ch}</span>)}
+        </span>
       </p>
     </div>
 
-    <p class="scroll-hint" aria-hidden="true"><span>scroll</span><span class="scroll-hint__key">↓</span></p>
+    <div class="copy">
+      <p class="headline">
+        <span class="headline__a">{first},</span>
+        <span class="headline__b voice">{rest.join(', ')}</span>
+      </p>
+      <p class="intro">{site.intro}</p>
+
+      <dl class="facts">
+        <div>
+          <dt>who</dt>
+          <dd>{site.fullName}</dd>
+        </div>
+        <div>
+          <dt>what</dt>
+          <dd>{site.tag} · {site.program}</dd>
+        </div>
+        <div>
+          <dt>now</dt>
+          <dd><i class="facts__dot" aria-hidden="true"></i>{now}</dd>
+        </div>
+      </dl>
+
+      <div class="cta">
+        <a class="key key--solid" href="#projects">see the work <Arrow dir="down" /></a>
+        <a class="key" href="#contact">say hi</a>
+      </div>
+    </div>
+
+    <div class="foot" aria-hidden="true">
+      <span class="foot__scroll">scroll<i></i></span>
+      <span class="foot__acts">
+        <span data-act-name="1">act 1/3 — look closer</span>
+        <span data-act-name="2">act 2/3 — open up</span>
+        <span data-act-name="3">act 3/3 — swap</span>
+      </span>
+      <span class="foot__bar"></span>
+    </div>
   </div>
 </section>
 
@@ -74,237 +117,162 @@ const wobble = [-4, 3, -2, 4, -3, 2];
 <style>
   .hero {
     position: relative;
-    height: 280svh;
+    height: 300svh;
+    background: var(--bg);
+    color: var(--fg);
   }
 
   .stage {
     --p: 0;
     --mx: 0;
     --my: 0;
+    /* where the portrait stands: the flower and the caption are placed from the same numbers */
+    --art-w: min(30vw, calc((100svh - var(--bar) - 13svh - 60px) * 0.8), 500px);
+    --art-right: calc(var(--gutter) + 6vw);
+    --art-top: calc(var(--bar) + 5svh);
+    --pad-top: calc(var(--bar) + clamp(10px, 2.4svh, 28px));
     position: sticky;
     top: 0;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: center;
-    column-gap: 2vw;
+    grid-template-rows: auto 1fr auto;
     height: 100svh;
-    padding: 92px var(--gutter) 44px;
+    padding: var(--pad-top) var(--gutter) clamp(14px, 2.4svh, 26px);
     overflow: clip;
   }
 
-  /* ── Copy ───────────────────────────── */
-  .copy {
+  /* the poster grid: big square modules, hairline */
+  .lines {
+    --cell: calc((100% - 2 * var(--gutter)) / 6);
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(90deg, var(--line) 1px, transparent 1px),
+      linear-gradient(var(--line) 1px, transparent 1px);
+    background-position: var(--gutter) var(--bar);
+    background-size: var(--cell) var(--cell);
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  /* ── masthead ───────────────────────── */
+  .mast-box {
     position: relative;
-    z-index: 5;
-    padding-left: clamp(0px, 3vw, 56px);
+    z-index: 1;
+    container-type: inline-size;
+  }
+
+  .mast-box--ghost {
+    position: absolute;
+    top: var(--pad-top);
+    right: var(--gutter);
+    left: var(--gutter);
+    z-index: 4;
+    pointer-events: none;
+  }
+
+  .mast {
+    margin: 0;
+    font-family: var(--font-display);
+    /* the word is 4.423em wide at full width and weight, so this fills the measure exactly */
+    font-size: calc(100cqw / 4.44);
+    font-weight: 900;
+    line-height: 0.76;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .mast__word {
+    display: block;
+  }
+
+  .mast__l {
+    display: inline-block;
+    font-variation-settings: 'wdth' var(--w, 100);
+    transition: font-variation-settings 0.45s var(--ease-out);
+  }
+
+  .mast-box--ghost .mast__l {
+    color: transparent;
+    -webkit-text-stroke: 1.5px var(--bg);
   }
 
   .hello {
-    margin: 0 0 -0.3em 0.2em;
-    color: var(--ink);
-    font: 400 clamp(30px, 3.2vw, 48px) / 1 var(--font-hand);
+    position: absolute;
+    top: 0.03em;
+    left: 0.16em;
+    margin: 0;
+    color: var(--accent);
+    font-size: clamp(26px, 3.3vw, 56px);
+    line-height: 1;
     rotate: -7deg;
     transform-origin: left bottom;
-    width: max-content;
   }
 
-  .name {
-    margin: 0;
-    font: 400 clamp(84px, 10.6vw, 190px) / 0.86 var(--font-display);
-    letter-spacing: -0.015em;
-    white-space: nowrap;
-  }
-
-  .name__letter {
-    display: inline-block;
-    color: var(--lemon);
-    -webkit-text-stroke: 0.07em var(--ink);
-    paint-order: stroke fill;
-    text-shadow:
-      0.035em 0.045em 0 var(--shadow),
-      0.065em 0.08em 0 var(--tomato);
-    rotate: var(--r);
-    transition: translate 0.5s var(--spring);
-  }
-
-  @media (hover: hover) {
-    .name__letter:hover {
-      translate: 0 -0.12em;
-    }
-  }
-
-  .aka {
-    margin: 1.35em 0 0;
-    color: var(--text-soft);
-    font-size: clamp(14px, 1.1vw, 16px);
-    font-weight: 500;
-  }
-
-  .aka__tag {
-    padding: 3px 6px 2px;
-    border: 2px solid var(--ink);
-    border-radius: 6px;
-    background: var(--cream);
-    color: var(--ink);
-    font: 400 10px/1 var(--font-pixel);
-    text-transform: uppercase;
-    vertical-align: 2px;
-  }
-
-  .headline {
-    margin: 0.35em 0 0;
-    font-size: clamp(28px, 2.9vw, 46px);
-    font-weight: 780;
-    line-height: 1.02;
-    letter-spacing: -0.035em;
-  }
-
-  .headline mark {
-    padding: 0 0.08em;
-    background: linear-gradient(transparent 55%, var(--lemon) 55%, var(--lemon) 92%, transparent 92%);
-    color: inherit;
-  }
-
-  .intro {
-    max-width: 32ch;
-    margin: 0.7em 0 0;
-    color: var(--text-soft);
-    font-size: clamp(16px, 1.25vw, 19px);
-    line-height: 1.45;
-  }
-
-  .cta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 14px;
-    margin-top: 26px;
-  }
-
-  .cta__main {
-    position: relative;
-  }
-
-  /* ── Art ────────────────────────────── */
-  .art {
-    position: relative;
+  /* ── the flower ─────────────────────── */
+  .bloom {
+    --d: min(60svh, 44vw, calc(var(--art-w) * 1.28));
+    --spin: calc(var(--p) * 210deg + var(--mx) * 16deg);
+    position: absolute;
+    top: calc(var(--art-top) + var(--art-w) * 1.25 * 0.8 - var(--d) / 2);
+    right: calc(var(--art-right) + var(--art-w) * 0.8 - var(--d) / 2);
     z-index: 2;
-    justify-self: center;
-    width: min(100%, calc((100svh - 190px) * 0.74), 540px);
-  }
-
-  .sticker {
-    position: absolute;
-    display: block;
+    width: var(--d);
+    mix-blend-mode: multiply;
+    scale: calc(1 + var(--p) * 0.3);
+    translate: calc(var(--mx) * -10px) calc(var(--my) * -8px);
     pointer-events: none;
-    translate: calc(var(--mx) * var(--d, 1) * -12px) calc(var(--my) * var(--d, 1) * -9px + var(--p) * var(--d, 1) * -34px);
   }
 
-  .sticker :global(svg) {
-    width: 100%;
-    height: auto;
-    overflow: visible;
+  :global([data-theme='night']) .bloom {
+    mix-blend-mode: normal;
   }
 
-  .s-star {
-    top: -7%;
-    left: -13%;
+  /* ── the portrait ───────────────────── */
+  .art {
+    position: absolute;
+    top: var(--art-top);
+    right: var(--art-right);
     z-index: 3;
-    width: clamp(72px, 8.5vw, 132px);
-    rotate: 14deg;
+    width: var(--art-w);
   }
 
-  .s-spark-pink {
-    top: 9%;
-    right: -10%;
-    width: clamp(36px, 3.6vw, 58px);
-  }
-
-  .s-spark-cream {
-    top: 46%;
-    left: -9%;
-    width: clamp(24px, 2.4vw, 38px);
-  }
-
-  .s-squiggle {
-    right: -12%;
-    bottom: 10%;
-    width: clamp(70px, 8vw, 124px);
-    rotate: -12deg;
-  }
-
-  .s-cursor {
-    right: -18px;
-    bottom: -30px;
-    width: 28px;
-    animation: nudge 2.8s var(--ease-out) infinite;
-  }
-
-  @keyframes nudge {
-    0%,
-    70%,
-    100% {
-      transform: translate(0, 0);
-    }
-    82% {
-      transform: translate(-6px, -7px);
-    }
-  }
-
-  .note {
+  .fig {
     position: absolute;
-    bottom: -7%;
-    left: -25%;
-    z-index: 4;
-    width: max-content;
-    max-width: 180px;
+    top: 47%;
+    left: calc(100% + 18px);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
     margin: 0;
-    padding: 18px 14px 12px;
-    border: 2px solid var(--ink);
-    border-radius: 4px 4px 14px 4px;
-    background: #fff1a8;
-    color: var(--on-accent);
-    box-shadow: 4px 5px 0 var(--shadow);
-    font: 400 21px/1.05 var(--font-hand);
-    rotate: -6deg;
-    translate: calc(var(--mx) * var(--d) * -12px) calc(var(--my) * var(--d) * -9px + var(--p) * var(--d) * -34px);
-  }
-
-  .note__tape {
-    position: absolute;
-    top: -12px;
-    left: 50%;
-    width: 70px;
-    translate: -50% 0;
-    rotate: 4deg;
-  }
-
-  .note__tape :global(svg) {
-    width: 100%;
-    height: 22px;
-  }
-
-  /* Captions narrate the three acts. */
-  .captions {
-    position: absolute;
-    top: -58px;
-    right: 4%;
-    z-index: 3;
-    height: 44px;
-    margin: 0;
-    font: 400 clamp(22px, 2vw, 30px) / 1 var(--font-hand);
-  }
-
-  .captions span[data-caption] {
-    position: absolute;
-    right: 0;
-    bottom: 0;
     white-space: nowrap;
+    writing-mode: vertical-rl;
+  }
+
+  .fig__no {
+    font: 500 11px/1 var(--font-mono);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+
+  .fig__caps {
+    position: relative;
+    font-size: clamp(20px, 1.7vw, 27px);
+    line-height: 1;
+  }
+
+  .fig__caps span {
+    position: absolute;
+    top: 0;
+    left: 0;
     opacity: 0;
     translate: 0 10px;
-    rotate: -3deg;
     transition:
-      opacity 0.35s ease,
-      translate 0.45s var(--spring);
+      opacity 0.3s ease,
+      translate 0.5s var(--ease-out);
+  }
+
+  .fig__caps span:first-child {
+    position: relative;
   }
 
   .stage[data-act='1'] [data-caption='1'],
@@ -312,14 +280,6 @@ const wobble = [-4, 3, -2, 4, -3, 2];
   .stage[data-act='3'] [data-caption='3'] {
     opacity: 1;
     translate: 0 0;
-  }
-
-  .captions__arrow {
-    position: absolute;
-    top: 30px;
-    right: -44px;
-    width: 46px;
-    rotate: 22deg;
   }
 
   /* With reduced motion the collage doesn't play on scroll; these flip between its three states instead. */
@@ -331,285 +291,303 @@ const wobble = [-4, 3, -2, 4, -3, 2];
     .acts {
       display: flex;
       justify-content: center;
-      gap: 10px;
-      margin-top: 26px;
+      gap: 8px;
+      margin-top: 18px;
     }
 
     .acts .key[aria-pressed='true'] {
-      --key-face: var(--lemon);
+      --key-bg: var(--fg);
+      --key-fg: var(--bg);
     }
   }
 
-  /* ── Scroll hint ────────────────────── */
-  .scroll-hint {
-    position: absolute;
-    bottom: 18px;
-    left: calc(var(--gutter) + clamp(0px, 3vw, 56px));
+  /* ── copy ───────────────────────────── */
+  .copy {
+    position: relative;
+    z-index: 5;
+    align-self: end;
+    width: min(44%, 620px);
+    padding-bottom: clamp(8px, 2svh, 26px);
+  }
+
+  .headline {
+    margin: 0;
+    font-size: clamp(38px, 5.1vw, 86px);
+    line-height: 0.9;
+  }
+
+  .headline__a {
+    display: block;
+    font-family: var(--font-display);
+    font-stretch: 66%;
+    font-weight: 800;
+    letter-spacing: -0.012em;
+    text-transform: uppercase;
+  }
+
+  .headline__b {
+    display: block;
+    margin-top: 0.02em;
+    font-size: 1.06em;
+    letter-spacing: -0.01em;
+  }
+
+  .intro {
+    max-width: 34ch;
+    margin: clamp(12px, 2svh, 22px) 0 0;
+    color: var(--fg-2);
+    font-size: clamp(16px, 1.25vw, 19px);
+    line-height: 1.45;
+  }
+
+  .facts {
+    display: grid;
+    gap: 5px;
+    margin: clamp(12px, 2.2svh, 24px) 0 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+    font: 500 11px/1.4 var(--font-mono);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+  }
+
+  .facts div {
+    display: grid;
+    grid-template-columns: 6ch 1fr;
+  }
+
+  .facts dt {
+    color: var(--fg-2);
+  }
+
+  .facts dd {
+    margin: 0;
+  }
+
+  .facts__dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: var(--signal);
+    animation: blink 1.6s steps(2, jump-none) infinite;
+  }
+
+  @keyframes blink {
+    to {
+      opacity: 0.15;
+    }
+  }
+
+  .cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: clamp(14px, 2.6svh, 28px);
+  }
+
+  /* ── foot of the cover ──────────────── */
+  .foot {
+    position: relative;
+    z-index: 5;
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin: 0;
-    font: 400 10px/1 var(--font-pixel);
-    letter-spacing: 0.08em;
+    justify-content: space-between;
+    gap: 16px;
+    padding-top: 10px;
+    color: var(--fg-2);
+    font: 500 10px/1 var(--font-mono);
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    opacity: calc(1 - var(--p) * 30);
   }
 
-  .scroll-hint__key {
-    display: grid;
-    place-items: center;
-    width: 24px;
-    height: 24px;
-    border: 2px solid var(--ink);
-    border-radius: 6px;
-    background: var(--cream);
-    box-shadow: 0 3px 0 var(--shadow);
-    font: 700 13px/1 var(--font-body);
-    animation: tap 1.6s var(--ease-out) infinite;
+  .foot__scroll {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    opacity: calc(1 - var(--p) * 12);
   }
 
-  @keyframes tap {
-    0%,
+  .foot__scroll i {
+    width: 44px;
+    height: 1px;
+    background: currentColor;
+    transform-origin: left;
+    animation: reach 1.8s var(--ease-in-out) infinite;
+  }
+
+  @keyframes reach {
+    0% {
+      scale: 0 1;
+    }
     60%,
     100% {
-      translate: 0 0;
-      box-shadow: 0 3px 0 var(--shadow);
+      scale: 1 1;
     }
-    75% {
-      translate: 0 3px;
-      box-shadow: 0 0 0 var(--shadow);
+    100% {
+      opacity: 0;
     }
   }
 
-  /* ── Entrance (JS only) ─────────────── */
-  :global(.js) .stage:not(.is-ready) .name__letter,
-  :global(.js) .stage:not(.is-ready) .sticker,
-  :global(.js) .stage:not(.is-ready) .note,
-  :global(.js) .stage:not(.is-ready) .hello {
+  .foot__acts {
+    position: relative;
+    display: grid;
+    justify-items: end;
+  }
+
+  .foot__acts span {
+    grid-area: 1 / 1;
     opacity: 0;
-    scale: 0.4;
+    transition: opacity 0.3s ease;
   }
 
-  .stage.is-ready .name__letter {
-    animation: stamp 0.7s var(--spring) backwards;
-    animation-delay: calc(var(--i) * 90ms);
+  .stage[data-act='1'] [data-act-name='1'],
+  .stage[data-act='2'] [data-act-name='2'],
+  .stage[data-act='3'] [data-act-name='3'] {
+    opacity: 1;
   }
 
-  .stage.is-ready .sticker,
-  .stage.is-ready .note,
-  .stage.is-ready .hello {
-    animation: pop 0.6s var(--spring) both;
-    animation-delay: 0.45s;
+  /* how far through the three acts you are */
+  .foot__bar {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 1px;
+    background: var(--line);
   }
 
-  .stage.is-ready .s-cursor {
-    animation:
-      pop 0.6s var(--spring) 0.8s both,
-      nudge 2.8s var(--ease-out) 1.6s infinite;
+  .foot__bar::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--fg);
+    transform-origin: left;
+    scale: var(--p) 1;
   }
 
-  @keyframes stamp {
-    from {
+  /* ── entrance (JS only) ─────────────── */
+  @media (prefers-reduced-motion: no-preference) {
+    :global(.js) .stage:not(.is-ready) .mast__l,
+    :global(.js) .stage:not(.is-ready) .hello,
+    :global(.js) .stage:not(.is-ready) .bloom,
+    :global(.js) .stage:not(.is-ready) .copy > * {
       opacity: 0;
-      scale: 1.6;
-      translate: 0 -30px;
+    }
+
+    .stage.is-ready .mast__l {
+      animation: rise 0.95s var(--ease-out) backwards;
+      animation-delay: calc(var(--i) * 65ms);
+    }
+
+    .stage.is-ready .hello {
+      animation: sign 0.7s var(--ease-out) 0.55s backwards;
+    }
+
+    .stage.is-ready .bloom {
+      animation: bloom 1.3s var(--spring) 0.25s backwards;
+    }
+
+    .stage.is-ready .copy > * {
+      animation: lift 0.8s var(--ease-out) backwards;
+    }
+
+    .stage.is-ready .copy > :nth-child(1) {
+      animation-delay: 0.35s;
+    }
+    .stage.is-ready .copy > :nth-child(2) {
+      animation-delay: 0.43s;
+    }
+    .stage.is-ready .copy > :nth-child(3) {
+      animation-delay: 0.51s;
+    }
+    .stage.is-ready .copy > :nth-child(4) {
+      animation-delay: 0.59s;
+    }
+
+    @keyframes rise {
+      from {
+        opacity: 0;
+        translate: 0 0.42em;
+      }
+    }
+
+    @keyframes sign {
+      from {
+        opacity: 0;
+        translate: -12px 8px;
+      }
+    }
+
+    @keyframes bloom {
+      from {
+        opacity: 0;
+        scale: 0.2;
+        rotate: -80deg;
+      }
+    }
+
+    @keyframes lift {
+      from {
+        opacity: 0;
+        translate: 0 22px;
+      }
     }
   }
 
-  @keyframes pop {
-    from {
-      opacity: 0;
-      scale: 0.3;
-    }
-  }
-
-  /* ── Phones & small tablets ─────────────
-     Not a shrunk desktop: the name sits on top of the print,
-     the print sizes itself to the screen height, extras step aside. */
+  /* ── phones & small tablets ─────────────
+     Not a shrunk desktop: the masthead runs across the top, the portrait stands
+     in front of its last letters, and the words stack underneath. */
   @media (max-width: 899px) {
     .hero {
-      height: 240svh;
+      height: 250svh;
     }
 
     .stage {
-      --name-size: clamp(64px, 13.5vw, 130px);
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-rows: auto auto auto;
-      align-content: center;
-      padding: 70px var(--gutter) 20px;
+      --art-w: min(58vw, calc((100svh - var(--bar) - 318px) * 0.8), 420px);
+      --art-right: calc(var(--gutter) + 2vw);
+      --art-top: calc(var(--bar) + 14px + 9vw);
+      --pad-top: calc(var(--bar) + 12px);
+    }
+
+    .bloom {
+      --d: min(calc(var(--art-w) * 1.2), 78vw);
     }
 
     .copy {
-      display: contents;
-    }
-
-    .copy__top {
-      position: relative;
-      z-index: 5;
-      grid-row: 1;
-      margin-bottom: calc(var(--name-size) * -0.46);
-      pointer-events: none;
-    }
-
-    .copy__bottom {
-      position: relative;
-      z-index: 5;
-      grid-row: 3;
-      padding-top: 16px;
-    }
-
-    .art {
-      grid-row: 2;
-      justify-self: end;
-      width: min(72vw, calc((100svh - 390px) * 0.8), 440px);
-      margin-right: 3vw;
-    }
-
-    .name {
-      font-size: var(--name-size);
-    }
-
-    .hello {
-      font-size: clamp(24px, 7vw, 36px);
-    }
-
-    .aka {
-      margin-top: 0;
-      font-size: 13px;
-    }
-
-    .aka__role {
-      display: block;
-      margin-top: 4px;
-    }
-
-    .aka__dot {
-      display: none;
-    }
-
-    .sticker,
-    .note {
-      translate: none;
+      width: 100%;
+      padding-bottom: 4px;
     }
 
     .headline {
-      font-size: clamp(24px, 7vw, 36px);
+      font-size: clamp(34px, 10.4vw, 64px);
     }
 
     .intro,
-    .note,
-    .scroll-hint {
+    .facts,
+    .lines {
       display: none;
     }
 
-    .cta {
-      margin-top: 14px;
-      gap: 12px;
-    }
-
-    .s-star {
-      top: 16%;
-      left: auto;
-      right: -9%;
-      width: clamp(52px, 14vw, 90px);
-    }
-
-    .s-spark-pink {
+    .fig {
       top: auto;
-      bottom: 22%;
-      right: -7%;
-    }
-
-    .s-spark-cream {
-      top: 52%;
-      left: -11%;
-    }
-
-    .s-squiggle {
-      right: auto;
-      bottom: -3%;
-      left: -18%;
-      width: clamp(56px, 16vw, 96px);
-    }
-
-    .captions {
-      top: -38px;
-      right: 0;
-      height: 34px;
-      font-size: clamp(18px, 5vw, 24px);
-    }
-
-    .captions span[data-caption] {
-      width: 6.2em;
-      white-space: normal;
-      text-align: right;
-      line-height: 0.95;
-    }
-
-    .captions__arrow {
-      display: none;
-    }
-  }
-
-  @media (max-width: 599px) {
-    .stage {
-      --name-size: 19.5vw;
-      grid-template-columns: auto minmax(0, 1fr);
-      grid-template-rows: auto auto;
-      column-gap: 8px;
-    }
-
-    .copy__top {
-      grid-row: 1;
-      grid-column: 1;
-      align-self: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin: 0;
-    }
-
-    .hello {
-      margin: 0 0 6px;
-      font-size: 22px;
-    }
-
-    .name {
-      writing-mode: vertical-rl;
-    }
-
-    .art {
-      grid-row: 1;
-      grid-column: 2;
-      width: min(calc(100vw - var(--gutter) * 2 - var(--name-size) * 0.9 - 8px - 3vw), calc((100svh - 330px) * 0.8), 440px);
-    }
-
-    .copy__bottom {
-      grid-row: 2;
-      grid-column: 1 / -1;
-    }
-
-    .s-squiggle {
-      right: -4%;
-      bottom: -5%;
+      bottom: 0;
       left: auto;
+      right: calc(100% + 10px);
+      rotate: 180deg;
     }
 
-    .s-spark-cream {
+    .fig__caps {
+      font-size: 18px;
+    }
+
+    .foot__scroll {
       display: none;
     }
   }
 
   @media (max-width: 899px) and (min-height: 760px) {
-    .intro {
-      display: block;
-      font-size: 16px;
-    }
-  }
-
-  @media (min-width: 600px) and (max-width: 899px) and (min-height: 760px) {
-    .art {
-      width: min(76vw, calc((100svh - 460px) * 0.8), 440px);
+    .facts {
+      display: grid;
     }
   }
 
@@ -620,19 +598,24 @@ const wobble = [-4, 3, -2, 4, -3, 2];
     }
 
     .stage {
+      --art-w: min(30vw, 300px);
       position: relative;
       height: auto;
       min-height: 100svh;
-      padding-top: 84px;
     }
 
-    .art {
-      width: min(42vw, 360px);
-      justify-self: center;
+    .copy {
+      padding-top: 46vw;
     }
 
-    .scroll-hint {
+    .foot {
       display: none;
+    }
+  }
+
+  @media (max-height: 540px) and (min-width: 900px) {
+    .copy {
+      padding-top: 30vw;
     }
   }
 
@@ -645,6 +628,11 @@ const wobble = [-4, 3, -2, 4, -3, 2];
       position: relative;
       height: auto;
       min-height: 100svh;
+    }
+
+    .foot__acts,
+    .foot__bar {
+      display: none;
     }
   }
 </style>

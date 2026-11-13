@@ -1,145 +1,158 @@
 /* ─────────────────────────────────────────────
-   Marigold: the colour system
+   Controlled chaos — the design system
    ─────────────────────────────────────────────
-   Built around genda phool — marigold against warm cream, with rani pink
-   and leaf green behind it. DAY is a courtyard at midday; NIGHT is the same
-   courtyard after dark, where the marigolds are what the lamps catch.
+   The site is a run of posters. Each section picks a SCHEME (a ground and what
+   may be printed on it) and builds only from that scheme's variables:
 
-   Components never name a colour. They use:
-     --paper / --paper-deep   the ground
-     --cream                  paper objects: cards, keycaps, sleeves
-     --bone                   a fill that stays light in BOTH themes
-     --ink / --ink-soft       outlines and type
-     --on-accent              type printed on an accent — stays DARK in both
-     --shadow                 the hard offset under every object — stays dark
-     --shout / --on-shout     saturated showpiece bands
+     --bg            the ground
+     --fg / --fg-2   type and its quieter voice
+     --line          hairlines
+     --accent        the one loud colour allowed on this ground
+     --on-accent     type printed on the accent
+
+   Paper sections follow the day/night switch. Coloured posters never change:
+   cobalt is cobalt at midnight too. Physical objects (cards, sheets, the
+   keyboard, the deck) keep their own colours in both themes.
+
+   Three typefaces, three jobs:
+     Archivo            structure — everything from 11px labels to 20vw mastheads
+     Instrument Serif   the voice — italic asides, the human bits
+     IBM Plex Mono      annotation — indices, metadata, instructions
    ───────────────────────────────────────────── */
+
+:root {
+  /* ── fixed pigments ── */
+  --c-paper: #f3f3ef;
+  --c-ink: #0c0d21;
+  --cobalt: #2238ff;
+  --violet: #7a3cff;
+  --magenta: #ff2a85;
+  --acid: #d6ff3d;
+  --signal: #ff4d1f;
+  --marigold: #ffae00;
+  --periwinkle: #c6d0ff;
+
+  /* physical paper: index cards, the résumé sheet, the ID */
+  --sheet: #ffffff;
+  --on-sheet: #0c0d21;
+  --on-sheet-2: #4b4d68;
+  --sheet-line: rgb(12 13 33 / 0.16);
+
+  /* ── type ── */
+  --font-display: 'Archivo Variable', 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
+  --font-body: 'Archivo Variable', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font-voice: 'Instrument Serif', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+
+  /* ── measure ── */
+  --gutter: clamp(16px, 3.4vw, 56px);
+  --bar: 52px;
+  --wrap: 1360px;
+
+  /* ── motion ── */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --spring: linear(0, 0.06 2.4%, 0.25 5.3%, 0.83 13%, 1.03 17%, 1.13 21%, 1.15 24%, 1.12 29%, 1.02 38%, 0.98 45%, 0.97 51%, 1 70%, 1);
+}
+
+/* ── day / night: only the neutral ground moves ── */
 :root,
 :root[data-theme='day'] {
   color-scheme: light;
-
-  /* the ground */
-  --paper: #fdf4e3;
-  --paper-deep: #f7e7c9;
-  --grid: rgb(42 26 12 / 0.07);
-
-  /* objects + ink */
-  --cream: #fffcf5;
-  --bone: #fff7e8;
-  --ink: #2a1a0c;
-  --ink-soft: #6b5340;
-  --text-soft: #4a3524;
-  --shadow: #2a1a0c;
-  --on-accent: #2a1a0c;
-  --soon-fill: rgb(255 255 255 / 0.45);
-
-  /* the marigold itself */
-  --marigold: #f59a1f;
-  --marigold-deep: #dd6e12;
-  --turmeric: #ffc94d;
-  --rani: #e6246b;
-  --leaf: #2e9c6c;
-  --leaf-deep: #166047;
-  --indigo: #2b3a8f;
-  --brass: #c08a3e;
-  --glow: #ffb534;
-
-  /* the showpiece band */
-  --shout: #ff3d86;
-  --on-shout: #28060f;
-
-  /* names the components already use, pointed at the new palette */
-  --lemon: var(--turmeric);
-  --tomato: #ef7536;
-  --lilac: #c3a6e0;
-  --mint: #6fcf9f;
-  --pink: var(--rani);
-  --sky: #8fb8e8;
-
-  --green: var(--leaf);
-  --green-deep: var(--leaf-deep);
-  --teal: #2ba89a;
-  --teal-deep: #176d67;
-  --sea: var(--indigo);
-  --sea-deep: #1d2a6e;
-
-  --yellow: var(--turmeric);
-  --purple: #8b6ad0;
-  --cyan: #2fb0bd;
-  --blue: #8fb8e8;
-  --blue-deep: #3f56c4;
-  --blue-pale: #e4ecfb;
+  --paper: var(--c-paper);
+  --paper-2: #e8e8e2;
+  --ink: var(--c-ink);
+  --ink-2: #4b4d68;
+  --rule: rgb(12 13 33 / 0.18);
+  --paper-accent: var(--cobalt);
+  --ink-room: #0c0d21;
 }
 
 :root[data-theme='night'] {
   color-scheme: dark;
-
-  --paper: #1e1510;
-  --paper-deep: #15100b;
-  --grid: rgb(251 234 210 / 0.06);
-
-  --cream: #2f241b;
-  --bone: #fbead2;
-  --ink: #fbead2;
-  --ink-soft: #c2a98d;
-  --text-soft: #e3d2ba;
-  --shadow: #0c0805;
-  --on-accent: #1d1206;
-  --soon-fill: rgb(255 240 215 / 0.06);
-
-  --marigold: #ffa92e;
-  --marigold-deep: #f0831c;
-  --turmeric: #ffd05c;
-  --rani: #f0477f;
-  --leaf: #35a878;
-  --leaf-deep: #27855e;
-  --indigo: #5468d8;
-  --brass: #d6a257;
-  --glow: #ffb534;
-
-  --shout: #b81555;
-  --on-shout: #ffe6ef;
-
-  --tomato: #ff8a4c;
-  --lilac: #b79ae0;
-  --mint: #63c79a;
-  --sky: #7ea4d8;
-
-  --teal: #33b5a8;
-  --teal-deep: #2a9188;
-  --sea-deep: #4055c4;
-
-  --purple: #a183e6;
-  --cyan: #3fc2cf;
-  --blue: #7ea4d8;
-  --blue-deep: #5468d8;
-  --blue-pale: #2a2338;
+  --paper: #0f1028;
+  --paper-2: #171937;
+  --ink: #f3f3ef;
+  --ink-2: #b4b6d2;
+  --rule: rgb(243 243 239 / 0.2);
+  --paper-accent: #8f9bff;
+  --ink-room: #07081a;
 }
 
-:root {
-  --font-display: 'Bagel Fat One', 'Arial Rounded MT Bold', system-ui, sans-serif;
-  --font-body: 'Bricolage Grotesque Variable', ui-sans-serif, system-ui, sans-serif;
-  --font-pixel: 'Silkscreen', ui-monospace, monospace;
-  --font-hand: 'Delicious Handrawn', 'Comic Sans MS', cursive;
-
-  --gutter: clamp(16px, 4vw, 56px);
-  --line: 3px;
-  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --spring: linear(0, 0.06 2.4%, 0.25 5.3%, 0.83 13%, 1.03 17%, 1.13 21%, 1.15 24%, 1.12 29%, 1.02 38%, 0.98 45%, 0.97 51%, 1 70%, 1);
+/* ── schemes ── */
+:root,
+.s-paper {
+  --bg: var(--paper);
+  --fg: var(--ink);
+  --fg-2: var(--ink-2);
+  --line: var(--rule);
+  --accent: var(--paper-accent);
+  --on-accent: #ffffff;
 }
 
-/* The castle changing its mind about the time of day. */
+.s-paper-2 {
+  --bg: var(--paper-2);
+  --fg: var(--ink);
+  --fg-2: var(--ink-2);
+  --line: var(--rule);
+  --accent: var(--paper-accent);
+  --on-accent: #ffffff;
+}
+
+.s-ink {
+  --bg: var(--ink-room);
+  --fg: #f3f3ef;
+  --fg-2: #b9bbd6;
+  --line: rgb(243 243 239 / 0.22);
+  --accent: var(--acid);
+  --on-accent: #0c0d21;
+}
+
+.s-cobalt {
+  --bg: var(--cobalt);
+  --fg: #ffffff;
+  --fg-2: rgb(255 255 255 / 0.86);
+  --line: rgb(255 255 255 / 0.36);
+  --accent: var(--acid);
+  --on-accent: #0c0d21;
+}
+
+.s-violet {
+  --bg: var(--violet);
+  --fg: #ffffff;
+  --fg-2: rgb(255 255 255 / 0.93);
+  --line: rgb(255 255 255 / 0.4);
+  --accent: var(--acid);
+  --on-accent: #0c0d21;
+}
+
+.s-magenta {
+  --bg: var(--magenta);
+  --fg: #0c0d21;
+  --fg-2: #1d0a1c;
+  --line: rgb(12 13 33 / 0.34);
+  --accent: #ffffff;
+  --on-accent: #0c0d21;
+}
+
+.s-acid {
+  --bg: var(--acid);
+  --fg: #0c0d21;
+  --fg-2: #272e12;
+  --line: rgb(12 13 33 / 0.3);
+  --accent: var(--cobalt);
+  --on-accent: #ffffff;
+}
+
+/* A deliberate flip of the switch animates; first paint never does. */
 :root.is-switching,
 :root.is-switching body,
-:root.is-switching .section,
-:root.is-switching .key,
-:root.is-switching .card,
-:root.is-switching .note {
+:root.is-switching .poster,
+:root.is-switching .nav {
   transition:
-    background-color 0.55s ease,
-    border-color 0.55s ease,
-    color 0.55s ease,
-    box-shadow 0.55s ease;
+    background-color 0.5s ease,
+    border-color 0.5s ease,
+    color 0.5s ease;
 }
 
 *,
@@ -149,25 +162,23 @@
 }
 
 html {
-  color-scheme: light;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  scroll-padding-top: var(--bar);
 }
 
 body {
   margin: 0;
   min-height: 100svh;
   background-color: var(--paper);
-  background-image:
-    linear-gradient(var(--grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-  background-size: 28px 28px;
   color: var(--ink);
   font-family: var(--font-body);
   font-size: 17px;
+  font-weight: 420;
   line-height: 1.5;
   overflow-x: clip;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 img,
@@ -180,9 +191,14 @@ a {
   color: inherit;
 }
 
+button {
+  font: inherit;
+  color: inherit;
+}
+
 ::selection {
-  background: var(--lemon);
-  color: var(--on-accent);
+  background: var(--acid);
+  color: #0c0d21;
 }
 
 .sr-only {
@@ -198,76 +214,246 @@ a {
 }
 
 :focus-visible {
-  outline: 3px dashed var(--purple);
-  outline-offset: 4px;
+  outline: 2px solid var(--fg, var(--ink));
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px var(--bg, var(--paper));
 }
 
 /* ─────────────────────────────────────────────
-   Keycap: the site's one button.
-   It foreshadows the keyboard from the first second.
+   Posters
+   ───────────────────────────────────────────── */
+.poster {
+  position: relative;
+  padding: clamp(64px, 9vw, 132px) var(--gutter);
+  background-color: var(--bg);
+  color: var(--fg);
+  scroll-margin-top: var(--bar);
+}
+
+.poster:focus {
+  outline: none;
+}
+
+.wrap {
+  position: relative;
+  z-index: 1;
+  max-width: var(--wrap);
+  margin: 0 auto;
+}
+
+/* ─────────────────────────────────────────────
+   Type roles
+   ───────────────────────────────────────────── */
+
+/* annotation */
+.label {
+  margin: 0;
+  font: 500 11px/1.35 var(--font-mono);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.label--dim {
+  color: var(--fg-2);
+}
+
+/* the voice */
+.voice {
+  font-family: var(--font-voice);
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* condensed poster caps */
+.head {
+  margin: 0;
+  font-family: var(--font-display);
+  font-stretch: 68%;
+  font-weight: 800;
+  line-height: 0.86;
+  letter-spacing: -0.012em;
+  text-transform: uppercase;
+}
+
+/* the widest, heaviest cut */
+.mega {
+  margin: 0;
+  font-family: var(--font-display);
+  font-stretch: 125%;
+  font-weight: 900;
+  line-height: 0.8;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+}
+
+/* ─────────────────────────────────────────────
+   Buttons. One shape, two weights. The class is still `.key`
+   so every button gets a key click from the sound engine.
    ───────────────────────────────────────────── */
 .key {
-  --key-face: var(--cream);
-  --key-edge: var(--shadow);
-  --key-depth: 5px;
-  --key-lift: 0px;
+  --key-bg: transparent;
+  --key-fg: var(--fg);
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5em;
+  gap: 0.7em;
   min-height: 44px;
-  padding: 0.6em 1.05em;
-  border: var(--line) solid var(--ink);
-  border-radius: 13px;
-  background: var(--key-face);
-  box-shadow: 0 calc(var(--key-depth) + var(--key-lift)) 0 var(--key-edge);
-  color: var(--key-ink, var(--ink));
-  font: 650 16px/1 var(--font-body);
-  letter-spacing: -0.01em;
+  padding: 0 20px;
+  border: 1.5px solid var(--fg);
+  border-radius: 999px;
+  background: var(--key-bg);
+  color: var(--key-fg);
+  font: 500 12px/1 var(--font-mono);
+  letter-spacing: 0.08em;
   text-decoration: none;
+  text-transform: uppercase;
   white-space: nowrap;
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  transform: translateY(calc(var(--key-lift) * -1));
   transition:
-    transform 0.16s var(--ease-out),
-    box-shadow 0.16s var(--ease-out);
+    background-color 0.22s var(--ease-out),
+    color 0.22s var(--ease-out),
+    border-color 0.22s var(--ease-out),
+    translate 0.16s var(--ease-out);
+}
+
+.key--solid {
+  --key-bg: var(--fg);
+  --key-fg: var(--bg);
+}
+
+.key--accent {
+  --key-bg: var(--accent);
+  --key-fg: var(--on-accent);
+  border-color: var(--accent);
 }
 
 @media (hover: hover) {
   .key:hover {
-    --key-lift: 2px;
+    --key-bg: var(--fg);
+    --key-fg: var(--bg);
+  }
+
+  .key--solid:hover,
+  .key--accent:hover {
+    --key-bg: var(--accent);
+    --key-fg: var(--on-accent);
+    border-color: var(--accent);
+  }
+
+  .key--accent:hover {
+    --key-bg: var(--fg);
+    --key-fg: var(--bg);
+    border-color: var(--fg);
   }
 }
 
 .key:active {
-  --key-lift: 0px;
-  transform: translateY(var(--key-depth));
-  box-shadow: 0 0 0 var(--key-edge);
+  translate: 0 2px;
   transition-duration: 0.04s;
 }
 
-.key--pink {
-  --key-face: var(--pink);
-  --key-ink: var(--on-accent);
+.key--sm {
+  min-height: 38px;
+  padding: 0 15px;
+  font-size: 11px;
 }
 
-.key--tomato {
-  --key-face: var(--tomato);
-  --key-ink: var(--on-accent);
+.key svg {
+  flex: none;
+  width: 1.05em;
+  height: 1.05em;
 }
 
-.key--yellow {
-  --key-face: var(--yellow);
-  --key-ink: var(--on-accent);
+/* icon buttons in the bar */
+.tool {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--fg);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.2s var(--ease-out),
+    color 0.2s var(--ease-out);
 }
 
-.key small {
-  font: 400 10px/1 var(--font-pixel);
-  letter-spacing: 0.04em;
-  opacity: 0.7;
+.tool svg {
+  width: 20px;
+  height: 20px;
+}
+
+@media (hover: hover) {
+  .tool:hover {
+    background: var(--fg);
+    color: var(--bg);
+  }
+}
+
+@media (pointer: coarse) {
+  .tool {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* a text link with a rule that draws itself */
+.link {
+  background: linear-gradient(currentColor, currentColor) 0 100% / 100% 1px no-repeat;
+  text-decoration: none;
+  transition: background-size 0.3s var(--ease-out);
+}
+
+@media (hover: hover) {
+  .link:hover {
+    background-size: 0 1px;
+    background-position: 100% 100%;
+  }
+}
+
+/* small mono tag */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px 3px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font: 500 10px/1.2 var(--font-mono);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────────
+   Entrances. Only when JS is running, and never under reduced motion.
+   ───────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  .js [data-reveal] {
+    opacity: 0;
+    translate: 0 26px;
+    transition:
+      opacity 0.7s var(--ease-out),
+      translate 0.9s var(--ease-out);
+    transition-delay: calc(var(--i, 0) * 70ms);
+  }
+
+  .js [data-reveal].is-in {
+    opacity: 1;
+    translate: 0 0;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -280,49 +466,49 @@ a {
   }
 }
 
-.key--sm {
-  --key-depth: 4px;
-  min-height: 40px;
-  padding: 0.55em 0.9em;
-  font-size: 15px;
-}
-
 /* ─────────────────────────────────────────────
-   Content sections
+   The jump card: pressing a key (or a nav link) wipes the screen in the
+   destination's colour, with its name on it, and lands you there.
    ───────────────────────────────────────────── */
-.section {
-  position: relative;
-  padding: clamp(72px, 10vw, 128px) var(--gutter);
-  border-top: var(--line) solid var(--ink);
-  scroll-margin-top: 60px;
-}
-
-/* a section with a garland strung across it needs headroom for the flowers */
-.section.has-garland {
-  padding-top: clamp(116px, 13vw, 190px);
-}
-
-.garland-hang {
-  position: absolute;
-  inset: -6px 0 auto;
-  z-index: 1;
+.jump {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  align-content: center;
+  gap: 2vh;
+  padding: 0 var(--gutter);
+  background: var(--bg);
+  color: var(--fg);
   pointer-events: none;
+  visibility: hidden;
+  clip-path: inset(0 0 0 100%);
 }
 
-.section--deep {
-  background-color: var(--paper-deep);
+.jump.is-on {
+  visibility: visible;
 }
 
-.section__inner {
-  position: relative;
-  z-index: 1;
-  max-width: 1180px;
-  margin: 0 auto;
+.jump__idx {
+  font: 500 clamp(12px, 1.2vw, 16px) / 1 var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.jump__name {
+  font-family: var(--font-display);
+  font-size: clamp(72px, 19vw, 330px);
+  font-stretch: 62%;
+  font-weight: 900;
+  line-height: 0.78;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 /* ─────────────────────────────────────────────
-   Page transitions: a project's floppy disk flies from the grid
-   into the disk drive on its case-study page (where browsers support it).
+   Page transitions: a project's floppy flies from the index
+   into the drive on its case-study page (where browsers support it).
    ───────────────────────────────────────────── */
 @view-transition {
   navigation: auto;

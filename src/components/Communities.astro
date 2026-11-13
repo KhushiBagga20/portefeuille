@@ -1,26 +1,29 @@
 ---
-import Shapes from './Shapes.astro';
-import SectionHead from './SectionHead.astro';
+// Beyond projects: the clubs. Two names set as large as the page allows, the facts beside.
+import PosterHead from './PosterHead.astro';
+import { chapter } from '../data/chapters';
 import { communities } from '../data/profile';
+
+const c = chapter('experience');
 ---
 
-<section id="experience" class="section section--deep" aria-labelledby="experience-title">
-  <Shapes variant="communities" />
-  <div class="section__inner">
-    <SectionHead eyebrow="communities & roles" title="beyond projects" id="experience-title" fill="cream" />
+<section id="experience" class="beyond poster s-paper" {...c.attrs} aria-labelledby="experience-title">
+  <div class="wrap">
+    <PosterHead id="experience" note="communities & roles" />
+    <h2 id="experience-title" class="sr-only">Beyond projects</h2>
 
-    <ul class="passes">
+    <ul class="clubs">
       {
-        communities.map((c, i) => (
-          <li class="pass" style={`--tone:var(--${c.tone});--r:${i % 2 ? 2 : -2}deg`}>
-            <div class="pass__top">
-              <span class="pass__hole" aria-hidden="true" />
-              <span class="pass__org">{c.org}</span>
-            </div>
-            <div class="pass__body">
-              <h3 class="pass__name">{c.name}</h3>
-              <p class="pass__role">{c.role}</p>
-              <p class="pass__line">{c.line}</p>
+        communities.map((club, i) => (
+          <li class="club" data-reveal style={`--i:${i}`}>
+            <h3 class="club__name">{club.name}</h3>
+            <div class="club__facts">
+              <p class="club__role">{club.role}</p>
+              <p class="label label--dim">
+                {club.org}
+                {club.since && <Fragment> · {club.since}</Fragment>}
+              </p>
+              <p class="club__line">{club.line}</p>
             </div>
           </li>
         ))
@@ -30,74 +33,77 @@ import { communities } from '../data/profile';
 </section>
 
 <style>
-  .passes {
-    display: flex;
-    flex-wrap: wrap;
-    gap: clamp(24px, 4vw, 48px);
-    margin: 52px 0 0;
+  .beyond {
+    padding-bottom: clamp(40px, 6vw, 90px);
+  }
+
+  .clubs {
+    margin: clamp(22px, 3vw, 44px) 0 0;
     padding: 0;
     list-style: none;
   }
 
-  .pass {
-    width: min(100%, 340px);
-    border: var(--line) solid var(--ink);
-    border-radius: 20px;
-    background: var(--cream);
-    box-shadow: 8px 9px 0 var(--shadow);
-    rotate: var(--r);
+  .club {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+    align-items: end;
+    gap: clamp(16px, 4vw, 70px);
+    padding: clamp(14px, 2vw, 26px) 0 clamp(16px, 2.2vw, 30px);
+    border-bottom: 1px solid var(--line);
   }
 
-  .pass__top {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 16px 12px;
-    border-bottom: var(--line) solid var(--ink);
-    border-radius: 17px 17px 0 0;
-    background: var(--tone);
-    color: var(--on-accent);
-  }
-
-  .pass__hole {
-    width: 46px;
-    height: 12px;
-    border: var(--line) solid var(--ink);
-    border-radius: 999px;
-    background: var(--paper-deep);
-  }
-
-  .pass__org {
-    font: 400 10px/1.3 var(--font-pixel);
-    letter-spacing: 0.05em;
-    text-align: center;
-    text-transform: uppercase;
-  }
-
-  .pass__body {
-    padding: 20px 22px 24px;
-    text-align: center;
-  }
-
-  .pass__name {
+  /* drawn in outline until you reach for it */
+  .club__name {
     margin: 0;
-    font: 400 40px/1 var(--font-display);
+    color: transparent;
+    font-family: var(--font-display);
+    font-size: clamp(58px, 13.6vw, 250px);
+    font-stretch: 62%;
+    font-weight: 900;
+    line-height: 0.78;
+    letter-spacing: -0.012em;
+    text-transform: uppercase;
+    -webkit-text-stroke: 1.5px var(--fg);
+    transition:
+      color 0.35s ease,
+      font-stretch 0.6s var(--ease-out);
   }
 
-  .pass__role {
-    display: inline-block;
-    margin: 12px 0 0;
-    padding: 6px 12px 5px;
-    border: 2px solid var(--ink);
-    border-radius: 999px;
-    background: var(--paper);
-    font-size: 15px;
+  .club:hover .club__name {
+    color: var(--accent);
+    font-stretch: 72%;
+    -webkit-text-stroke-color: var(--accent);
+  }
+
+  .club__facts {
+    padding-bottom: 0.4em;
+  }
+
+  .club__role {
+    margin: 0 0 8px;
+    font-size: clamp(20px, 1.9vw, 30px);
+    font-stretch: 84%;
     font-weight: 700;
+    line-height: 1.05;
   }
 
-  .pass__line {
-    margin: 14px 0 0;
-    color: var(--text-soft);
+  .club__line {
+    max-width: 36ch;
+    margin: 12px 0 0;
+    color: var(--fg-2);
+    line-height: 1.45;
+  }
+
+  @media (max-width: 699px) {
+    .club {
+      grid-template-columns: minmax(0, 1fr);
+      align-items: start;
+    }
+  }
+
+  @media (hover: none) {
+    .club__name {
+      color: var(--fg);
+    }
   }
 </style>

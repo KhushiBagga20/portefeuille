@@ -1,174 +1,342 @@
 ---
-import Shapes from './Shapes.astro';
-import Garland from './Garland.astro';
+// About, set like an editorial spread: one sentence at headline size, the rest quiet,
+// and a student ID hanging off a lanyard that leans toward the cursor and turns over.
 import { Image } from 'astro:assets';
-import SectionHead from './SectionHead.astro';
-import { about, education } from '../data/profile';
+import PosterHead from './PosterHead.astro';
+import { chapter } from '../data/chapters';
+import { about, education, languages } from '../data/profile';
 import { site } from '../data/site';
 import drawing from '../assets/collage/illustration.png';
 
-const tilts = [-3, 2, -1, 3, -2, 1, -3];
+const c = chapter('about');
+const [lead, ...more] = about.paragraphs;
+
+// The course name gets the serif voice wherever the lead sentence mentions it.
+const at = lead.indexOf(education.focus);
+const parts = at < 0 ? [lead] : [lead.slice(0, at), education.focus, lead.slice(at + education.focus.length)];
 ---
 
-<section id="about" class="section has-garland" aria-labelledby="about-title">
-  <Garland class="garland-hang" />
-  <Shapes variant="about" />
-  <div class="section__inner about">
-    <div class="about__text">
-      <SectionHead eyebrow="about.txt" title="about me" id="about-title" />
-      {about.paragraphs.map((p) => <p class="about__p">{p}</p>)}
-      <p class="about__label">things I get excited about</p>
-      <ul class="interests">
-        {about.interests.map((item, i) => <li style={`--r:${tilts[i % tilts.length]}deg`}>{item}</li>)}
-      </ul>
-    </div>
+<section id="about" class="about poster s-paper" {...c.attrs} aria-labelledby="about-title">
+  <span class="about__moon" aria-hidden="true"></span>
 
-    <aside class="id" aria-labelledby="id-title">
-      <span class="id__clip" aria-hidden="true"></span>
-      <div class="id__bar">
-        <span id="id-title">student id</span>
-        <span class="id__chip" aria-hidden="true"></span>
-      </div>
-      <div class="id__body">
-        <div class="id__photo">
-          <Image src={drawing} alt="" width={160} height={200} />
+  <div class="wrap">
+    <PosterHead id="about" note={`class of ${education.graduation}`} />
+    <h2 id="about-title" class="sr-only">About</h2>
+
+    <div class="about__grid">
+      <div class="about__text">
+        <p class="about__say" data-reveal>
+          {parts.length === 3 ? <Fragment>{parts[0]}<em class="voice">{parts[1]}</em>{parts[2]}</Fragment> : lead}
+        </p>
+
+        <div class="about__rest">
+          {more.map((p) => <p class="about__more" data-reveal>{p}</p>)}
+
+          <div class="about__list" data-reveal>
+            <p class="label label--dim">things I get excited about</p>
+            <ol class="interests">
+              {
+                about.interests.map((item, i) => (
+                  <li>
+                    <span class="interests__no">{String(i + 1).padStart(2, '0')}</span>
+                    <span class="interests__name">{item}</span>
+                  </li>
+                ))
+              }
+            </ol>
+          </div>
         </div>
-        <dl class="id__facts">
-          <div>
-            <dt>name</dt>
-            <dd>{site.fullName}</dd>
-          </div>
-          <div>
-            <dt>university</dt>
-            <dd>{education.school}</dd>
-          </div>
-          <div>
-            <dt>degree</dt>
-            <dd>{education.degree}</dd>
-          </div>
-          <div>
-            <dt>focus</dt>
-            <dd>{education.focus}</dd>
-          </div>
-          <div class="id__half">
-            <dt>expected grad</dt>
-            <dd>{education.graduation}</dd>
-          </div>
-          <div class="id__half">
-            <dt>cgpa</dt>
-            <dd>{education.cgpa}</dd>
-          </div>
-        </dl>
       </div>
-      <div class="id__barcode" aria-hidden="true"></div>
-    </aside>
+
+      <!-- ── the ID ─────────────────────────── -->
+      <div class="about__id">
+        <span class="lanyard" aria-hidden="true"></span>
+        <div class="id" data-id data-tilt>
+          <div class="id__inner">
+            <article class="id__face id__front" aria-labelledby="id-title" data-id-front>
+              <span class="id__slot" aria-hidden="true"></span>
+              <header class="id__bar">
+                <span id="id-title">student id</span>
+                <span>{education.started}—{education.graduation}</span>
+              </header>
+              <div class="id__body">
+                <div class="id__photo">
+                  <Image src={drawing} alt="" width={200} height={250} />
+                </div>
+                <dl class="id__facts">
+                  <div>
+                    <dt>name</dt>
+                    <dd>{site.fullName}</dd>
+                  </div>
+                  <div>
+                    <dt>university</dt>
+                    <dd>{education.school}</dd>
+                  </div>
+                  <div>
+                    <dt>degree</dt>
+                    <dd>{education.degree}</dd>
+                  </div>
+                  <div>
+                    <dt>focus</dt>
+                    <dd>{education.focus}</dd>
+                  </div>
+                </dl>
+              </div>
+              <dl class="id__row">
+                <div>
+                  <dt>expected grad</dt>
+                  <dd>{education.graduation}</dd>
+                </div>
+                <div>
+                  <dt>cgpa</dt>
+                  <dd>{education.cgpa}</dd>
+                </div>
+              </dl>
+              <div class="id__barcode" aria-hidden="true"></div>
+            </article>
+
+            <article class="id__face id__back" aria-labelledby="id-back-title" data-id-back inert>
+              <header class="id__bar">
+                <span id="id-back-title">coursework</span>
+                <span>reverse</span>
+              </header>
+              <ol class="id__courses">
+                {education.coursework.map((course) => <li>{course}</li>)}
+              </ol>
+              <dl class="id__row">
+                <div>
+                  <dt>languages</dt>
+                  <dd>{languages.join(' · ')}</dd>
+                </div>
+              </dl>
+              <div class="id__barcode" aria-hidden="true"></div>
+            </article>
+          </div>
+          <span class="id__glare" aria-hidden="true"></span>
+        </div>
+
+        <button class="key key--sm id__flip" type="button" data-id-flip aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 12a8 8 0 0 1 13.7-5.6M20 12a8 8 0 0 1-13.7 5.6M18 2v5h-5M6 22v-5h5" fill="none" stroke="currentColor" stroke-width="2"></path>
+          </svg>
+          <span data-id-flip-label>turn it over</span>
+        </button>
+      </div>
+    </div>
   </div>
 </section>
 
+<script>
+  // The card turns over. Whichever face is away from you is taken out of the tab order.
+  document.querySelectorAll<HTMLElement>('[data-id]').forEach((card) => {
+    const button = card.parentElement?.querySelector<HTMLButtonElement>('[data-id-flip]');
+    const label = button?.querySelector<HTMLElement>('[data-id-flip-label]');
+    const front = card.querySelector<HTMLElement>('[data-id-front]');
+    const back = card.querySelector<HTMLElement>('[data-id-back]');
+    if (!button || !front || !back) return;
+
+    const set = (flipped: boolean) => {
+      card.classList.toggle('is-flipped', flipped);
+      button.setAttribute('aria-pressed', String(flipped));
+      if (label) label.textContent = flipped ? 'back to the front' : 'turn it over';
+      front.toggleAttribute('inert', flipped);
+      back.toggleAttribute('inert', !flipped);
+    };
+    button.addEventListener('click', () => set(!card.classList.contains('is-flipped')));
+    card.addEventListener('click', () => set(!card.classList.contains('is-flipped')));
+  });
+</script>
+
 <style>
   .about {
-    display: grid;
-    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-    align-items: center;
-    gap: clamp(40px, 6vw, 96px);
+    overflow: clip;
   }
 
-  .about__p {
-    max-width: 50ch;
-    margin: 22px 0 0;
-    font-size: clamp(18px, 1.5vw, 22px);
+  /* one large, quiet disc, cropped by the edge of the sheet */
+  .about__moon {
+    position: absolute;
+    top: calc(clamp(64px, 9vw, 132px) + clamp(70px, 9vw, 150px));
+    right: calc(-1 * clamp(120px, 15vw, 280px));
+    width: clamp(380px, 46vw, 820px);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--violet);
+  }
+
+  .about__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: clamp(32px, 6vw, 110px);
+    margin-top: clamp(36px, 6vw, 88px);
+  }
+
+  .about__say {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(31px, 4.5vw, 76px);
+    font-stretch: 82%;
+    font-weight: 700;
+    line-height: 0.98;
+    letter-spacing: -0.022em;
+    text-wrap: balance;
+  }
+
+  .about__say em {
+    color: var(--accent);
+    font-size: 1.06em;
+    letter-spacing: -0.01em;
+  }
+
+  /* the second voice starts a third of the way in, not flush left */
+  .about__rest {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    gap: clamp(24px, 4vw, 60px);
+    margin: clamp(32px, 5vw, 72px) 0 0 clamp(0px, 9vw, 150px);
+  }
+
+  .about__more {
+    margin: 0;
+    color: var(--fg-2);
+    font-size: clamp(17px, 1.3vw, 20px);
     line-height: 1.5;
   }
 
-  .about__p + .about__p {
-    margin-top: 14px;
-    color: var(--text-soft);
-  }
-
-  .about__label {
-    margin: 30px 0 0;
-    font: 400 24px/1 var(--font-hand);
-  }
-
   .interests {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin: 14px 0 0;
+    margin: 12px 0 0;
     padding: 0;
+    border-top: 1px solid var(--line);
     list-style: none;
   }
 
   .interests li {
-    padding: 8px 12px 7px;
-    border: 2px solid var(--ink);
-    border-radius: 999px;
-    background: var(--cream);
-    box-shadow: 2px 3px 0 var(--shadow);
-    font-size: 15px;
-    font-weight: 600;
-    rotate: var(--r);
+    display: grid;
+    grid-template-columns: 4ch 1fr;
+    align-items: baseline;
+    padding: 9px 0 7px;
+    border-bottom: 1px solid var(--line);
+    transition: padding-left 0.3s var(--ease-out);
   }
 
-  /* ── Student ID ─────────────────────── */
-  .id {
+  .interests li:hover {
+    padding-left: 12px;
+  }
+
+  .interests__no {
+    color: var(--fg-2);
+    font: 500 10px/1 var(--font-mono);
+    letter-spacing: 0.08em;
+  }
+
+  .interests__name {
+    font-family: var(--font-display);
+    font-size: clamp(18px, 1.55vw, 24px);
+    font-stretch: 78%;
+    font-weight: 700;
+    line-height: 1.05;
+    text-transform: uppercase;
+  }
+
+  /* ── the ID ─────────────────────────── */
+  .about__id {
     position: relative;
-    justify-self: center;
-    width: min(100%, 420px);
-    border: var(--line) solid var(--ink);
-    border-radius: 20px;
-    background: var(--cream);
-    box-shadow: 10px 12px 0 var(--shadow);
-    rotate: 2.5deg;
+    display: grid;
+    justify-items: center;
+    align-content: start;
+    gap: 22px;
+    padding-top: clamp(40px, 6vw, 96px);
   }
 
-  .id__clip {
+  .lanyard {
+    --drop: calc(clamp(36px, 6vw, 88px) + 8px);
     position: absolute;
-    top: -22px;
+    top: calc(-1 * var(--drop));
     left: 50%;
-    width: 64px;
-    height: 34px;
-    border: var(--line) solid var(--ink);
-    border-radius: 10px;
-    background: var(--lilac);
+    width: 22px;
+    height: calc(var(--drop) + clamp(40px, 6vw, 96px) + 20px);
+    background: var(--c-ink);
     translate: -50% 0;
+  }
+
+  .id {
+    --tx: 0;
+    --ty: 0;
+    --lit: 0;
+    position: relative;
+    width: min(100%, 400px);
+    color: var(--on-sheet);
+    cursor: pointer;
+    perspective: 1100px;
+    rotate: 3deg;
+  }
+
+  .id__inner {
+    display: grid;
+    transform: rotateY(calc(var(--tx) * 10deg)) rotateX(calc(var(--ty) * -8deg));
+    transform-style: preserve-3d;
+    transition: transform 0.75s var(--spring);
+  }
+
+  .id.is-flipped .id__inner {
+    transform: rotateY(calc(180deg + var(--tx) * 10deg)) rotateX(calc(var(--ty) * 8deg));
+  }
+
+  .id__face {
+    grid-area: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--c-ink);
+    border-radius: 16px;
+    background: var(--sheet);
+    box-shadow: 0 30px 60px -32px rgb(12 13 33 / 0.6);
+    backface-visibility: hidden;
+  }
+
+  .id__back {
+    transform: rotateY(180deg);
+  }
+
+  .id__slot {
+    align-self: center;
+    width: 62px;
+    height: 13px;
+    margin: 13px 0 11px;
+    border: 1px solid var(--c-ink);
+    border-radius: 999px;
+    background: var(--c-paper);
+  }
+
+  .id__back .id__bar {
+    margin-top: 37px;
   }
 
   .id__bar {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    padding: 16px 18px 12px;
-    border-bottom: var(--line) solid var(--ink);
-    border-radius: 17px 17px 0 0;
-    background: var(--tomato);
-    color: var(--on-accent);
-    font: 400 12px/1 var(--font-pixel);
-    letter-spacing: 0.08em;
+    gap: 12px;
+    padding: 11px 18px 10px;
+    background: var(--cobalt);
+    color: #ffffff;
+    font: 500 11px/1 var(--font-mono);
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-  }
-
-  .id__chip {
-    width: 34px;
-    height: 24px;
-    border: 2px solid var(--ink);
-    border-radius: 6px;
-    background: linear-gradient(90deg, transparent 45%, var(--ink) 45% 55%, transparent 55%), var(--lemon);
   }
 
   .id__body {
     display: grid;
-    grid-template-columns: 112px 1fr;
+    flex: 1;
+    grid-template-columns: 146px 1fr;
+    align-items: start;
     gap: 16px;
-    padding: 18px;
+    padding: 18px 18px 14px;
   }
 
   .id__photo {
     align-self: start;
     overflow: hidden;
-    border: var(--line) solid var(--ink);
-    border-radius: 10px;
-    background: var(--blue);
+    border: 1px solid var(--c-ink);
+    background: var(--periwinkle);
     aspect-ratio: 4 / 5;
   }
 
@@ -180,58 +348,130 @@ const tilts = [-3, 2, -1, 3, -2, 1, -3];
 
   .id__facts {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 9px 10px;
+    gap: 9px;
     margin: 0;
   }
 
-  .id__facts > div:not(.id__half) {
-    grid-column: 1 / -1;
+  .id__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 0;
+    padding: 11px 18px;
+    border-top: 1px solid var(--sheet-line);
   }
 
-  dt {
-    font: 400 9px/1 var(--font-pixel);
-    letter-spacing: 0.06em;
+  .id dt {
+    color: var(--on-sheet-2);
+    font: 500 9px/1 var(--font-mono);
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--ink-soft);
   }
 
-  dd {
-    margin: 3px 0 0;
+  .id dd {
+    margin: 4px 0 0;
     font-size: 15px;
+    font-stretch: 92%;
     font-weight: 650;
+    line-height: 1.2;
+  }
+
+  .id__courses {
+    flex: 1;
+    margin: 0;
+    padding: 12px 18px 10px;
+    counter-reset: course;
+    list-style: none;
+  }
+
+  .id__courses li {
+    display: grid;
+    grid-template-columns: 3.4ch 1fr;
+    padding: 3.5px 0;
+    font-size: 13.5px;
+    font-stretch: 92%;
+    font-weight: 600;
     line-height: 1.25;
+    counter-increment: course;
+  }
+
+  .id__courses li::before {
+    content: counter(course, decimal-leading-zero);
+    color: var(--on-sheet-2);
+    font: 500 9px/1.9 var(--font-mono);
+    letter-spacing: 0.08em;
   }
 
   .id__barcode {
-    height: 34px;
-    margin: 0 18px 18px;
+    flex: none;
+    height: 30px;
+    margin: 4px 18px 16px;
     background: repeating-linear-gradient(
       90deg,
-      var(--ink) 0 3px,
+      var(--c-ink) 0 3px,
       transparent 3px 5px,
-      var(--ink) 5px 6px,
+      var(--c-ink) 5px 6px,
       transparent 6px 9px,
-      var(--ink) 9px 13px,
+      var(--c-ink) 9px 13px,
       transparent 13px 15px
     );
-    opacity: 0.85;
   }
 
-  @media (max-width: 859px) {
-    .about {
-      grid-template-columns: minmax(0, 1fr);
-    }
+  /* light sliding across the laminate */
+  .id__glare {
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    background: radial-gradient(
+      circle at calc(50% + var(--tx) * 50%) calc(50% + var(--ty) * 50%),
+      rgb(255 255 255 / 0.5),
+      transparent 55%
+    );
+    mix-blend-mode: soft-light;
+    opacity: var(--lit);
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
 
-    .id {
-      margin-top: 24px;
-      rotate: 1.5deg;
-    }
+  .id__flip svg {
+    transition: rotate 0.7s var(--spring);
+  }
+
+  .id__flip[aria-pressed='true'] svg {
+    rotate: 180deg;
   }
 
   @media (max-width: 420px) {
     .id__body {
-      grid-template-columns: 88px 1fr;
+      grid-template-columns: 104px 1fr;
+    }
+  }
+
+  @media (max-width: 899px) {
+    .about__grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .about__rest {
+      grid-template-columns: minmax(0, 1fr);
+      margin-left: 0;
+    }
+
+    .about__moon {
+      top: auto;
+      bottom: clamp(40px, 12vw, 120px);
+      right: -32vw;
+      width: 92vw;
+    }
+
+    .lanyard {
+      --drop: 30px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .id__inner {
+      transition: none;
     }
   }
 </style>

@@ -1,43 +1,73 @@
 ---
-import Doodle from './Doodle.astro';
+import Seal from './Seal.astro';
 import SoundToggle from './SoundToggle.astro';
-import ThemeLever from './ThemeLever.astro';
+import ThemeToggle from './ThemeToggle.astro';
+import { chapters } from '../data/chapters';
 import { site } from '../data/site';
+
+interface Props {
+  /** what the "you are here" slot says on pages that aren't the home page */
+  here?: string;
+}
+const { here } = Astro.props;
+
+const numbered = site.nav.map((item) => {
+  const i = chapters.findIndex((c) => `/#${c.id}` === item.href);
+  return { ...item, index: i < 0 ? '' : String(i).padStart(2, '0') };
+});
 ---
 
-<header class="nav">
-  <a class="logo" href="/" aria-label={`${site.name}, home`}>
-    {site.name.toLowerCase()}<span class="logo__spark"><Doodle kind="sparkle" color="var(--pink)" /></span>
+<header class="nav s-paper">
+  <a class="nav__mark" href="/#top" aria-label={`${site.name}, home`}>
+    <span class="nav__seal"><Seal /></span>
+    <span class="nav__name">{site.name}</span>
   </a>
 
-  <div class="nav__right">
-    <nav class="links" aria-label="Main">
-      {site.nav.map((item) => <a class="key key--nav" href={item.href}>{item.label}</a>)}
-    </nav>
-    <ThemeLever />
+  <p class="nav__now" aria-hidden="true">
+    {
+      here ? (
+        <span>{here}</span>
+      ) : (
+        <Fragment>
+          <span data-chapter-idx>(00)</span>
+          <span data-chapter-now>{chapters[0].name}</span>
+        </Fragment>
+      )
+    }
+  </p>
+
+  <nav class="nav__links" aria-label="Main">
+    {numbered.map((item) => <a href={item.href}>{item.label}</a>)}
+  </nav>
+
+  <div class="nav__tools">
+    <ThemeToggle />
     <SoundToggle />
-    <button class="key key--nav menu-button" popovertarget="site-menu" aria-label="Open menu">menu</button>
+    <button class="nav__menu" type="button" popovertarget="site-menu" aria-label="Open menu">
+      <span aria-hidden="true"></span>menu
+    </button>
   </div>
-  <nav id="site-menu" class="menu" popover aria-label="Main (mobile)">
-    {site.nav.map((item) => <a class="key" href={item.href}>{item.label}</a>)}
+
+  <nav id="site-menu" class="menu s-ink" popover aria-label="Main (mobile)">
+    <ul>
+      {
+        numbered.map((item) => (
+          <li>
+            <a href={item.href}>
+              <span class="menu__idx">{item.index && `(${item.index})`}</span>
+              <span class="menu__name">{item.label}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
   </nav>
 </header>
 
 <script>
-  // Once the pinned hero is done, give the nav a solid strip so it never sits on top of text.
-  const nav = document.querySelector<HTMLElement>('.nav');
-  const hero = document.querySelector<HTMLElement>('[data-hero]');
-  const syncNav = () => {
-    const limit = hero ? hero.offsetTop + hero.offsetHeight - innerHeight - 20 : 40;
-    nav?.classList.toggle('is-solid', scrollY > limit);
-  };
-  addEventListener('scroll', syncNav, { passive: true });
-  addEventListener('resize', syncNav);
-  syncNav();
-
   const menu = document.getElementById('site-menu');
   menu?.addEventListener('click', (e) => {
-    if ((e.target as HTMLElement).closest('a')) menu.hidePopover();
+    if ((e.target as HTMLElement).closest('a')) (menu as HTMLElement & { hidePopover(): void }).hidePopover();
   });
 </script>
 
@@ -48,92 +78,186 @@ import { site } from '../data/site';
     z-index: 50;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 18px var(--gutter);
-    pointer-events: none;
-    transition:
-      background-color 0.25s ease,
-      box-shadow 0.25s ease,
-      padding 0.25s ease;
+    gap: clamp(14px, 2.4vw, 34px);
+    height: var(--bar);
+    padding: 0 var(--gutter);
+    border-bottom: 1px solid var(--line);
+    background-color: var(--bg);
+    color: var(--fg);
   }
 
-  .nav:global(.is-solid) {
-    padding-block: 10px;
-    background-color: var(--paper);
-    box-shadow: 0 var(--line) 0 var(--shadow);
-    pointer-events: auto;
+  .nav__mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-family: var(--font-display);
+    font-size: 21px;
+    font-stretch: 112%;
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    text-decoration: none;
+    text-transform: uppercase;
   }
 
-  .nav > * {
-    pointer-events: auto;
+  .nav__seal {
+    width: 22px;
+    transition: rotate 0.9s var(--spring);
   }
 
-  .logo {
+  .nav__mark:hover .nav__seal {
+    rotate: 120deg;
+  }
+
+  .nav__now {
+    display: flex;
+    gap: 8px;
+    margin: 0;
+    color: var(--fg-2);
+    font: 500 11px/1 var(--font-mono);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .nav__links {
+    display: flex;
+    gap: clamp(14px, 2vw, 28px);
+    margin-left: auto;
+  }
+
+  .nav__links a {
     position: relative;
-    font: 400 30px/1 var(--font-display);
-    letter-spacing: -0.02em;
+    padding: 8px 0;
+    font: 500 11px/1 var(--font-mono);
+    letter-spacing: 0.09em;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  .nav__links a::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 2px;
+    height: 1.5px;
+    background: currentColor;
+    scale: 0 1;
+    transform-origin: right;
+    transition: scale 0.3s var(--ease-out);
+  }
+
+  .nav__links a:hover::after,
+  .nav__links a[aria-current]::after {
+    scale: 1 1;
+    transform-origin: left;
+  }
+
+  .nav__tools {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .nav__menu {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    margin-left: 6px;
+    padding: 0 14px;
+    border: 1.5px solid var(--fg);
+    border-radius: 999px;
+    background: none;
+    font: 500 11px/1 var(--font-mono);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .nav__menu span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  /* ── the phone menu: a dark sheet with the running order set large ── */
+  .menu {
+    inset: var(--bar) 0 auto 0;
+    width: 100%;
+    max-width: none;
+    max-height: calc(100svh - var(--bar));
+    margin: 0;
+    padding: 18px var(--gutter) 28px;
+    border: 0;
+    background: var(--bg);
+    color: var(--fg);
+    overflow-y: auto;
+  }
+
+  .menu ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .menu a {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    padding: 10px 0 8px;
+    border-bottom: 1px solid var(--line);
     text-decoration: none;
   }
 
-  .logo__spark {
-    position: absolute;
-    top: -8px;
-    right: -18px;
-    width: 18px;
-    transition: rotate 0.5s var(--spring);
+  .menu__idx {
+    width: 4ch;
+    color: var(--accent);
+    font: 500 11px/1 var(--font-mono);
+    letter-spacing: 0.09em;
   }
 
-  .logo:hover .logo__spark {
-    rotate: 90deg;
+  .menu__name {
+    font-family: var(--font-display);
+    font-size: clamp(44px, 15vw, 88px);
+    font-stretch: 66%;
+    font-weight: 800;
+    line-height: 0.92;
+    text-transform: uppercase;
   }
 
-  .nav__right {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
+  @media (prefers-reduced-motion: no-preference) {
+    .menu:popover-open {
+      animation: menu-in 0.42s var(--ease-out);
+    }
 
-  .links {
-    display: flex;
-    gap: 10px;
-  }
-
-  .key--nav {
-    --key-depth: 4px;
-    min-height: 40px;
-    padding: 0.5em 0.9em;
-    font-size: 15px;
-  }
-
-  .menu-button {
-    display: none;
-  }
-
-  .menu {
-    inset: 70px var(--gutter) auto auto;
-    margin: 0;
-    padding: 12px;
-    border: var(--line) solid var(--ink);
-    border-radius: 18px;
-    background: var(--paper);
-    box-shadow: 6px 7px 0 var(--shadow);
-  }
-
-  .menu:popover-open {
-    display: grid;
-    gap: 12px;
-    min-width: 180px;
+    @keyframes menu-in {
+      from {
+        clip-path: inset(0 0 100% 0);
+      }
+      to {
+        clip-path: inset(0 0 0 0);
+      }
+    }
   }
 
   @media (max-width: 899px) {
-    .links {
+    .nav__links {
       display: none;
     }
-    .menu-button {
+
+    .nav__tools {
+      margin-left: auto;
+    }
+
+    .nav__menu {
       display: inline-flex;
     }
-    .logo {
-      font-size: 26px;
+  }
+
+  @media (max-width: 479px) {
+    .nav__now {
+      display: none;
     }
   }
 </style>

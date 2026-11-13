@@ -1,5 +1,6 @@
 import { basis, planeTransform, project, solidPath, type Camera } from './iso';
 import { KEY, keycap } from './keycap';
+import { jumpTo } from './fx';
 import { bloop, keyDown, keyUp } from './sound';
 
 type KeyDef = { id: string; legend: string; cx: number; cy: number; w: number; hole?: boolean };
@@ -137,20 +138,14 @@ export function initKeyboard(svg: SVGSVGElement) {
   };
 
   // ── Navigation ─────────────────────────────
+  // Let the key finish springing back, then leave: a real page loads, an in-page
+  // section arrives behind the jump card (scripts/fx.ts).
   const go = (href: string) => {
-    if (!href.startsWith('#')) {
-      // a real page: let the key finish springing back before we leave
-      window.setTimeout(() => (location.href = href), 170);
-      return;
-    }
-    const target = document.querySelector<HTMLElement>(href);
     window.setTimeout(() => {
-      if (!target) return void (location.hash = href);
-      target.scrollIntoView({ behavior: reduceMotion.matches ? 'auto' : 'smooth', block: 'start' });
-      history.replaceState(null, '', href);
-      target.classList.remove('is-arrived');
-      void target.offsetWidth;
-      target.classList.add('is-arrived');
+      if (!href.startsWith('#')) return void (location.href = href);
+      void jumpTo(href).then((found) => {
+        if (!found) location.hash = href;
+      });
     }, 170);
   };
 
@@ -239,8 +234,20 @@ export function initKeyboard(svg: SVGSVGElement) {
   let partyUntil = 0;
   let hintTimer = 0;
 
+  // The wall behind the keyboard repeats whatever is being typed, in letters a storey high.
+  const wall = section.querySelector<HTMLElement>('[data-wall]');
+  const wallText = section.querySelector<HTMLElement>('[data-wall-text]');
+  const onWall = (text: string) => {
+    if (!wall || !wallText) return;
+    wall.classList.toggle('is-typing', text.length > 0);
+    if (!text) return;
+    wallText.textContent = text;
+    wallText.style.setProperty('--n', String(Math.max(4, text.length)));
+  };
+
   const showBuffer = () => {
     if (screenText) screenText.textContent = buffer.toLowerCase();
+    onWall(buffer);
   };
 
   /**
@@ -297,6 +304,7 @@ export function initKeyboard(svg: SVGSVGElement) {
 
     if (bubbleText) bubbleText.textContent = 'hello to you too!';
     if (screenText) screenText.textContent = 'hello!! ✦';
+    onWall('HELLO!!');
     screen?.classList.remove('is-party');
     void screen?.offsetWidth;
     screen?.classList.add('is-party');

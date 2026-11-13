@@ -1,78 +1,397 @@
 ---
-import Shapes from './Shapes.astro';
-import SectionHead from './SectionHead.astro';
+// Tools, as a wiring diagram instead of a row of badges. Projects on the left, what they
+// were built with on the right, a wire for every real connection. Reach for a project to
+// see what it's made of; reach for a tool to see where it's been used.
+//
+// Nothing here is rated. A wire means "this project's stack lists this tool".
+import PosterHead from './PosterHead.astro';
+import { chapter } from '../data/chapters';
 import { skills } from '../data/profile';
+import { archive, projects } from '../data/projects';
+
+const c = chapter('skills');
+
+const sources = [
+  ...projects.map((p) => ({ name: p.name, href: `/projects/${p.slug}/`, stack: p.stack ?? [] })),
+  ...archive.map((a) => ({ name: a.name, href: undefined as string | undefined, stack: a.stack ?? [] })),
+].filter((s) => s.stack.length > 0);
+
+const toolCount = new Set(skills.flatMap((g) => g.items)).size;
 ---
 
-<section id="skills" class="section" aria-labelledby="skills-title">
-  <Shapes variant="skills" />
-  <div class="section__inner">
-    <SectionHead
-      eyebrow="skills.cfg"
-      title="tools I've used"
-      id="skills-title"
-      fill="lilac"
-      lede="Pulled straight from the projects above. No percentage bars."
-    />
+<section id="skills" class="tools poster s-paper" {...c.attrs} aria-labelledby="skills-title">
+  <div class="wrap">
+    <PosterHead id="skills" note={`${toolCount} tools · ${sources.length} projects · no percentage bars`} />
 
-    <div class="groups">
-      {
-        skills.map((g) => (
-          <div class="group">
-            <h3 class="group__title">{g.title}</h3>
-            <ul class="caps">
-              {g.items.map((s) => (
-                <li>{s}</li>
-              ))}
-            </ul>
-            {g.from.length > 0 && <p class="group__from">used in {g.from.join(', ')}</p>}
-          </div>
-        ))
-      }
+    <header class="tools__head">
+      <h2 id="skills-title" class="tools__title head" data-reveal>What it's<br />made of</h2>
+      <p class="tools__lede voice" data-reveal>
+        Every wire is a real one: the tool is in that project's stack.
+      </p>
+    </header>
+
+    <div class="graph" data-graph>
+      <svg class="graph__wires" data-wires aria-hidden="true"></svg>
+
+      <div class="graph__col graph__col--from">
+        <p class="label label--dim">projects</p>
+        <ul class="nodes">
+          {
+            sources.map((s) => (
+              <li>
+                <button class="node" type="button" aria-pressed="false" data-project={s.name} data-stack={JSON.stringify(s.stack)} data-href={s.href}>
+                  <span class="node__name">{s.name}</span>
+                  <span class="node__n">{String(s.stack.length).padStart(2, '0')}</span>
+                  <i class="node__dot" data-dot />
+                </button>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <div class="graph__col graph__col--to">
+        {
+          skills.map((g) => (
+            <div class="group">
+              <h3 class="label label--dim">{g.title}</h3>
+              <ul class="chips">
+                {g.items.map((item) => (
+                  <li>
+                    <button class="chip" type="button" aria-pressed="false" data-skill={item}>
+                      {item}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))
+        }
+      </div>
     </div>
+
+    <p class="readout" aria-live="polite">
+      <span class="readout__text" data-readout>Pick a project to see what it's made of, or a tool to see where it's been used.</span>
+      <a class="link readout__link" data-readout-link hidden>open the case study</a>
+    </p>
   </div>
 </section>
 
+<script>
+  const SVG = 'http://www.w3.org/2000/svg';
+
+  document.querySelectorAll<HTMLElement>('[data-graph]').forEach((graph) => {
+    const svg = graph.querySelector<SVGSVGElement>('[data-wires]')!;
+    const section = graph.closest('section')!;
+    const readout = section.querySelector<HTMLElement>('[data-readout]')!;
+    const link = section.querySelector<HTMLAnchorElement>('[data-readout-link]')!;
+    const idle = readout.textContent ?? '';
+
+    const nodes = [...graph.querySelectorAll<HTMLButtonElement>('[data-project]')];
+    const chips = [...graph.querySelectorAll<HTMLButtonElement>('[data-skill]')];
+    const chipOf = new Map(chips.map((chip) => [chip.dataset.skill!, chip]));
+    const stackOf = new Map(nodes.map((n) => [n, JSON.parse(n.dataset.stack ?? '[]') as string[]]));
+
+    // one wire per real connection
+    const wires = nodes.flatMap((node) =>
+      stackOf
+        .get(node)!
+        .filter((tool) => chipOf.has(tool))
+        .map((tool) => {
+          const path = document.createElementNS(SVG, 'path');
+          svg.append(path);
+          return { node, chip: chipOf.get(tool)!, path };
+        }),
+    );
+
+    function layout() {
+      const box = graph.getBoundingClientRect();
+      svg.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+      for (const w of wires) {
+        const a = w.node.querySelector('[data-dot]')!.getBoundingClientRect();
+        const b = w.chip.getBoundingClientRect();
+        const ax = a.left + a.width / 2 - box.left;
+        const ay = a.top + a.height / 2 - box.top;
+        const bx = b.left - box.left;
+        const by = b.top + b.height / 2 - box.top;
+        const bend = Math.max(40, (bx - ax) * 0.5);
+        w.path.setAttribute('d', `M${ax.toFixed(1)} ${ay.toFixed(1)}C${(ax + bend).toFixed(1)} ${ay.toFixed(1)} ${(bx - bend).toFixed(1)} ${by.toFixed(1)} ${bx.toFixed(1)} ${by.toFixed(1)}`);
+      }
+    }
+    new ResizeObserver(layout).observe(graph);
+    document.fonts.ready.then(layout);
+
+    // ── what's lit ──────────────────────────────
+    let pinned: HTMLButtonElement | null = null;
+
+    function show(active: HTMLButtonElement | null) {
+      const isProject = !!active?.dataset.project;
+      const lit = new Set<Element>();
+      if (active) {
+        lit.add(active);
+        for (const w of wires) {
+          const on = isProject ? w.node === active : w.chip === active;
+          w.path.classList.toggle('is-on', on);
+          if (on) lit.add(isProject ? w.chip : w.node);
+        }
+      } else wires.forEach((w) => w.path.classList.remove('is-on'));
+
+      graph.classList.toggle('has-active', !!active);
+      [...nodes, ...chips].forEach((el) => el.classList.toggle('is-on', lit.has(el)));
+
+      link.hidden = true;
+      if (!active) readout.textContent = idle;
+      else if (isProject) {
+        const n = stackOf.get(active)!.length;
+        readout.textContent = `${active.dataset.project} is built with ${n} of these.`;
+        if (active.dataset.href) {
+          link.href = active.dataset.href;
+          link.hidden = false;
+        }
+      } else {
+        const users = wires.filter((w) => w.chip === active).map((w) => w.node.dataset.project);
+        readout.textContent = `${active.dataset.skill}: used in ${users.join(', ')}.`;
+      }
+    }
+
+    [...nodes, ...chips].forEach((el) => {
+      el.addEventListener('pointerenter', (e) => (e as PointerEvent).pointerType === 'mouse' && show(el));
+      el.addEventListener('pointerleave', (e) => (e as PointerEvent).pointerType === 'mouse' && show(pinned));
+      el.addEventListener('focus', () => show(el));
+      el.addEventListener('blur', () => show(pinned));
+      el.addEventListener('click', () => {
+        pinned?.setAttribute('aria-pressed', 'false');
+        pinned = pinned === el ? null : el;
+        pinned?.setAttribute('aria-pressed', 'true');
+        show(pinned ?? el);
+      });
+    });
+  });
+</script>
+
 <style>
-  .groups {
+  .tools__head {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: clamp(28px, 4vw, 44px) clamp(28px, 5vw, 64px);
-    margin-top: 52px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 24px;
+    margin-top: clamp(28px, 4.4vw, 64px);
   }
 
-  .group__title {
-    margin: 0;
-    font: 400 26px/1.05 var(--font-display);
+  .tools__title {
+    font-size: clamp(54px, 9.4vw, 176px);
+    font-stretch: 62%;
+    font-weight: 900;
+    line-height: 0.78;
   }
 
-  .caps {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 8px;
-    margin: 16px 0 0;
+  .tools__lede {
+    max-width: 17ch;
+    margin: 0 0 0.25em;
+    font-size: clamp(22px, 2.1vw, 34px);
+    line-height: 1.05;
+    text-align: right;
+  }
+
+  /* ── the diagram ────────────────────── */
+  .graph {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.25fr);
+    gap: clamp(60px, 13vw, 240px);
+    margin-top: clamp(36px, 5vw, 80px);
+    padding-top: clamp(18px, 2.4vw, 32px);
+    border-top: 1px solid var(--fg);
+  }
+
+  .graph__wires {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  .graph__wires :global(path) {
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 1;
+    opacity: 0.22;
+    transition:
+      opacity 0.25s ease,
+      stroke 0.25s ease,
+      stroke-width 0.25s ease;
+  }
+
+  .graph.has-active .graph__wires :global(path) {
+    opacity: 0.05;
+  }
+
+  .graph.has-active .graph__wires :global(path.is-on) {
+    stroke: var(--accent);
+    stroke-width: 2;
+    opacity: 1;
+  }
+
+  .nodes {
+    display: grid;
+    margin: 12px 0 0;
     padding: 0;
     list-style: none;
   }
 
-  .caps li {
-    padding: 8px 11px 7px;
-    border: 2px solid var(--ink);
-    border-radius: 10px;
-    background: var(--cream);
-    box-shadow: 0 4px 0 var(--shadow);
+  .node {
+    position: relative;
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    width: 100%;
+    padding: clamp(10px, 1.3vw, 18px) 26px clamp(8px, 1.1vw, 14px) 0;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    transition:
+      color 0.25s ease,
+      opacity 0.25s ease;
+  }
+
+  .node__name {
+    flex: 1;
+    font-family: var(--font-display);
+    font-size: clamp(26px, 3.3vw, 58px);
+    font-stretch: 64%;
+    font-weight: 900;
+    line-height: 0.9;
+    text-transform: uppercase;
+  }
+
+  .node__n {
+    color: var(--fg-2);
+    font: 500 11px/1 var(--font-mono);
+    letter-spacing: 0.08em;
+  }
+
+  .node__dot {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    width: 11px;
+    height: 11px;
+    border: 1.5px solid var(--fg);
+    border-radius: 50%;
+    background: var(--bg);
+    translate: 50% -50%;
+    transition:
+      background-color 0.25s ease,
+      border-color 0.25s ease,
+      scale 0.4s var(--spring);
+  }
+
+  .group + .group {
+    margin-top: clamp(18px, 2.2vw, 30px);
+  }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin: 10px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .chip {
+    padding: 8px 13px 7px;
+    border: 1px solid var(--fg);
+    border-radius: 999px;
+    background: var(--bg);
     font-size: 15px;
-    font-weight: 650;
+    font-stretch: 90%;
+    font-weight: 600;
+    line-height: 1.1;
+    cursor: pointer;
+    transition:
+      background-color 0.25s ease,
+      border-color 0.25s ease,
+      color 0.25s ease,
+      opacity 0.25s ease;
   }
 
-  .group__from {
-    margin: 14px 0 0;
-    font: 400 20px/1.15 var(--font-hand);
+  /* everything not on the live circuit steps back */
+  .graph.has-active .node:not(.is-on),
+  .graph.has-active .chip:not(.is-on) {
+    opacity: 0.28;
   }
 
-  @media (max-width: 759px) {
-    .groups {
+  .node.is-on {
+    color: var(--accent);
+  }
+
+  .node.is-on .node__dot {
+    border-color: var(--accent);
+    background: var(--accent);
+    scale: 1.35;
+  }
+
+  .chip.is-on {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+
+  .node[aria-pressed='true'] .node__name,
+  .chip[aria-pressed='true'] {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+  }
+
+  .readout {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 16px;
+    min-height: 2.6em;
+    margin: clamp(22px, 3vw, 40px) 0 0;
+    font-size: clamp(17px, 1.5vw, 22px);
+    font-stretch: 90%;
+    font-weight: 600;
+  }
+
+  .readout__link {
+    color: var(--accent);
+  }
+
+  .readout__link[hidden] {
+    display: none;
+  }
+
+  @media (max-width: 899px) {
+    .tools__head {
       grid-template-columns: minmax(0, 1fr);
+    }
+
+    .tools__lede {
+      max-width: 26ch;
+      text-align: left;
+    }
+
+    /* no room for wires: the lit chips carry the same information */
+    .graph {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 30px;
+    }
+
+    .graph__wires,
+    .node__dot {
+      display: none;
+    }
+
+    .node {
+      padding-right: 0;
     }
   }
 </style>
