@@ -23,7 +23,6 @@ const faces: [string, string, string][] = [
   ['B', 'back', '2,-1,1'],
 ];
 
-const STATES = '43,252,003,274,489,856,000';
 ---
 
 <section
@@ -110,22 +109,6 @@ const STATES = '43,252,003,274,489,856,000';
       </div>
     </div>
   </div>
-
-  <!-- the number of states a cube can be in. it is a real number. -->
-  <p class="cube__count" aria-label={`${STATES} possible states`}>
-    <span class="cube__run" aria-hidden="true">
-      {
-        [0, 1].map(() => (
-          <span>
-            {STATES}
-            <i>possible states</i>
-            {STATES}
-            <i>you only need one</i>
-          </span>
-        ))
-      }
-    </span>
-  </p>
 </section>
 
 <script>
@@ -144,7 +127,7 @@ const STATES = '43,252,003,274,489,856,000';
     display: flex;
     flex-direction: column;
     min-height: 100svh;
-    padding: clamp(22px, 3vw, 40px) 0 0;
+    padding: clamp(22px, 3vw, 40px) 0 calc(clamp(48px, 9vw, 150px) + clamp(8px, 1.4vw, 22px));
     overflow: clip;
     clip-path: ellipse(calc(56% + pow(var(--dome), 3) * 650%) calc(100% + pow(var(--dome), 8) * 60%) at 50% 100%);
   }
@@ -355,47 +338,6 @@ const STATES = '43,252,003,274,489,856,000';
     gap: 10px;
   }
 
-  /* ── forty-three quintillion ────────── */
-  .cube__count {
-    margin: 0 0 -0.09em;
-    overflow: clip;
-    font-family: var(--font-display);
-    font-size: clamp(64px, 11.5vw, 210px);
-    font-stretch: 62%;
-    font-weight: 900;
-    line-height: 0.8;
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .cube__run {
-    display: inline-flex;
-    animation: run 60s linear infinite;
-  }
-
-  .cube__run > span {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 0.22em;
-    padding-right: 0.22em;
-    color: transparent;
-    -webkit-text-stroke: 1.5px var(--fg);
-  }
-
-  .cube__run i {
-    color: var(--accent);
-    font: 300 0.26em/1 var(--font-display);
-    font-style: normal;
-    letter-spacing: -0.02em;
-    -webkit-text-stroke: 0;
-  }
-
-  @keyframes run {
-    to {
-      translate: -50% 0;
-    }
-  }
-
   /* a hand-made solve earns a small ceremony */
   .cube.is-won .cube__disc {
     animation: won 1.1s var(--spring);
@@ -465,8 +407,5 @@ const STATES = '43,252,003,274,489,856,000';
       clip-path: none;
     }
 
-    .cube__run {
-      animation: none;
-    }
   }
 </style>

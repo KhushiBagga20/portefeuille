@@ -7,12 +7,25 @@ import KeyboardScene from './KeyboardScene.astro';
 import PosterHead from './PosterHead.astro';
 import { chapter } from '../data/chapters';
 import { desk, pad, sections } from '../data/keyboard';
+import { basis, project } from '../scripts/iso';
+import { KEY } from '../scripts/keycap';
 
 const c = chapter('keyboard');
 const IDLE = 'press any key';
+
+// Where the board's highest key sits in its own drawing, so the stylesheet can place the
+// whole board just below the strip at any window shape. The drawing is scaled to cover its
+// stage (width-fitted on wide windows, height-fitted on tall ones), so the key's position on
+// screen is one of two things; the CSS takes whichever applies.
+const m = basis(desk.camera);
+const [boxW, boxH] = desk.viewBox;
+const highest = Math.min(
+  ...desk.keys.filter((k) => !k.hole).flatMap((k) => [-1, 1].map((side) => project(m, k.cx + side * k.w * 50, k.cy - 50, KEY.rest)[1])),
+);
+const stage = `--key-tall:${(highest / boxH).toFixed(4)};--key-wide:${(((boxH / 2 - highest) / boxW) * 100).toFixed(2)}vw`;
 ---
 
-<section id="keyboard" class="keyboard poster s-cobalt" {...c.attrs} aria-labelledby="keyboard-title">
+<section id="keyboard" class="keyboard poster s-cobalt" style={stage} {...c.attrs} aria-labelledby="keyboard-title">
   <!-- behind the board: the idle line, or your own typing -->
   <div class="wall" data-wall aria-hidden="true">
     <span class="wall__idle" style={`--n:${IDLE.length}`}>{IDLE}</span>
@@ -52,9 +65,16 @@ const IDLE = 'press any key';
 <style>
   .keyboard {
     --cut: clamp(48px, 9vw, 150px);
+    /* the board's own stage: one screen tall */
+    --stage: max(720px, 100svh);
+    /* how far down that stage the highest key would sit */
+    --key-top: min(calc(var(--stage) * var(--key-tall)), calc(var(--stage) / 2 - var(--key-wide)));
+    /* lower the stage until that key is clear of the slant and the strip, and let the
+       room grow by the same amount so nothing is lost off the bottom */
+    --drop: max(0px, calc(var(--cut) + 60px - var(--key-top)));
     position: relative;
     z-index: 1;
-    min-height: max(720px, 100svh);
+    min-height: calc(var(--stage) + var(--drop));
     margin-top: calc(var(--cut) * -1);
     padding: 0;
     overflow: clip;
@@ -109,7 +129,7 @@ const IDLE = 'press any key';
   /* ── the board ──────────────────────── */
   .scene {
     position: absolute;
-    inset: 0;
+    inset: var(--drop) 0 0;
   }
 
   .scene :global(.scene__desk) {

@@ -103,7 +103,9 @@ polygons (`scripts/rubik.ts`). It sits in an ink room in front of an acid disc.
 The board, its garden and its behaviour are as they were (`KeyboardScene.astro`,
 `Garden.astro`, `scripts/keyboard.ts`, `scripts/iso.ts`). Around it:
 
-- a cobalt room that arrives on the slant, cutting across the foot of the cube room;
+- a cobalt room that arrives on the slant, cutting across the foot of the cube room.
+  The board is lowered so its highest key always sits just under the header strip,
+  whatever the window's shape (`Keyboard.astro` works that out from the drawing itself);
 - a wall of type behind the board that repeats whatever you press;
 - a new dark **R** key for the résumé.
 
