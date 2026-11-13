@@ -1,242 +1,239 @@
-# khushi's little corner of the internet
+# Khushi Bagga — portfolio
 
-Portfolio of Khushi Bagga. Astro + TypeScript, no animation or 3D libraries.
+Astro + TypeScript. No UI framework, no animation library, no 3D library: everything that
+moves is SVG, CSS and a few small scripts.
 
 ```bash
 npm install
 npm run dev      # http://localhost:4321
 npm run build    # static site in dist/
+npm run preview  # serve the built site
 ```
 
-## The idea
+## The idea: controlled chaos
 
-A scrapbook left inside a candy-colored computer from 1999. The square is the site's one motif:
-windows in the collage → keys on the keyboard → section cards.
+The site is a run of posters. Each section has one ground, one loud colour, one large
+gesture and its own way of being touched. What holds them together is strict: three
+typefaces, one hairline, one button, one index number in the corner of every sheet.
 
-- **Ground:** periwinkle `#b9c6ff` with a faint white grid
-- **Paper objects:** cream `#fff8ec` with ink `#1b1526` outlines and hard shadows
-- **Accents:** lemon `#ffe14f` to highlight, tomato `#ff6a3d` to act, plus pink, lilac and mint on the keycaps
-- **Type:** Bagel Fat One (big moments), Bricolage Grotesque (reading), Delicious Handrawn (notes), Silkscreen (tiny computer labels)
+**Three typefaces, three jobs**
 
-## 1. The collage (landing page)
+| Face | Job |
+| --- | --- |
+| Archivo (variable: width 62–125, weight 100–900) | structure — from 11px labels to the 20vw masthead |
+| Instrument Serif, italic | the voice — asides, the human bits |
+| IBM Plex Mono | annotation — indices, metadata, instructions |
 
-Your photo sits at the bottom. Your drawing sits on top, with square holes cut in it by CSS masks.
-While the hero is pinned, scrolling plays three acts: **look closer** (the photo drifts under the holes),
-**open up** (the holes merge until the photo takes over), **swap** (new windows open in the photo and show the drawing).
-On desktop, a square lens follows the cursor.
+**Schemes.** A section picks a scheme class and builds only from that scheme's variables
+(`--bg`, `--fg`, `--fg-2`, `--line`, `--accent`, `--on-accent`):
+
+| Class | Ground | Used by |
+| --- | --- | --- |
+| `s-paper`, `s-paper-2` | off-white (follows day/night) | cover, about, work, beyond, tools |
+| `s-ink` | blue-black | cube, records, 404 |
+| `s-cobalt` | `#2238ff` | keyboard |
+| `s-magenta` | `#ff2a85` | milestones |
+| `s-violet` | `#7a3cff` | résumé |
+| `s-acid` | `#d6ff3d` | contact |
+
+All of it is in `src/styles/global.css`. Physical objects (index cards, the résumé sheet,
+the ID, the keyboard, the deck) keep their own colours on any ground.
+
+**The marigold** survives as geometry: `Rosette.astro` draws rings of circles round a
+centre. It is the mark in the nav (`Seal.astro`), the favicon, and the large flower turning
+behind the portrait on the cover.
+
+## Running order
+
+`src/data/chapters.ts` is the list of sections. A section's index — (03), (07) — is its
+position in that list, so adding or reordering one renumbers the whole site. Keep
+`src/pages/index.astro` in the same order.
+
+## 1. The cover
+
+A masthead the width of the page, the portrait standing in front of it, and the name
+repeated as an outline across the portrait so it still reads. The letters swell toward the
+cursor along Archivo's width axis while the others give way by the same amount, so the word
+never changes length.
+
+The portrait is the square-hole collage: your photo underneath, your drawing on top with
+windows cut in it by CSS masks. While the cover is pinned, scrolling plays three acts —
+**look closer**, **open up**, **swap** — and on desktop a square lens follows the cursor.
+That logic (`Collage.astro`, `scripts/hero.ts`, `scripts/collage-math.ts`) is unchanged;
+`Hero.astro` only decides where things sit around it.
 
 ### Swapping in your own art
 
 1. **Photo** → replace `src/assets/collage/photo.jpg` (portrait, 4:5, e.g. 1600×2000).
-2. **Drawing** → replace `src/assets/collage/illustration.png`.
-   Draw it **on top of your photo, on the same canvas size**, then export the drawing alone with a transparent background.
-   That's what makes the holes line up.
+2. **Drawing** → replace `src/assets/collage/illustration.png`. Draw it on top of your photo,
+   on the same canvas, then export the drawing alone with a transparent background.
 3. **Holes** → edit `photoWindows` and `drawingWindows` in `src/data/collage.ts` (800×1000 grid).
+4. Run `npm run og` afterwards (see below) so the link preview matches.
 
-## 2. The keyboard
+The same drawing is used on the student ID in About.
 
-A diagonal, extruded keyboard drawn as SVG by a tiny 2.5D engine (`src/scripts/iso.ts`):
-an orthographic camera projects each key's base and top face, and the hull of the two becomes the key's body.
+## 2. The cube
 
-- Click or tap a coloured key (A about · P projects · S skills · M milestones · E experience · C contact), or **type the letter on your real keyboard**, to jump to that section.
-- Keys press down and spring back; on desktop they lift on hover and the whole keyboard tilts with the cursor.
-- The missing **G** key grew a garden. Hover (or tap) the watering can.
-- **Spell `hello`** (click the keys or type them) and the keyboard ripples, plays a little tune, the garden blooms
-  and a butterfly flies out. A tiny screen echoes what you type. The E key only jumps to its section when it isn't
-  part of "he…", so spelling never gets interrupted. On phones, the ✦ key does the same (and ? drops a hint).
-- **Click sounds** are synthesised live with Web Audio (`src/scripts/sound.ts`): no audio files.
-  Bigger keys thock deeper. The speaker keycap in the nav mutes them, and the choice is remembered.
-- Phones get their own 3×3 key pad instead of a shrunken keyboard.
+A real 3×3: 26 cubies, each with its own orientation matrix, drawn as depth-sorted SVG
+polygons (`scripts/rubik.ts`). It sits in an ink room in front of an acid disc.
 
-Change which letters do what (label, link, colour) in `src/data/keyboard.ts`.
-Camera angles, the popped-out key and the garden's position live in the same file.
+- Drag the background to orbit; drag a sticker to turn that layer.
+- The pad and a real keyboard both speak standard notation: **U D L R F B**, with ′ (or
+  shift) for counter-clockwise.
+- The panel reads the cube itself: moves made by hand, solved or scrambled (checked by
+  looking at the faces, so it's right whichever way up the cube ends), the last turn, and
+  the camera angle on a dial.
+- **Scramble** is 18 turns that never undo the one before. **Solve** plays the move log
+  backwards, compressed — you watch it undo itself. Press it again to skip to the end.
+- A turn commits at 90° by rewriting integer positions, so nothing drifts.
 
-## 3. Content (projects, milestones, about)
+## 3. The keyboard
 
-All content lives in data files, separate from the components that draw it:
+The board, its garden and its behaviour are as they were (`KeyboardScene.astro`,
+`Garden.astro`, `scripts/keyboard.ts`, `scripts/iso.ts`). Around it:
+
+- a cobalt room that arrives on the slant, cutting across the foot of the cube room;
+- a wall of type behind the board that repeats whatever you press;
+- a new dark **R** key for the résumé.
+
+Coloured keys jump to sections — click, tap, or type the letter. Spell `hello` for the
+garden. Which letters do what lives in `src/data/keyboard.ts`.
+
+## 4. Content
+
+Everything a visitor reads comes from data files:
 
 | Content | File |
 | --- | --- |
-| Featured projects (floppy disks + case-study pages) and the archive | `src/data/projects.ts` |
-| Milestones / achievements | `src/data/achievements.ts` |
-| About text, education, communities, skill groups | `src/data/profile.ts` |
-| Hero words, nav, contact links | `src/data/site.ts` |
+| Projects, the archive, disk colours | `src/data/projects.ts` |
+| Milestones | `src/data/achievements.ts` |
+| About, education, clubs, skill groups | `src/data/profile.ts` |
+| The résumé | `src/data/resume.ts` |
+| Cover words, nav, contact links | `src/data/site.ts` |
 
-Rules the site follows:
+House rules, unchanged:
 
-- Anything left out (a missing `oneLiner`, `role`, `stack`, section `body`, link…) shows a styled
-  **"details coming soon"** instead of a guess. Fill the field in and it appears.
-- Links (GitHub, demo, email, LinkedIn, résumé) only render once they're filled in.
-- Each project's `todo` list is a private checklist and never shows on the site.
-- Skills are grouped by hand in `profile.ts`; the "used in …" notes are worked out from project stacks.
+- A field left out shows a plain **"details coming soon"**, never a guess.
+- Links appear only once they're filled in.
+- `todo` lists are notes to yourself and never render.
 
-Each featured project gets its own page at `/projects/<slug>/`. In browsers that support
-cross-document view transitions, the floppy disk flies from the grid into the disk drive on that page.
+How each section shows its data:
 
-## 4. Sharing, 404 and the little extras
+- **About** — the first paragraph at headline size; the ID card leans toward the cursor and
+  turns over to show coursework and languages.
+- **Work** — the first project at full size, the rest as an index. A row floods with its
+  disk's colour and the disk rides under the cursor. Each project has a page at
+  `/projects/<slug>/`; where the browser supports it, the disk flies there.
+- **Milestones** — index cards in a drawer. Tabs, arrow keys or the buttons pull a card to
+  the front. A sideways row on phones; a plain list with no JS.
+- **Beyond** — the clubs.
+- **Tools** — a wiring diagram. One wire per real connection between a project's stack and a
+  tool. Nothing is rated.
 
-- **Link preview image** (`public/og.png`): what LinkedIn/WhatsApp/iMessage show when the link is shared.
-  It's a screenshot of the `/og/` page. After changing your photo, drawing or headline, run `npm run dev`
-  and then `npm run og` to regenerate it. Once the site has a domain, set `site` in `astro.config.mjs`
-  so previews use absolute URLs.
-- **404 page**: `src/pages/404.astro` ("disk not found").
-- **Reduced motion**: the collage doesn't play on scroll; "drawn / real / both" buttons switch it instead.
-- **Contact** links and the résumé live in `src/data/site.ts` and `public/`.
+## 5. The résumé
 
-## 5. The record room (`/music/`)
+One sheet, three reading lengths, four lenses — at `#resume`, and on the **R** key.
 
-A turntable you can actually use, loaded from your public Spotify playlist. The deck is drawn
-with the same 2.5D engine as the keyboard — brushed-metal chassis, stroboscopic dots, grooves,
-a real tonearm — and Spotify's own embedded player does the streaming.
+- **Skim / read / everything** fold lines in and out. Reading times are counted from the
+  words each length actually shows.
+- A **lens** (AI, native & systems, web, design) keeps the sheet whole but lets entries that
+  aren't about that subject fall back.
+- It is plain CSS: the controls are radio buttons and the sheet responds with `:has()`.
 
-- **Pick a sleeve** and the record slides out, flies across the room, lands on the platter,
-  the arm swings over and the platter winds up. Picking another reverses it first.
-- **Controls:** start/stop (on the deck or the panel), previous, next, **shuffle** (anything
-  from the playlist at random), **dig deeper** (refills the crate with a fresh handful),
-  33⅓ / 45, and a pitch fader you can drag or nudge with arrow keys.
-- **The platter follows the player.** Spotify reports what it's doing and the deck matches it,
-  so the record is never spinning at something that isn't playing. When a track ends, the
-  needle moves on by itself.
-- **Speed and pitch move the platter only** — Spotify keeps its own tempo, and the page says so.
-- **Spotify loads only once you pick a record**, so nothing third-party touches the page for
-  someone just looking around. Full tracks play for signed-in Spotify listeners; everyone else
-  gets the 30-second preview.
-- **Reduced motion:** no flight and no spinning; the record simply appears on the platter.
-- **Phones:** deck first, then controls, then a swipeable row of sleeves.
+`src/data/resume.ts` holds the PDF's own wording. When the PDF changes, change that file.
+Phone number and home town are deliberately left out of the page; they stay in the PDF.
 
-### Refreshing the playlist
+## 6. The record room
+
+The deck and its state machine are unchanged (`Turntable.astro`, `scripts/turntable.ts`):
+pick a sleeve, the record flies to the platter, Spotify's own player streams it, and the
+platter follows what the player reports. New around it:
+
+- **The index** — all the tracks, searchable, with running times. Click a row to play it.
+- **Artists** — every artist, sized by how many of their songs are in the playlist; pick one
+  to filter the index.
+- A very large record on the wall that wears the current sleeve and turns while it plays.
+
+Albums and moods are not offered because the playlist data doesn't contain them.
 
 ```bash
-npm run playlist        # re-reads the playlist into src/data/playlist.json
+npm run playlist        # re-reads the public playlist into src/data/playlist.json
 ```
 
-`scripts/fetch-playlist.mjs` reads two public Spotify endpoints — the playlist's embed page for
-the track list, and the oEmbed endpoint for each track's album art. No account or API key needed,
-as long as the playlist is public. Covers are hotlinked from Spotify's CDN rather than copied
-into the repo, and no audio is ever stored here: the music stays Spotify's to serve.
+`scripts/fetch-playlist.mjs` reads two public Spotify endpoints (the embed page for the
+track list, oEmbed for cover art). No account or key. Covers are hotlinked, no audio is
+stored. Change the playlist with `PLAYLIST_ID=… npm run playlist`. If Spotify changes their
+embed page the script may fail; the site keeps working on the last committed JSON.
 
-To use a different playlist, change `PLAYLIST` in that script (or run it with
-`PLAYLIST_ID=… npm run playlist`) and commit the regenerated JSON.
+## 7. The rest
 
-One caveat worth knowing: the track list comes from Spotify's own embed page, which is an
-internal format they could change. If the script ever errors, the site keeps working on the
-last committed `playlist.json` — only the refresh breaks.
+- **Contact** — an acid dome rises over the record room; the address is set as large as it
+  goes; the masthead returns across the foot of the page.
+- **Case studies** — `src/pages/projects/[slug].astro`, covered in the disk's colour.
+- **404** — `src/pages/404.astro`.
+- **Link preview** — `public/og.png` is a screenshot of `/og/`. With the dev server running:
+  `npm run og`. Once there's a domain, set `site` in `astro.config.mjs`.
 
-## 6. Day and night
+## Shared motion
 
-The castle has two atmospheres, thrown by a brass lever in the nav (`ThemeLever.astro`) —
-not a sun/moon icon. DAY is the workshop with sun on the paper; NIGHT is the same room after
-everyone's gone, lit by its own windows. Night isn't an inversion: accents shift to amber and
-periwinkle rather than flipping.
+`src/scripts/fx.ts`, loaded once from the layout:
 
-The whole system is semantic tokens in `global.css`, so components never name a colour:
-
-| Token | Role |
+| Hook | What it gives the element |
 | --- | --- |
-| `--paper` / `--paper-deep` | the room itself |
-| `--cream` | paper objects: cards, keycaps, sleeves |
-| `--bone` | a fill that stays light in **both** themes (display type, lit panels) |
-| `--ink` / `--ink-soft` | outlines and type — goes light at night |
-| `--on-accent` | type printed on an accent fill — stays **dark** in both themes |
-| `--shadow` | the hard offset under every object — stays dark |
-| `--glow` | window light, lamps, indicator bulbs |
+| `data-reveal` | fades up once, the first time it's on screen |
+| `data-view` | `--enter` and `--through`, 0→1 as it crosses the viewport |
+| `data-pointer` | `--px` / `--py`, the cursor's position across it |
+| `data-tilt` | `--tx` / `--ty` / `--lit`, for things that lean toward the cursor |
+| `data-kinetic` + `data-k` | letters that swell toward the cursor |
+| `data-chapter` | reported in the nav as "where you are" |
 
-Three rules make the flip safe, and they're the ones to remember when adding anything:
+**Jumps.** Nav links and keyboard keys don't scroll past six sections. A card in the
+destination's colours wipes across, the page moves behind it, the card leaves (`jumpTo`).
 
-1. Text on an accent fill (lemon, tomato, lilac, mint, pink) uses `--on-accent`, never `--ink` —
-   accents stay light in both themes, so their ink must stay dark.
-2. Hard offset shadows use `--shadow`, never `--ink`, or they'd turn into light halos at night.
-3. A **screen is a light source**: the case-study monitor redeclares the daytime ink locally, so
-   it stays lit after dark instead of going transparent.
+## Day and night
 
-The theme is chosen before first paint by an inline script in `Base.astro`, so there's no flash.
-It follows the system preference until the lever is thrown once, then remembers the choice.
+The half-moon in the nav. Only the neutral paper moves; cobalt is cobalt at midnight.
+Daylight is the default for everyone — night only if the visitor has chosen it.
 
-Both themes are checked by measuring real contrast ratios on every visible text node across all
-pages — currently zero failures in either.
+## Accessibility
 
-## 7. The cube
-
-`src/components/Rubik.astro` + `src/scripts/rubik.ts` — a real 3×3 Rubik's cube on a hot-pink
-band, right after the hero. Not a GIF and not a CSS trick: 26 cubies, each carrying its own 3×3
-orientation matrix, drawn as depth-sorted SVG polygons through an orthographic camera. Same
-chunky ink outline as everything else.
-
-- **Drag the background** to orbit it; it turns slowly on its own when left alone.
-- **Drag a sticker** to turn that layer. The drag vector is projected onto the two in-face axes,
-  the nearer one wins, and the rotation axis is the third — which is how a real cube answers
-  your thumb. Direction comes from the sign of that projection and the handedness of the pair.
-- **Scramble** queues twelve random quarter-turns; **solve it for me** snaps every cubie home.
-- Four one-tap buttons turn layers for anyone not using a mouse.
-- It only animates while on screen, and sits perfectly still under `prefers-reduced-motion`.
-
-A turn animates as an extra rotation applied on top of the affected cubies, then *commits* at 90°
-by rewriting their integer positions and orientation matrices — so floating-point drift can never
-accumulate across hundreds of turns.
-
-## 8. Marigolds
-
-The signature motif, and the reason for the palette. `src/components/Garland.astro` strings
-marigolds across the top of a section the way a toran hangs over a doorway: a quadratic sag for
-the string, flowers dangling *below* it (their centres offset down by their own radius, or the
-tops clip), leaves tucked between, and each flower swinging slightly out of step with its
-neighbours.
-
-Drop one in with `<Garland class="garland-hang" />` as the first child of a `.section`, and add
-`has-garland` to that section so it gets headroom for the flowers. `droop` and `count` are props.
-
-The whole colour system is built around them — marigold and turmeric against warm cream, with
-rani pink and leaf green behind. At night the ground goes deep brown and the marigolds are what
-the lamps catch.
-
-## 9. The flat-shape layer
-
-Every content section sits on a layer of flat shapes — concentric rings, leaves, petals,
-blobs, arcs, dot grids and checker blocks — in green, teal and sea blue. It's one component,
-`src/components/Shapes.astro`, with a named set of shapes per section.
-
-To move, recolour or add a shape, edit that section's entry in the `sets` object: `k` is the
-kind, `x`/`y` are percentages of the section box, `s` scales it, `c` is the colour and `o` the
-opacity. `hide: true` drops a shape on narrow screens.
-
-The vocabulary is both organic and mechanical: rings, leaves, petals, blobs, arcs, dot grids and
-checker blocks, plus **gears** (which turn slowly), **bolts** and **pipe elbows** placed at the
-section seams so the rooms read as joined parts of one machine.
-
-Two rules keep it readable: big light fills (green, teal, lemon) may sit behind text, while the
-darker sea blue stays in thin or small shapes out in the margins. The layer is decorative only —
-hidden from screen readers, never catches a click, and always painted under the content.
+- Text contrast is measured, both themes, every page.
+- Everything interactive is a real button, link or radio, and works from the keyboard.
+- With `prefers-reduced-motion`: the cover isn't pinned (three buttons switch the collage),
+  nothing follows the cursor or the scroll, jumps land instantly, the cube turns without
+  animating, records don't spin.
+- With no JavaScript every section is still complete and readable.
 
 ## Where things live
 
 | What | File |
 | --- | --- |
-| Page order | `src/pages/index.astro` |
-| Case-study page | `src/pages/projects/[slug].astro` |
-| Collage images + hole positions | `src/data/collage.ts` |
-| Collage animation | `src/scripts/hero.ts`, `src/scripts/collage-math.ts` |
-| Keyboard sections, layouts, cameras | `src/data/keyboard.ts` |
-| Keyboard geometry | `src/scripts/iso.ts`, `src/scripts/keycap.ts` |
-| Keyboard interactions + hello | `src/scripts/keyboard.ts` |
-| Click sounds + mute toggle | `src/scripts/sound.ts`, `src/components/SoundToggle.astro` |
-| Keyboard drawing | `src/components/KeyboardScene.astro`, `src/components/Garden.astro` |
-| Sections | `About`, `Projects` (+ archive), `Milestones`, `Communities`, `Skills`, `Contact` in `src/components/` |
-| Shared bits | `SectionHead`, `Badge`, `ComingSoon`, `FloppyDisk` in `src/components/` |
-| Playlist data (generated) | `src/data/playlist.json` ← `scripts/fetch-playlist.mjs` |
-| Record collection + sleeve tints | `src/data/music.ts` |
-| Record room | `src/pages/music.astro`, `src/components/MusicRoom.astro` |
-| Deck + sleeves | `src/components/Turntable.astro`, `src/components/Sleeve.astro` |
-| Deck state machine + choreography | `src/scripts/turntable.ts` |
-| Flat shapes + machine parts | `src/components/Shapes.astro` |
-| Day/night lever | `src/components/ThemeLever.astro` |
-| Marigold garland | `src/components/Garland.astro` |
-| The Rubik's cube | `src/components/Rubik.astro`, `src/scripts/rubik.ts` |
-| Colors, type, keycap buttons, section spacing | `src/styles/global.css` |
+| Running order | `src/data/chapters.ts`, `src/pages/index.astro` |
+| Tokens, schemes, type roles, buttons | `src/styles/global.css` |
+| Layout shell, fonts, jump card | `src/layouts/Base.astro` |
+| Shared motion | `src/scripts/fx.ts` |
+| Nav, day/night, sound | `Nav`, `ThemeToggle`, `SoundToggle` |
+| Poster strip, arrow, tags | `PosterHead`, `Arrow`, `Badge`, `ComingSoon` |
+| Marigold | `Rosette`, `Seal`, `public/favicon.svg` |
+| Cover | `Hero`, `Collage`, `scripts/hero.ts`, `data/collage.ts` |
+| Cube | `Rubik`, `scripts/rubik.ts` |
+| Keyboard | `Keyboard`, `KeyboardScene`, `Garden`, `scripts/keyboard.ts`, `scripts/iso.ts`, `data/keyboard.ts` |
+| Sections | `About`, `Projects`, `Milestones`, `Communities`, `Skills`, `Resume`, `Contact` |
+| Record room | `MusicRoom`, `Turntable`, `Sleeve`, `scripts/turntable.ts`, `data/music.ts` |
+| Objects | `FloppyDisk`, `Computer` |
+| Click sounds | `scripts/sound.ts` |
 
-## Next up
+(Components are in `src/components/`.)
 
-- [ ] Real photo + drawing
-- [ ] Fill in the "coming soon" fields in `src/data/*.ts`
-- [ ] Contact links in `src/data/site.ts`
-- [ ] Collage squares dropping down into the keyboard as keycaps
-- [ ] Blender props rendered as images (monitor, floppy disk, mouse)
+## Waiting on real material
+
+Nothing below is built with stand-ins, on purpose.
+
+- [ ] **Your photo and drawing** for the cover — the collage still runs on placeholder art.
+- [ ] **Project details** marked `todo` in `src/data/projects.ts`: roles, features, stacks,
+      links, screenshots, results.
+- [ ] **Art** — needs your actual artwork files (and any notes you want beside them).
+- [ ] **Films & shows** — needs your actual list.
+- [ ] **Albums / moods in the record room** — albums need the playlist script extended;
+      moods need you to say which songs are which.
+- [ ] A domain, then `site` in `astro.config.mjs`.

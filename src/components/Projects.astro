@@ -193,7 +193,7 @@ const meta = (p: (typeof projects)[number]) => [p.type, p.event].filter(Boolean)
   .work__title sup {
     margin-left: 0.12em;
     color: var(--accent);
-    font: 500 0.13em/1 var(--font-mono);
+    font: 500 max(12px, 0.13em) / 1 var(--font-mono);
     letter-spacing: 0;
     vertical-align: top;
   }
@@ -570,6 +570,7 @@ const meta = (p: (typeof projects)[number]) => [p.type, p.event].filter(Boolean)
 
     .feature__disk {
       width: min(62%, 280px);
+      margin-bottom: 14px;
     }
 
     .row__link {
@@ -601,10 +602,10 @@ const meta = (p: (typeof projects)[number]) => [p.type, p.event].filter(Boolean)
   /* no hover: the disk can't follow anything, so it simply sits at the end of the row */
   @media (hover: none) {
     .row__disk {
-      top: 14px;
+      top: 8px;
       right: 34px;
       left: auto;
-      width: 64px;
+      width: 52px;
       opacity: 1;
       translate: none;
       rotate: 8deg;
@@ -612,7 +613,7 @@ const meta = (p: (typeof projects)[number]) => [p.type, p.event].filter(Boolean)
     }
 
     .row__name {
-      padding-right: 76px;
+      padding-right: 64px;
     }
   }
 

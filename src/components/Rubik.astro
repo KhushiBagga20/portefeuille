@@ -41,7 +41,7 @@ const STATES = '43,252,003,274,489,856,000';
 
     <div class="cube__grid">
       <div class="cube__copy">
-        <h2 id="cube-title" class="cube__title">Turn<br />it.</h2>
+        <h2 id="cube-title" class="cube__title">Turn <br />it.</h2>
         <p class="cube__voice voice">Twenty-six little boxes, forty-three quintillion ways to be wrong.</p>
         <p class="cube__how label">
           Drag the cube to spin it.<br />
@@ -138,13 +138,13 @@ const STATES = '43,252,003,274,489,856,000';
     --enter: 1;
     --through: 0.5;
     /* the room arrives as a dome rising out of the cover, then squares off */
-    --dome: min(1, var(--enter) * 1.4);
+    --dome: min(1, var(--enter) * 1.25);
     display: flex;
     flex-direction: column;
     min-height: 100svh;
     padding: clamp(22px, 3vw, 40px) 0 0;
     overflow: clip;
-    clip-path: ellipse(calc(56% + var(--dome) * 70%) calc(100% + var(--dome) * 55%) at 50% 100%);
+    clip-path: ellipse(calc(56% + pow(var(--dome), 3) * 650%) calc(100% + pow(var(--dome), 8) * 60%) at 50% 100%);
   }
 
   .cube__frame {

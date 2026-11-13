@@ -168,6 +168,10 @@ const now = site.currently.replace(/^currently:\s*/i, '');
     left: var(--gutter);
     z-index: 4;
     pointer-events: none;
+    /* only where the portrait is: anywhere else the outline would nibble at the solid letters */
+    clip-path: inset(
+      0 calc(var(--art-right) - var(--gutter) - 14px) 0 calc(100% - var(--art-right) + var(--gutter) - var(--art-w) - 14px)
+    );
   }
 
   .mast {
@@ -543,7 +547,7 @@ const now = site.currently.replace(/^currently:\s*/i, '');
     }
 
     .stage {
-      --art-w: min(58vw, calc((100svh - var(--bar) - 318px) * 0.8), 420px);
+      --art-w: min(68vw, calc((100svh - var(--bar) - 318px) * 0.8), 420px);
       --art-right: calc(var(--gutter) + 2vw);
       --art-top: calc(var(--bar) + 14px + 9vw);
       --pad-top: calc(var(--bar) + 12px);
@@ -569,15 +573,15 @@ const now = site.currently.replace(/^currently:\s*/i, '');
     }
 
     .fig {
-      top: auto;
-      bottom: 0;
-      left: auto;
-      right: calc(100% + 10px);
-      rotate: 180deg;
+      display: none;
     }
 
-    .fig__caps {
-      font-size: 18px;
+    /* under the name, on clear paper, rather than across the K */
+    .hello {
+      top: calc(100% + 4px);
+      left: 2px;
+      font-size: 27px;
+      rotate: -5deg;
     }
 
     .foot__scroll {

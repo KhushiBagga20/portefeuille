@@ -78,8 +78,8 @@ const diskFace = { w: DISK.w, h: DISK.d, r: 8 };
       <stop offset="1" stop-color="#8f79e6"></stop>
     </linearGradient>
     <linearGradient id="crt-disk" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#ff7b52"></stop>
-      <stop offset="1" stop-color="#d9481f"></stop>
+      <stop offset="0" stop-color="#2b2f63"></stop>
+      <stop offset="1" stop-color="#0c0d21"></stop>
     </linearGradient>
     <radialGradient id="crt-glass" cx="0.4" cy="0.35" r="0.8">
       <stop offset="0" stop-color="#3a3163"></stop>
@@ -103,8 +103,8 @@ const diskFace = { w: DISK.w, h: DISK.d, r: 8 };
     width="400"
     height="340"
     rx="40"
-    fill="#6f86dc"
-    opacity="0.28"></rect>
+    fill="#0c0d21"
+    opacity="0.16"></rect>
 
   <!-- stand -->
   <path d={box(BASE, 0, -10)} fill="url(#crt-base)"></path>
@@ -134,7 +134,7 @@ const diskFace = { w: DISK.w, h: DISK.d, r: 8 };
 
   <!-- front wall: bezel, screen, slot -->
   <g transform={wall}>
-    <rect x="-176" y="3" width="352" height={BODY.z1 - BODY.z0 - 6} rx="18" fill="#fff8ec"></rect>
+    <rect x="-176" y="3" width="352" height={BODY.z1 - BODY.z0 - 6} rx="18" fill="#f6f4ff"></rect>
     <rect x="-150" y="16" width="300" height="198" rx="34" fill="#d9ccff"></rect>
     <rect class="crt__glass" x="-136" y="28" width="272" height="174" rx="26" fill="url(#crt-glass)"></rect>
     <rect x="-136" y="28" width="272" height="174" rx="26" fill="url(#crt-scan)"></rect>
@@ -150,7 +150,7 @@ const diskFace = { w: DISK.w, h: DISK.d, r: 8 };
     <text class="crt__brand" x="-112" y="235">khushi</text>
     <circle cx="140" cy="262" r="7" fill="#b9a6fb"></circle>
     <circle cx="160" cy="262" r="7" fill="#b9a6fb"></circle>
-    <polygon points="154,6 159,17 171,18 162,26 165,38 154,31 143,38 146,26 137,18 149,17" fill="#ffe14f"></polygon>
+    <polygon points="154,6 159,17 171,18 162,26 165,38 154,31 143,38 146,26 137,18 149,17" fill="#d6ff3d"></polygon>
   </g>
 
   <!-- floppy, half in the drive -->
@@ -161,9 +161,9 @@ const diskFace = { w: DISK.w, h: DISK.d, r: 8 };
           <g class="floppy__disk" style={`--ex:${eject.x.toFixed(2)}px;--ey:${eject.y.toFixed(2)}px`}>
             <path d={solidPath(m, { cx: DISK.cx, cy: DISK.cy, z0: DISK.z0, z1: DISK.z1, bottom: diskFace, top: diskFace })} fill="url(#crt-disk)" />
             <g transform={planeTransform(m, DISK.z1, DISK.cx, DISK.cy)}>
-              <rect x={-DISK.w / 2} y={-DISK.d / 2} width={DISK.w} height={DISK.d} rx="8" fill="#ff8a63" />
-              <rect x="-54" y="6" width="108" height="56" rx="5" fill="#fffaf0" />
-              <path d="M-46 30 H46 M-46 46 H46" stroke="#c9d6ff" stroke-width="2" />
+              <rect x={-DISK.w / 2} y={-DISK.d / 2} width={DISK.w} height={DISK.d} rx="8" fill="#1c1f47" />
+              <rect x="-54" y="6" width="108" height="56" rx="3" fill="#ffffff" />
+              <path d="M-46 46 H46" stroke="#0c0d21" stroke-opacity="0.18" stroke-width="1.5" />
               <text class="floppy__label" x="0" y="34">résumé</text>
             </g>
           </g>
@@ -209,7 +209,8 @@ const diskFace = { w: DISK.w, h: DISK.d, r: 8 };
 
   .crt__text text {
     font-family: var(--font-mono);
-    fill: #7fe0b0;
+    font-weight: 500;
+    fill: #d6ff3d;
   }
 
   .crt__dim {
@@ -236,13 +237,13 @@ const diskFace = { w: DISK.w, h: DISK.d, r: 8 };
   }
 
   .crt__led {
-    fill: #7fe0b0;
+    fill: #d6ff3d;
     animation: crt-led 2.4s ease-in-out infinite;
   }
 
   @keyframes crt-led {
     50% {
-      fill: #3fae7a;
+      fill: #8fae1f;
     }
   }
 
@@ -268,13 +269,14 @@ const diskFace = { w: DISK.w, h: DISK.d, r: 8 };
   }
 
   .floppy:focus-visible .floppy__disk {
-    filter: drop-shadow(0 0 0 var(--ink)) drop-shadow(0 0 3px var(--purple));
+    filter: drop-shadow(0 0 0 #0c0d21) drop-shadow(0 0 4px #2238ff);
   }
 
   .floppy__label {
-    fill: #1b1526;
+    fill: #0c0d21;
     font-family: var(--font-voice);
     font-size: 30px;
+    font-style: italic;
     text-anchor: middle;
   }
 

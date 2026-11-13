@@ -33,12 +33,12 @@ export const CRATE = 9;
 // Sleeve tints, picked from the site's palette. Stable per track, so a record always
 // comes back wearing the same colour.
 const TINTS: { paper: string; label: string }[] = [
-  { paper: '#e8e4f3', label: '#b9a6fb' },
-  { paper: '#f7e2cf', label: '#ff8a63' },
-  { paper: '#dfe9e2', label: '#63d3a0' },
-  { paper: '#fdeedd', label: '#ffd84a' },
-  { paper: '#f4e0e8', label: '#ff7eb3' },
-  { paper: '#dfe6f6', label: '#86b4f7' },
+  { paper: '#eef3d2', label: '#d6ff3d' },
+  { paper: '#f6dbe7', label: '#ff2a85' },
+  { paper: '#dfe2f7', label: '#2238ff' },
+  { paper: '#e6dcf7', label: '#7a3cff' },
+  { paper: '#f7ddd3', label: '#ff4d1f' },
+  { paper: '#e3e8fb', label: '#c6d0ff' },
 ];
 
 export function tintFor(id: string) {

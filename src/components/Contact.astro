@@ -1,64 +1,88 @@
 ---
-import Computer from './Computer.astro';
+// The last poster. An acid dome rises over the record room, the address is set as large
+// as it will go, and the name the site opened with comes back across the foot.
+import Arrow from './Arrow.astro';
 import ComingSoon from './ComingSoon.astro';
-import SectionHead from './SectionHead.astro';
+import Computer from './Computer.astro';
+import PosterHead from './PosterHead.astro';
+import Seal from './Seal.astro';
+import { chapter } from '../data/chapters';
 import { site } from '../data/site';
+
+const c = chapter('contact');
 
 // Only links you've actually filled in (src/data/site.ts) show up.
 const { email, resume } = site.links;
 const links = [
-  { label: 'email me', href: email ? `mailto:${email}` : '', external: false, tone: 'key--tomato' },
-  { label: 'LinkedIn', href: site.links.linkedin, external: true, tone: '' },
-  { label: 'GitHub', href: site.links.github, external: true, tone: '' },
-  { label: 'résumé (PDF)', href: resume, external: true, tone: 'key--yellow' },
+  { label: 'LinkedIn', href: site.links.linkedin },
+  { label: 'GitHub', href: site.links.github },
+  { label: 'résumé (PDF)', href: resume },
 ].filter((l) => l.href);
+
+const letters = [...site.name.toUpperCase()];
+const year = new Date().getFullYear();
 ---
 
-<section id="contact" class="section section--deep" aria-labelledby="contact-title">
-  <div class="section__inner contact">
-    <div class="contact__text">
-      <SectionHead eyebrow="contact.eml" title="say hi" id="contact-title" />
-      <p class="contact__msg">
-        Building something unusual, running a hackathon, or want to talk about AI and design? I'd love to hear from you.
-      </p>
+<section id="contact" class="contact poster s-acid" data-view data-kinetic {...c.attrs} aria-labelledby="contact-title">
+  <div class="wrap">
+    <PosterHead id="contact" note="the last page" />
 
-      {
-        email && (
-          <p class="contact__email">
-            <span class="contact__label">email</span>
-            <a href={`mailto:${email}`}>{email}</a>
-            <button class="contact__copy" type="button" data-copy={email}>
-              copy
-            </button>
-          </p>
-        )
-      }
+    <div class="contact__grid">
+      <div class="contact__text">
+        <h2 id="contact-title" class="contact__title">Say<br />hi.</h2>
+        <p class="contact__msg">
+          Building something unusual, running a hackathon, or want to talk about AI and design? I'd love to hear from you.
+        </p>
+      </div>
 
-      {
-        links.length ? (
-          <div class="contact__links">
-            {links.map((l) => (
-              <a
-                class:list={['key', l.tone]}
-                href={l.href}
-                target={l.external ? '_blank' : undefined}
-                rel={l.external ? 'noopener' : undefined}
-              >
+      <div class="contact__computer">
+        <Computer resume={resume} />
+      </div>
+    </div>
+
+    {
+      email ? (
+        <p class="contact__email">
+          <span class="label">write to</span>
+          <a class="contact__mail" href={`mailto:${email}`}>
+            {email}
+          </a>
+          <button class="key key--sm" type="button" data-copy={email}>
+            copy
+          </button>
+        </p>
+      ) : (
+        <ComingSoon text="contact links coming soon" />
+      )
+    }
+
+    {
+      links.length > 0 && (
+        <ul class="contact__links">
+          {links.map((l) => (
+            <li>
+              <a class="contact__link" href={l.href} target="_blank" rel="noopener">
                 {l.label}
-                {l.external && <span class="sr-only"> (opens in a new tab)</span>}
+                <span class="sr-only"> (opens in a new tab)</span>
+                <Arrow dir="out" />
               </a>
-            ))}
-          </div>
-        ) : (
-          <ComingSoon text="contact links coming soon" />
-        )
-      }
-    </div>
-
-    <div class="contact__computer">
-      <Computer resume={resume} />
-    </div>
+            </li>
+          ))}
+        </ul>
+      )
+    }
   </div>
+
+  <footer class="end">
+    <p class="end__line label">
+      <span class="end__seal"><Seal /></span>
+      <span>{site.fullName} — portfolio, {year}</span>
+      <a class="link" href="#top">back to the top <Arrow dir="up" /></a>
+    </p>
+    <p class="end__name" aria-hidden="true">
+      {letters.map((ch, i) => <span data-k={i}>{ch}</span>)}
+    </p>
+  </footer>
 </section>
 
 <script>
@@ -66,7 +90,7 @@ const links = [
     button.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(button.dataset.copy!);
-        button.textContent = 'copied!';
+        button.textContent = 'copied';
       } catch {
         button.textContent = 'select it';
       }
@@ -77,63 +101,48 @@ const links = [
 
 <style>
   .contact {
+    --enter: 1;
+    --rise: clamp(90px, 16vw, 260px);
+    --dome: min(1, var(--enter) * 1.25);
+    z-index: 2;
+    margin-top: calc(var(--rise) * -1);
+    padding-bottom: 0;
+    overflow: clip;
+    /* the same dome the site opened with, in the other colour */
+    clip-path: ellipse(calc(56% + pow(var(--dome), 3) * 650%) calc(100% + pow(var(--dome), 8) * 60%) at 50% 100%);
+  }
+
+  /* whatever comes before leaves room for the dome to land on */
+  :global(.poster:has(+ .contact)) {
+    padding-bottom: calc(clamp(64px, 9vw, 132px) + clamp(90px, 16vw, 260px));
+  }
+
+  .contact__grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
     align-items: center;
-    gap: clamp(32px, 5vw, 72px);
+    gap: clamp(24px, 4vw, 70px);
+    margin-top: clamp(20px, 3vw, 44px);
+  }
+
+  .contact__title {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(110px, 23vw, 430px);
+    font-stretch: 62%;
+    font-weight: 900;
+    line-height: 0.74;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
   }
 
   .contact__msg {
-    max-width: 38ch;
-    margin: 22px 0 0;
-    font-size: clamp(18px, 1.5vw, 21px);
-    line-height: 1.5;
-  }
-
-  .contact__email {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 10px;
-    margin: 22px 0 0;
-    font-weight: 650;
-  }
-
-  .contact__label {
-    color: var(--ink-soft);
-    font: 400 11px/1 var(--font-pixel);
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-
-  .contact__email a {
-    word-break: break-all;
-    text-decoration-thickness: 2px;
-    text-underline-offset: 3px;
-  }
-
-  .contact__copy {
-    padding: 4px 9px 3px;
-    border: 2px solid var(--ink);
-    border-radius: 6px;
-    background: var(--cream);
-    box-shadow: 0 2px 0 var(--shadow);
-    color: var(--ink);
-    font: 400 10px/1.2 var(--font-pixel);
-    text-transform: uppercase;
-    cursor: pointer;
-  }
-
-  .contact__copy:active {
-    translate: 0 2px;
-    box-shadow: none;
-  }
-
-  .contact__links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-top: 26px;
+    max-width: 30ch;
+    margin: clamp(20px, 3vw, 44px) 0 0;
+    font-size: clamp(18px, 1.6vw, 24px);
+    font-stretch: 92%;
+    font-weight: 550;
+    line-height: 1.32;
   }
 
   .contact__computer {
@@ -141,19 +150,140 @@ const links = [
     justify-self: center;
   }
 
+  /* the address, as big as the measure allows */
+  .contact__email {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 20px;
+    margin: clamp(30px, 5vw, 80px) 0 0;
+    padding-top: clamp(16px, 2vw, 26px);
+    border-top: 1px solid var(--fg);
+  }
+
+  .contact__email .label {
+    flex-basis: 100%;
+  }
+
+  .contact__mail {
+    font-family: var(--font-display);
+    font-size: clamp(27px, 6.3vw, 118px);
+    font-stretch: 66%;
+    font-weight: 900;
+    line-height: 0.92;
+    letter-spacing: -0.01em;
+    text-decoration: none;
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+    background: linear-gradient(currentColor, currentColor) 0 100% / 0 0.07em no-repeat;
+    transition:
+      background-size 0.5s var(--ease-out),
+      font-stretch 0.5s var(--ease-out);
+  }
+
+  .contact__mail:hover,
+  .contact__mail:focus-visible {
+    background-size: 100% 0.07em;
+    font-stretch: 70%;
+  }
+
+  .contact__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 clamp(20px, 3.4vw, 56px);
+    margin: clamp(18px, 2.4vw, 34px) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .contact__link {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.3em;
+    padding: 6px 0;
+    font-family: var(--font-display);
+    font-size: clamp(24px, 3vw, 50px);
+    font-stretch: 68%;
+    font-weight: 800;
+    line-height: 1;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  .contact__link :global(svg) {
+    font-size: 0.62em;
+    transition: rotate 0.4s var(--spring);
+  }
+
+  .contact__link:hover {
+    color: var(--accent);
+  }
+
+  .contact__link:hover :global(svg) {
+    rotate: 45deg;
+  }
+
+  /* ── the end ────────────────────────── */
+  .end {
+    position: relative;
+    z-index: 1;
+    margin-top: clamp(56px, 8vw, 130px);
+    container-type: inline-size;
+  }
+
+  .end__line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    max-width: var(--wrap);
+    margin: 0 auto;
+    padding-top: 14px;
+    border-top: 1px solid var(--fg);
+  }
+
+  .end__line a {
+    display: inline-flex;
+    gap: 6px;
+    margin-left: auto;
+  }
+
+  .end__seal {
+    width: 18px;
+  }
+
+  /* the masthead again, sinking out of the bottom of the page */
+  .end__name {
+    margin: clamp(14px, 2vw, 30px) 0 -0.17em;
+    font-family: var(--font-display);
+    font-size: calc(100cqw / 4.44);
+    font-weight: 900;
+    line-height: 0.76;
+    text-align: center;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .end__name span {
+    display: inline-block;
+    font-variation-settings: 'wdth' var(--w, 100);
+    transition: font-variation-settings 0.45s var(--ease-out);
+  }
+
   @media (max-width: 859px) {
-    .contact {
+    .contact__grid {
       grid-template-columns: minmax(0, 1fr);
     }
 
     .contact__computer {
-      order: -1;
-      width: min(100%, 440px);
-      margin-top: -12px;
+      width: min(100%, 420px);
+      justify-self: start;
     }
+  }
 
-    .contact__text {
-      order: -2;
+  @media (prefers-reduced-motion: reduce) {
+    .contact {
+      clip-path: none;
     }
   }
 </style>

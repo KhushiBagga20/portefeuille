@@ -1,6 +1,15 @@
 ---
+// The record room: a dark listening room. A crate to dig through, a deck that works,
+// and now the whole collection as an index you can search and sort by artist.
+//
+// Every title, artist, cover and running time is Spotify's (src/data/playlist.json);
+// their own player does the streaming. The deck and its state machine are unchanged
+// (Turntable.astro, scripts/turntable.ts) — this file is the room around them.
+import Arrow from './Arrow.astro';
+import PosterHead from './PosterHead.astro';
 import Sleeve from './Sleeve.astro';
 import Turntable from './Turntable.astro';
+import { chapter } from '../data/chapters';
 import { CRATE, deckLabel, playlist, roomNote, tintFor } from '../data/music';
 
 interface Props {
@@ -9,129 +18,209 @@ interface Props {
 }
 const { level = 'h1' } = Astro.props;
 const Heading = level;
+const c = chapter('records');
 
-const crate = playlist.tracks.slice(0, CRATE);
+const tracks = playlist.tracks;
+const crate = tracks.slice(0, CRATE);
 const tilts = [-2.4, 1.8, -1.2, 2.6, -2, 1.3, -2.8, 2.1, -1.6];
 const shifts = [0, 16, -10, 22, -6, 12, -18, 8, -14];
+
+// Spotify joins collaborators with a comma and a no-break space.
+const namesOf = (credit: string) => credit.split(/, /).map((n) => n.trim());
+const tally = new Map<string, number>();
+for (const t of tracks) for (const name of namesOf(t.artist)) tally.set(name, (tally.get(name) ?? 0) + 1);
+const artists = [...tally].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+
+const clock = (ms: number | null) => {
+  if (!ms) return '';
+  const s = Math.round(ms / 1000);
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+};
+const total = tracks.reduce((n, t) => n + (t.duration ?? 0), 0);
+const hours = Math.floor(total / 3_600_000);
+const mins = Math.round((total % 3_600_000) / 60_000);
+const no = (i: number) => String(i + 1).padStart(3, '0');
 
 // The browser needs the whole playlist to dig through and to shuffle.
 const payload = {
   url: playlist.url,
   name: playlist.name,
   crate: CRATE,
-  tracks: playlist.tracks.map((t) => ({ ...t, label: tintFor(t.id).label, paper: tintFor(t.id).paper })),
+  tracks: tracks.map((t) => ({ ...t, label: tintFor(t.id).label, paper: tintFor(t.id).paper })),
 };
 ---
 
-<section id="records" class="room" data-room data-playlist={JSON.stringify(payload)} aria-labelledby="room-title">
-  <div class="room__head">
-    <p class="eyebrow">music.room</p>
-    <Heading id="room-title" class="room__title">my records</Heading>
-    <p class="room__note">{roomNote}</p>
+<section id="records" class="room poster s-ink" data-room data-playing="false" data-playlist={JSON.stringify(payload)} {...c.attrs} aria-labelledby="room-title">
+  <!-- one very large record, most of it off the edge of the room -->
+  <div class="plate" aria-hidden="true">
+    <span class="plate__disc"><span class="plate__label" data-plate-label></span></span>
   </div>
 
-  <div class="room__body">
-    <!-- ── the crate ────────────────────────── -->
-    <div class="shelf">
-      <h2 class="shelf__title" id="shelf-title">the crate</h2>
-      <p class="shelf__hint">
-        <span data-crate-count>{playlist.tracks.length}</span> records · pick one up and put it on
-      </p>
-      <ul class="stack" aria-labelledby="shelf-title">
-        {
-          crate.map((t, i) => (
-            <li class="stack__item" style={`--r:${tilts[i % tilts.length]}deg;--x:${shifts[i % shifts.length]}px`}>
-              <button class="pick" type="button" data-pick={i} aria-pressed="false">
-                <span class="sr-only">Put on </span>
-                <span class="pick__disc" aria-hidden="true" style={`--label:${tintFor(t.id).label}`} />
-                <Sleeve track={t} />
-                <span class="pick__meta">
-                  <span class="pick__title" data-pick-title>{t.title}</span>
-                  <span class="pick__artist" data-pick-artist>{t.artist}</span>
-                </span>
-              </button>
-            </li>
-          ))
-        }
-      </ul>
-      <button class="key key--sm dig" type="button" data-dig>dig deeper <span aria-hidden="true">⤵</span></button>
-    </div>
+  <div class="wrap">
+    <PosterHead id="records" note={`${tracks.length} tracks · ${artists.length} artists · ${hours} h ${String(mins).padStart(2, '0')} min`} />
 
-    <!-- ── the deck ─────────────────────────── -->
-    <div class="deck-area">
-      <div class="deck-area__table">
-        <Turntable />
+    <header class="room__head">
+      <Heading id="room-title" class="room__title">Records</Heading>
+      <p class="room__note voice">{roomNote}</p>
+    </header>
+
+    <div class="room__body">
+      <!-- ── the crate ────────────────────────── -->
+      <div class="shelf">
+        <h3 class="shelf__title label" id="shelf-title">the crate</h3>
+        <p class="shelf__hint">pick one up and put it on</p>
+        <ul class="stack" aria-labelledby="shelf-title">
+          {
+            crate.map((t, i) => (
+              <li class="stack__item" style={`--r:${tilts[i % tilts.length]}deg;--x:${shifts[i % shifts.length]}px`}>
+                <button class="pick" type="button" data-pick={i} aria-pressed="false">
+                  <span class="sr-only">Put on </span>
+                  <span class="pick__disc" aria-hidden="true" style={`--label:${tintFor(t.id).label}`} />
+                  <Sleeve track={t} />
+                  <span class="pick__meta">
+                    <span class="pick__title" data-pick-title>{t.title}</span>
+                    <span class="pick__artist" data-pick-artist>{t.artist}</span>
+                  </span>
+                </button>
+              </li>
+            ))
+          }
+        </ul>
+        <button class="key key--sm dig" type="button" data-dig>dig deeper <Arrow dir="down" /></button>
       </div>
 
-      <p class="deck-area__label">{deckLabel}</p>
-
-      <div class="panel" role="group" aria-label="Turntable controls">
-        <button class="panel__btn" type="button" data-prev aria-label="Previous record">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 5v14L8 12zM6 5h2.4v14H6z" /></svg>
-        </button>
-        <button class="panel__btn panel__btn--main" type="button" data-toggle aria-pressed="false">
-          <svg class="panel__play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5 20 12 7 19.5z" /></svg>
-          <svg class="panel__stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>
-          <span class="sr-only" data-toggle-label>Play</span>
-        </button>
-        <button class="panel__btn" type="button" data-next aria-label="Next record">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14l10-7zM15.6 5H18v14h-2.4z" /></svg>
-        </button>
-        <button class="panel__btn" type="button" data-shuffle aria-label="Shuffle: play anything from the playlist">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path
-              d="M3 7h3.5l3 5M3 17h3.5l3-5M21 7h-4m4 0-2.5-2.5M21 7l-2.5 2.5M21 17h-4m4 0-2.5-2.5M21 17l-2.5 2.5M13.5 7H17M13.5 17H17"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"></path>
-          </svg>
-        </button>
-
-        <div class="panel__rpm" role="group" aria-label="Platter speed">
-          <button class="rpm" type="button" data-rpm="33" aria-pressed="true">33⅓</button>
-          <button class="rpm" type="button" data-rpm="45" aria-pressed="false">45</button>
+      <!-- ── the deck ─────────────────────────── -->
+      <div class="deck-area">
+        <div class="deck-area__table">
+          <Turntable />
         </div>
-      </div>
 
-      <p class="panel__note">the speed and pitch move the platter — Spotify keeps its own tempo.</p>
+        <p class="deck-area__label voice">{deckLabel}</p>
 
-      <!-- ── what's on ─────────────────────── -->
-      <div class="now" data-now>
-        <p class="now__empty" data-now-empty>nothing on the platter yet — pick a record.</p>
-        <div class="now__card" data-now-card hidden>
-          <p class="now__line">
-            <strong data-now-title></strong>
-            <span data-now-artist></span>
-          </p>
-          <p class="now__cue" data-cue hidden>
-            <span aria-hidden="true">↓</span> your browser is holding playback — press play in the Spotify bar below.
-          </p>
-          <div class="now__links">
+        <div class="panel" role="group" aria-label="Turntable controls">
+          <button class="panel__btn" type="button" data-prev aria-label="Previous record">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 5v14L8 12zM6 5h2.4v14H6z" /></svg>
+          </button>
+          <button class="panel__btn panel__btn--main" type="button" data-toggle aria-pressed="false">
+            <svg class="panel__play" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5 20 12 7 19.5z" /></svg>
+            <svg class="panel__stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" /></svg>
+            <span class="sr-only" data-toggle-label>Play</span>
+          </button>
+          <button class="panel__btn" type="button" data-next aria-label="Next record">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14l10-7zM15.6 5H18v14h-2.4z" /></svg>
+          </button>
+          <button class="panel__btn" type="button" data-shuffle aria-label="Shuffle: play anything from the playlist">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M3 7h3.5l3 5M3 17h3.5l3-5M21 7h-4m4 0-2.5-2.5M21 7l-2.5 2.5M21 17h-4m4 0-2.5-2.5M21 17l-2.5 2.5M13.5 7H17M13.5 17H17"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="square"></path>
+            </svg>
+          </button>
+
+          <div class="panel__rpm" role="group" aria-label="Platter speed">
+            <button class="rpm" type="button" data-rpm="33" aria-pressed="true">33⅓</button>
+            <button class="rpm" type="button" data-rpm="45" aria-pressed="false">45</button>
+          </div>
+        </div>
+
+        <p class="panel__note label">the speed and pitch move the platter — Spotify keeps its own tempo.</p>
+
+        <!-- ── what's on ─────────────────────── -->
+        <div class="now" data-now>
+          <p class="now__empty voice" data-now-empty>nothing on the platter yet — pick a record.</p>
+          <div class="now__card" data-now-card hidden>
+            <p class="label now__tag"><i aria-hidden="true"></i>now playing</p>
+            <p class="now__line">
+              <strong data-now-title></strong>
+              <span data-now-artist></span>
+            </p>
+            <p class="now__cue" data-cue hidden>
+              your browser is holding playback — press play in the Spotify bar below.
+            </p>
             <a class="key key--sm" data-now-link href={playlist.url} target="_blank" rel="noopener">
               open in Spotify<span class="sr-only"> (opens in a new tab)</span>
+              <Arrow dir="out" />
             </a>
           </div>
         </div>
+
+        <!-- Spotify's own player: it does the actual streaming. -->
+        <div class="amp" data-amp>
+          <p class="amp__label label">
+            <span class="amp__dot" aria-hidden="true"></span>
+            streaming from
+            <a class="link" href={playlist.url} target="_blank" rel="noopener">
+              Spotify · {playlist.name}<span class="sr-only"> (opens in a new tab)</span>
+            </a>
+          </p>
+          <div class="amp__embed">
+            <p class="amp__idle label">the player loads when you put a record on</p>
+            <div data-embed></div>
+          </div>
+          <p class="amp__fineprint">
+            Full tracks play if you're signed in to Spotify; otherwise you get a 30-second preview.
+          </p>
+        </div>
       </div>
 
-      <!-- Spotify's own player: it does the actual streaming. -->
-      <div class="amp" data-amp>
-        <p class="amp__label">
-          <span class="amp__dot" aria-hidden="true"></span>
-          streaming from
-          <a href={playlist.url} target="_blank" rel="noopener">
-            Spotify · {playlist.name}<span class="sr-only"> (opens in a new tab)</span>
+      <!-- ── the index: all of it ─────────────── -->
+      <div class="index" data-library data-view="songs">
+        <div class="index__top">
+          <div class="index__tabs" role="group" aria-label="Browse the collection by">
+            <button class="index__tab" type="button" data-index-view="songs" aria-pressed="true">
+              songs <sup>{tracks.length}</sup>
+            </button>
+            <button class="index__tab" type="button" data-index-view="artists" aria-pressed="false">
+              artists <sup>{artists.length}</sup>
+            </button>
+          </div>
+          <a class="index__playlist label link" href={playlist.url} target="_blank" rel="noopener">
+            the playlist<span class="sr-only"> on Spotify (opens in a new tab)</span>
+            <Arrow dir="out" />
           </a>
-        </p>
-        <div class="amp__embed">
-          <p class="amp__idle">the player loads when you put a record on</p>
-          <div data-embed></div>
         </div>
-        <p class="amp__fineprint">
-          Full tracks play if you're signed in to Spotify; otherwise you get a 30-second preview.
-        </p>
+
+        <div class="index__songs">
+          <label class="index__find">
+            <span class="sr-only">Filter songs by title or artist</span>
+            <input type="search" placeholder="filter by title or artist" autocomplete="off" spellcheck="false" data-index-find />
+          </label>
+          <p class="index__state label" aria-live="polite">
+            <span data-index-count>{tracks.length} of {tracks.length}</span>
+            <button class="index__clear link" type="button" data-index-clear hidden>clear filter</button>
+          </p>
+          <ol class="tracks" data-tracks>
+            {
+              tracks.map((t, i) => (
+                <li data-names={namesOf(t.artist).join('|')}>
+                  <button class="track" type="button" data-track={i}>
+                    <span class="track__no">{no(i)}</span>
+                    <span class="track__title">{t.title}</span>
+                    <span class="track__artist">{t.artist}</span>
+                    <span class="track__time">{clock(t.duration)}</span>
+                  </button>
+                </li>
+              ))
+            }
+          </ol>
+          <p class="index__none voice" data-index-none hidden>nothing by that name in here.</p>
+        </div>
+
+        <ul class="names" data-names-list>
+          {
+            artists.map(([name, n]) => (
+              <li>
+                <button class="name" type="button" data-artist={name} style={`--n:${n}`}>
+                  {name}
+                  <sup>{n}</sup>
+                </button>
+              </li>
+            ))
+          }
+        </ul>
       </div>
     </div>
   </div>
@@ -145,67 +234,156 @@ const payload = {
 <script>
   import { initMusicRoom } from '../scripts/turntable';
   document.querySelectorAll<HTMLElement>('[data-room]').forEach(initMusicRoom);
+
+  // ── the index: two views and a filter. Playing a row is the deck's job (turntable.ts). ──
+  document.querySelectorAll<HTMLElement>('[data-library]').forEach((index) => {
+    const rows = [...index.querySelectorAll<HTMLLIElement>('[data-tracks] > li')];
+    const find = index.querySelector<HTMLInputElement>('[data-index-find]')!;
+    const count = index.querySelector<HTMLElement>('[data-index-count]')!;
+    const clear = index.querySelector<HTMLButtonElement>('[data-index-clear]')!;
+    const none = index.querySelector<HTMLElement>('[data-index-none]')!;
+    const views = [...index.querySelectorAll<HTMLButtonElement>('[data-index-view]')];
+    let artist = '';
+
+    const haystack = rows.map((row) => (row.textContent ?? '').toLowerCase());
+
+    const apply = () => {
+      const q = find.value.trim().toLowerCase();
+      let shown = 0;
+      rows.forEach((row, i) => {
+        const hit = (!artist || (row.dataset.names ?? '').split('|').includes(artist)) && (!q || haystack[i].includes(q));
+        row.hidden = !hit;
+        if (hit) shown++;
+      });
+      count.textContent = artist ? `${shown} by ${artist}` : `${shown} of ${rows.length}`;
+      clear.hidden = !artist && !q;
+      none.hidden = shown > 0;
+    };
+
+    const view = (name: string) => {
+      index.dataset.view = name;
+      views.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.indexView === name)));
+    };
+
+    views.forEach((b) => b.addEventListener('click', () => view(b.dataset.indexView!)));
+    find.addEventListener('input', apply);
+    clear.addEventListener('click', () => {
+      artist = '';
+      find.value = '';
+      apply();
+    });
+    index.querySelectorAll<HTMLButtonElement>('[data-artist]').forEach((b) =>
+      b.addEventListener('click', () => {
+        artist = b.dataset.artist!;
+        find.value = '';
+        apply();
+        view('songs');
+        index.querySelector<HTMLElement>('[data-tracks]')!.scrollTop = 0;
+      }),
+    );
+  });
 </script>
 
 <style>
   .room {
-    padding: 104px var(--gutter) clamp(72px, 10vw, 120px);
+    overflow: clip;
   }
 
+  /* ── the oversized record ───────────── */
+  .plate {
+    position: absolute;
+    top: clamp(16px, 2vw, 40px);
+    right: calc(-1 * clamp(110px, 14vw, 260px));
+    width: clamp(340px, 40vw, 720px);
+    pointer-events: none;
+  }
+
+  .plate__disc {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle, transparent 0 21.5%, rgb(255 255 255 / 0.07) 21.5% 22%, transparent 22%),
+      repeating-radial-gradient(circle, #1d1f44 0 2px, #101230 2px 5px);
+    animation: spin 14s linear infinite;
+    animation-play-state: paused;
+  }
+
+  .room[data-playing='true'] .plate__disc {
+    animation-play-state: running;
+  }
+
+  .plate__label {
+    width: 34%;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--accent) center / cover no-repeat;
+    box-shadow: inset 0 0 0 clamp(8px, 1.1vw, 18px) rgb(12 13 33 / 0.28);
+  }
+
+  .plate__label::after {
+    content: '';
+    display: block;
+    width: 9%;
+    aspect-ratio: 1;
+    margin: 45.5% auto 0;
+    border-radius: 50%;
+    background: var(--bg);
+  }
+
+  @keyframes spin {
+    to {
+      rotate: 360deg;
+    }
+  }
+
+  /* ── head ───────────────────────────── */
   .room__head {
-    max-width: 1240px;
-    margin: 0 auto;
-  }
-
-  .eyebrow {
-    margin: 0;
-    font: 400 11px/1 var(--font-pixel);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    margin-top: clamp(28px, 4.4vw, 64px);
   }
 
   .room__title {
-    margin: 12px 0 0;
-    color: var(--lemon);
-    font: 400 clamp(46px, 6vw, 92px) / 0.92 var(--font-display);
-    -webkit-text-stroke: 0.07em var(--ink);
-    paint-order: stroke fill;
-    text-shadow:
-      0.035em 0.045em 0 var(--shadow),
-      0.065em 0.08em 0 var(--tomato);
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: clamp(72px, 15.5vw, 290px);
+    font-stretch: 62%;
+    font-weight: 900;
+    line-height: 0.76;
+    letter-spacing: -0.015em;
+    text-transform: uppercase;
   }
 
   .room__note {
-    max-width: 34ch;
-    margin: 14px 0 0;
-    font: 400 clamp(22px, 2vw, 28px) / 1.15 var(--font-hand);
-    rotate: -1.5deg;
+    max-width: 22ch;
+    margin: clamp(14px, 2vw, 26px) 0 0;
+    color: var(--accent);
+    font-size: clamp(23px, 2.2vw, 36px);
+    line-height: 1.05;
   }
 
   .room__body {
     display: grid;
-    grid-template-columns: minmax(190px, 0.52fr) minmax(0, 1.48fr);
+    grid-template-columns: minmax(170px, 0.46fr) minmax(0, 1.3fr) minmax(0, 0.92fr);
     align-items: start;
-    gap: clamp(28px, 5vw, 72px);
-    max-width: 1240px;
-    margin: clamp(36px, 5vw, 64px) auto 0;
+    gap: clamp(24px, 3.4vw, 56px);
+    margin-top: clamp(36px, 5vw, 76px);
   }
 
   /* ── crate ───────────────────────────── */
   .shelf__title {
     margin: 0;
-    font: 400 clamp(24px, 2.2vw, 32px) / 1 var(--font-display);
   }
 
   .shelf__hint {
     margin: 6px 0 0;
-    color: var(--text-soft);
-    font: 400 20px/1.2 var(--font-hand);
+    color: var(--fg-2);
+    font-size: 15px;
   }
 
   .stack {
-    max-width: 268px;
-    margin: 26px 0 0;
+    max-width: 250px;
+    margin: 22px 0 0;
     padding: 0 0 32px;
     list-style: none;
   }
@@ -242,7 +420,7 @@ const payload = {
 
   @media (hover: hover) {
     .stack:hover .pick {
-      filter: saturate(0.85) brightness(0.96);
+      filter: saturate(0.8) brightness(0.86);
     }
 
     .stack__item:hover .pick,
@@ -264,8 +442,9 @@ const payload = {
   }
 
   .pick:focus-visible {
-    outline: 3px dashed var(--purple);
+    outline: 2px solid var(--accent);
     outline-offset: 6px;
+    box-shadow: none;
   }
 
   .pick__disc {
@@ -277,8 +456,8 @@ const payload = {
     border-radius: 50%;
     background:
       radial-gradient(circle, var(--label) 0 17%, transparent 17%),
-      repeating-radial-gradient(circle, #241d3a 0 2px, #171226 2px 4px);
-    box-shadow: 2px 3px 8px rgb(27 21 38 / 0.4);
+      repeating-radial-gradient(circle, #262a55 0 2px, #14163a 2px 4px);
+    box-shadow: 2px 3px 8px rgb(0 0 0 / 0.5);
     transition: right 0.45s var(--spring);
   }
 
@@ -295,7 +474,7 @@ const payload = {
     left: 2px;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
     max-width: 100%;
     text-align: left;
     opacity: 0;
@@ -314,16 +493,22 @@ const payload = {
 
   .pick__title {
     overflow: hidden;
-    color: var(--ink);
-    font: 400 20px/1.05 var(--font-display);
+    color: var(--fg);
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-stretch: 74%;
+    font-weight: 800;
+    line-height: 1;
     text-overflow: ellipsis;
+    text-transform: uppercase;
     white-space: nowrap;
   }
 
   .pick__artist {
     overflow: hidden;
-    color: var(--text-soft);
-    font: 400 10px/1.3 var(--font-pixel);
+    color: var(--fg-2);
+    font: 500 10px/1.3 var(--font-mono);
+    letter-spacing: 0.08em;
     text-overflow: ellipsis;
     text-transform: uppercase;
     white-space: nowrap;
@@ -338,8 +523,10 @@ const payload = {
   }
 
   .deck-area__label {
-    margin: 4px 0 0;
-    font: 400 24px/1 var(--font-hand);
+    margin: 2px 0 0;
+    color: var(--fg-2);
+    font-size: 22px;
+    line-height: 1;
     text-align: center;
   }
 
@@ -348,73 +535,61 @@ const payload = {
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    width: max-content;
-    max-width: 100%;
-    margin: 16px auto 0;
-    padding: 14px 18px;
-    border-radius: 26px;
-    background: linear-gradient(#e7ebe4, #c4ccc1);
-    box-shadow:
-      0 1px 0 rgb(255 255 255 / 0.8) inset,
-      0 8px 0 #8d998e,
-      0 14px 22px -10px rgb(27 21 38 / 0.55);
+    gap: 10px;
+    margin: 18px auto 0;
   }
 
   .panel__note {
+    max-width: 44ch;
     margin: 14px auto 0;
-    color: var(--text-soft);
-    font: 400 18px/1.2 var(--font-hand);
+    color: var(--fg-2);
+    font-size: 10px;
+    line-height: 1.6;
     text-align: center;
   }
 
   .panel__btn {
     display: grid;
     place-items: center;
-    width: 50px;
-    height: 50px;
+    width: 48px;
+    height: 48px;
     padding: 0;
-    border: 0;
-    border-radius: 14px;
-    background: linear-gradient(#fdfdfb, #dfe4dc);
-    box-shadow:
-      0 1px 0 rgb(255 255 255 / 0.9) inset,
-      0 4px 0 #9aa69b;
-    color: #3f4a42;
+    border: 1.5px solid var(--fg);
+    border-radius: 50%;
+    background: none;
+    color: var(--fg);
     cursor: pointer;
     transition:
-      translate 0.12s ease,
-      box-shadow 0.12s ease;
+      background-color 0.18s ease,
+      color 0.18s ease,
+      translate 0.1s ease;
   }
 
   .panel__btn svg {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     fill: currentColor;
   }
 
   .panel__btn:hover {
-    background: linear-gradient(#fff, #e9eee6);
+    background: var(--fg);
+    color: var(--bg);
   }
 
   .panel__btn:active {
-    translate: 0 4px;
-    box-shadow: 0 0 0 #9aa69b;
+    translate: 0 2px;
   }
 
   .panel__btn--main {
     width: 64px;
     height: 64px;
-    border-radius: 18px;
-    background: linear-gradient(#ff8a63, #ef5f33);
-    box-shadow:
-      0 1px 0 rgb(255 255 255 / 0.45) inset,
-      0 5px 0 #b8421c;
-    color: #fff8ec;
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--on-accent);
   }
 
   .panel__btn--main:hover {
-    background: linear-gradient(#ff9b78, #ff6a3d);
+    border-color: var(--fg);
   }
 
   .panel__btn--main svg {
@@ -436,78 +611,105 @@ const payload = {
 
   .panel__rpm {
     display: flex;
-    gap: 4px;
-    padding: 4px;
-    border-radius: 14px;
-    background: #8d998e;
+    margin-left: 6px;
+    border: 1.5px solid var(--fg);
+    border-radius: 999px;
+    overflow: hidden;
   }
 
   .rpm {
-    min-width: 46px;
-    padding: 7px 8px 6px;
+    min-width: 50px;
+    padding: 0 12px;
+    height: 36px;
     border: 0;
-    border-radius: 10px;
-    background: #e7ebe4;
-    color: #4f5a51;
-    font: 400 11px/1 var(--font-pixel);
+    background: none;
+    color: var(--fg);
+    font: 500 11px/1 var(--font-mono);
+    letter-spacing: 0.06em;
     cursor: pointer;
   }
 
   .rpm[aria-pressed='true'] {
-    background: var(--lemon);
-    color: var(--on-accent);
+    background: var(--fg);
+    color: var(--bg);
   }
 
   /* ── now playing ─────────────────────── */
   .now {
     max-width: 560px;
-    margin: 20px auto 0;
-    text-align: center;
+    margin: 22px auto 0;
   }
 
   .now__empty {
     margin: 0;
-    color: var(--text-soft);
-    font: 400 22px/1.2 var(--font-hand);
+    color: var(--fg-2);
+    font-size: 22px;
+    line-height: 1.2;
+    text-align: center;
   }
 
   .now__card {
-    padding: 18px 22px;
-    border: var(--line) solid var(--ink);
-    border-radius: 18px;
-    background: var(--cream);
-    box-shadow: 7px 8px 0 var(--shadow);
+    display: grid;
+    justify-items: start;
+    gap: 12px;
+    padding: 16px 0 0;
+    border-top: 1px solid var(--line);
   }
 
   .now__card[hidden] {
     display: none;
   }
 
-  .now__line {
+  .now__tag {
     display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: center;
-    gap: 6px 10px;
+    align-items: center;
+    gap: 8px;
+    color: var(--accent);
+  }
+
+  .now__tag i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .room[data-playing='true'] .now__tag i {
+    animation: pulse 1.2s steps(2, jump-none) infinite;
+  }
+
+  @keyframes pulse {
+    to {
+      opacity: 0.2;
+    }
+  }
+
+  .now__line {
+    display: grid;
+    gap: 6px;
     margin: 0;
   }
 
   .now__line strong {
-    font: 400 30px/1 var(--font-display);
-    font-weight: 400;
+    font-family: var(--font-display);
+    font-size: clamp(30px, 3.4vw, 54px);
+    font-stretch: 66%;
+    font-weight: 900;
+    line-height: 0.9;
+    text-transform: uppercase;
   }
 
   .now__line span {
-    color: var(--text-soft);
-    font-size: 16px;
+    color: var(--fg-2);
+    font-size: 17px;
     font-weight: 600;
   }
 
   .now__cue {
-    margin: 12px 0 0;
+    margin: 0;
     padding: 8px 10px;
-    border: 2px dashed var(--ink);
-    border-radius: 10px;
+    border: 1px dashed var(--accent);
+    color: var(--accent);
     font-size: 14px;
     line-height: 1.35;
   }
@@ -516,77 +718,57 @@ const payload = {
     display: none;
   }
 
-  .now__links {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 14px;
-  }
-
   /* ── the amp: Spotify's player ───────── */
   .amp {
     max-width: 560px;
     margin: 22px auto 0;
-    padding: 14px 16px 12px;
-    border-radius: 20px;
-    background: linear-gradient(var(--cream), var(--paper-deep));
-    box-shadow:
-      0 1px 0 rgb(255 255 255 / 0.5) inset,
-      0 7px 0 var(--brass),
-      0 14px 22px -12px rgb(27 21 38 / 0.5);
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
   }
 
   .amp__label {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 7px;
     margin: 0 0 10px;
-    color: var(--ink-soft);
-    font: 400 10px/1.3 var(--font-pixel);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    color: var(--fg-2);
+  }
+
+  .amp__label a {
+    color: var(--fg);
   }
 
   .amp__dot {
-    width: 9px;
-    height: 9px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background: #1db954;
-    box-shadow: 0 0 7px #1db95499;
+    opacity: 0.35;
   }
 
-
+  .amp.is-live .amp__dot {
+    opacity: 1;
+  }
 
   .amp__embed {
     display: grid;
     place-items: center;
     overflow: hidden;
     border-radius: 12px;
-    background: #191414;
+    background: #000000;
     min-height: 80px;
   }
 
   .amp__idle {
-    margin: 0;
     padding: 0 12px;
-    color: #9a93a8;
-    font: 400 10px/1.4 var(--font-pixel);
-    letter-spacing: 0.04em;
+    color: #a9abc6;
+    font-size: 10px;
     text-align: center;
-    text-transform: uppercase;
   }
 
   .amp.is-live .amp__idle {
     display: none;
-  }
-
-  .amp__dot {
-    opacity: 0.35;
-  }
-
-  .amp.is-live .amp__dot {
-    opacity: 1;
   }
 
   .amp__embed :global(iframe) {
@@ -596,10 +778,270 @@ const payload = {
   }
 
   .amp__fineprint {
-    margin: 10px 2px 0;
-    color: var(--ink-soft);
+    margin: 10px 0 0;
+    color: var(--fg-2);
     font-size: 12px;
     line-height: 1.4;
+  }
+
+  /* ── the index ───────────────────────── */
+  .index__top {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--fg);
+  }
+
+  .index__tabs {
+    display: flex;
+    gap: clamp(12px, 1.6vw, 22px);
+  }
+
+  .index__tab {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--fg-2);
+    font-family: var(--font-display);
+    font-size: clamp(26px, 2.5vw, 40px);
+    font-stretch: 64%;
+    font-weight: 900;
+    line-height: 0.9;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+
+  .index__tab sup {
+    font: 500 10px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    vertical-align: top;
+  }
+
+  .index__tab:hover,
+  .index__tab[aria-pressed='true'] {
+    color: var(--fg);
+  }
+
+  .index__tab[aria-pressed='true'] sup {
+    color: var(--accent);
+  }
+
+  .index__playlist {
+    display: inline-flex;
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  .index[data-view='songs'] .names,
+  .index[data-view='artists'] .index__songs {
+    display: none;
+  }
+
+  .index__find {
+    display: block;
+    margin-top: 12px;
+  }
+
+  .index__find input {
+    width: 100%;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: 0;
+    background: rgb(255 255 255 / 0.04);
+    color: var(--fg);
+    font: 500 12px/1 var(--font-mono);
+    letter-spacing: 0.04em;
+    appearance: none;
+  }
+
+  .index__find input::placeholder {
+    color: var(--fg-2);
+    opacity: 1;
+  }
+
+  .index__find input:focus-visible {
+    border-color: var(--accent);
+    outline: none;
+    box-shadow: none;
+  }
+
+  .index__state {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 10px 0 6px;
+    color: var(--fg-2);
+  }
+
+  .index__clear {
+    padding: 0;
+    border: 0;
+    color: var(--accent);
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    cursor: pointer;
+  }
+
+  .index__clear[hidden] {
+    display: none;
+  }
+
+  .tracks {
+    max-height: min(62svh, 560px);
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--line);
+    list-style: none;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-color: var(--fg-2) transparent;
+    scrollbar-width: thin;
+  }
+
+  .tracks li[hidden] {
+    display: none;
+  }
+
+  .track {
+    display: grid;
+    grid-template-columns: 4ch minmax(0, 1fr) auto;
+    grid-template-areas:
+      'no title time'
+      'no artist time';
+    align-items: baseline;
+    column-gap: 10px;
+    width: 100%;
+    padding: 8px 6px 7px 0;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    background: none;
+    color: var(--fg);
+    text-align: left;
+    cursor: pointer;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease,
+      padding 0.2s var(--ease-out);
+  }
+
+  .track__no {
+    grid-area: no;
+    color: var(--fg-2);
+    font: 500 10px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+  }
+
+  .track__title {
+    grid-area: title;
+    overflow: hidden;
+    font-size: 15px;
+    font-stretch: 88%;
+    font-weight: 650;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .track__artist {
+    grid-area: artist;
+    overflow: hidden;
+    color: var(--fg-2);
+    font-size: 12.5px;
+    line-height: 1.3;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .track__time {
+    grid-area: time;
+    align-self: center;
+    color: var(--fg-2);
+    font: 500 10px/1 var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.06em;
+  }
+
+  .track:hover,
+  .track:focus-visible {
+    padding-left: 8px;
+    background: var(--fg);
+    color: var(--bg);
+    outline: none;
+    box-shadow: none;
+  }
+
+  .track:hover :is(.track__no, .track__artist, .track__time),
+  .track:focus-visible :is(.track__no, .track__artist, .track__time) {
+    color: var(--bg);
+  }
+
+  /* the one that's on */
+  .track[aria-current='true'] {
+    padding-left: 8px;
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+
+  .track[aria-current='true'] :is(.track__no, .track__artist, .track__time) {
+    color: var(--on-accent);
+  }
+
+  .index__none {
+    margin: 18px 0 0;
+    color: var(--fg-2);
+    font-size: 22px;
+  }
+
+  .index__none[hidden] {
+    display: none;
+  }
+
+  /* artists, sized by how many of their songs are in here */
+  .names {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 14px;
+    max-height: min(74svh, 660px);
+    margin: 14px 0 0;
+    padding: 0 4px 0 0;
+    list-style: none;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-color: var(--fg-2) transparent;
+    scrollbar-width: thin;
+  }
+
+  .name {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--fg);
+    font-family: var(--font-display);
+    font-size: calc(15px + (var(--n) - 1) * 6.5px);
+    font-stretch: 68%;
+    font-weight: 800;
+    line-height: 1.05;
+    text-align: left;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+
+  .name sup {
+    margin-left: 2px;
+    color: var(--fg-2);
+    font: 500 9px/1 var(--font-mono);
+    vertical-align: top;
+  }
+
+  .name:hover {
+    color: var(--accent);
   }
 
   /* ── the record in transit ───────────── */
@@ -627,25 +1069,36 @@ const payload = {
     height: 320px;
     border-radius: 50%;
     background:
-      radial-gradient(circle, #120d1e 0 3.6%, var(--label, #b9a6fb) 3.6% 31%, transparent 31%),
-      repeating-radial-gradient(circle, #2d2742 0 2px, #171226 2px 4.4px);
-    box-shadow: 0 18px 26px -14px rgb(27 21 38 / 0.7);
+      radial-gradient(circle, #0c0d21 0 3.6%, var(--label, #d6ff3d) 3.6% 31%, transparent 31%),
+      repeating-radial-gradient(circle, #2a2e5c 0 2px, #14163a 2px 4.4px);
+    box-shadow: 0 18px 26px -14px rgb(0 0 0 / 0.7);
     transform-origin: 0 0;
     will-change: transform;
   }
 
+  /* ── two columns, index underneath ───── */
+  @media (max-width: 1179px) {
+    .room__body {
+      grid-template-columns: minmax(170px, 0.5fr) minmax(0, 1.5fr);
+    }
+
+    .index {
+      grid-column: 1 / -1;
+    }
+
+    .tracks {
+      max-height: min(56svh, 460px);
+    }
+  }
+
   /* ── phones & small tablets ──────────── */
   @media (max-width: 899px) {
-    .room {
-      padding-top: 88px;
-    }
-
     .room__body {
       grid-template-columns: minmax(0, 1fr);
-      gap: 32px;
+      gap: 30px;
     }
 
-    /* deck → controls → the records → what's on → the player. */
+    /* deck → controls → the records → what's on → the player → the index. */
     .deck-area {
       display: contents;
     }
@@ -665,7 +1118,7 @@ const payload = {
 
     .panel__note {
       order: 4;
-      margin-top: 10px;
+      margin-top: 0;
     }
 
     .shelf {
@@ -674,20 +1127,26 @@ const payload = {
 
     .now {
       order: 6;
-      margin-top: 4px;
+      width: 100%;
+      margin-top: 0;
     }
 
     .amp {
       order: 7;
-      margin-top: 4px;
+      width: 100%;
+      margin-top: 0;
+    }
+
+    .index {
+      order: 8;
     }
 
     .stack {
       display: flex;
       gap: 14px;
       max-width: none;
-      margin-top: 16px;
-      padding: 10px 2px 18px;
+      margin: 16px calc(var(--gutter) * -1) 0;
+      padding: 10px var(--gutter) 18px;
       overflow-x: auto;
       scroll-snap-type: x mandatory;
       -webkit-overflow-scrolling: touch;
@@ -718,8 +1177,15 @@ const payload = {
 
     .pick__meta {
       position: static;
+      margin-top: 10px;
       opacity: 1;
       translate: 0 0;
+    }
+
+    .plate {
+      top: 46px;
+      right: -34vw;
+      width: 78vw;
     }
   }
 
@@ -727,6 +1193,10 @@ const payload = {
     .pick,
     .pick__disc {
       transition: none;
+    }
+
+    .plate__disc {
+      animation: none;
     }
   }
 </style>

@@ -3,6 +3,8 @@
 //   npm run dev        (in one terminal)
 //   npm run og         (in another)
 //
+// Point it somewhere else with OG_URL, e.g. OG_URL=http://localhost:4322/og/ after `npm run preview`.
+//
 // Uses your installed Google Chrome. Set CHROME_PATH if it lives somewhere else.
 import { spawn } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -55,5 +57,9 @@ try {
   console.log(`saved ${out.pathname}`);
 } finally {
   chrome.kill();
-  rmSync(profile, { recursive: true, force: true });
+  try {
+    rmSync(profile, { recursive: true, force: true, maxRetries: 6, retryDelay: 250 });
+  } catch {
+    // a leftover temp profile is not worth an error; the OS clears it
+  }
 }

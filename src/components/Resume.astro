@@ -151,7 +151,9 @@ const contacts = [
             <p class="entry__degree">{education.degree}</p>
             <p class="entry__meta">{education.facts.join('  ·  ')}</p>
             <div class="fold" data-depth="3">
-              <p class="entry__course"><b>Relevant coursework</b> {education.coursework.join(', ')}</p>
+              <div>
+                <p class="entry__course"><b>Relevant coursework</b> {education.coursework.join(', ')}</p>
+              </div>
             </div>
           </div>
         </section>
@@ -159,18 +161,20 @@ const contacts = [
         <section class="part">
           <h3 class="part__label">technical skills</h3>
           <div class="part__body">
-            <dl class="skills">
+            <ul class="skills">
               {
                 resume.skills.map((s) => (
-                  <div class="fold" data-depth={s.depth} data-tags={s.tags.join(' ') || undefined}>
-                    <div class="skills__row">
-                      <dt>{s.title}</dt>
-                      <dd>{s.items.join(', ')}</dd>
+                  <li class="fold" data-depth={s.depth} data-tags={s.tags.join(' ') || undefined}>
+                    <div>
+                      <p class="skills__row">
+                        <b>{s.title}</b>
+                        <span>{s.items.join(', ')}</span>
+                      </p>
                     </div>
-                  </div>
+                  </li>
                 ))
               }
-            </dl>
+            </ul>
           </div>
         </section>
 
@@ -195,7 +199,9 @@ const contacts = [
                     <ul class="entry__lines">
                       {e.lines.map((l) => (
                         <li class="fold" data-depth={l.depth}>
-                          <span>{l.text}</span>
+                          <div>
+                            <span class="line">{l.text}</span>
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -210,16 +216,20 @@ const contacts = [
           <div class="part__fold">
             <h3 class="part__label">additional</h3>
             <div class="part__body">
-              <dl class="skills">
-                <div class="skills__row">
-                  <dt>Areas of interest</dt>
-                  <dd>{resume.interests.join(', ')}</dd>
-                </div>
-                <div class="skills__row">
-                  <dt>Languages</dt>
-                  <dd>{resume.languages.join(', ')}</dd>
-                </div>
-              </dl>
+              <ul class="skills">
+                <li>
+                  <p class="skills__row">
+                    <b>Areas of interest</b>
+                    <span>{resume.interests.join(', ')}</span>
+                  </p>
+                </li>
+                <li>
+                  <p class="skills__row">
+                    <b>Languages</b>
+                    <span>{resume.languages.join(', ')}</span>
+                  </p>
+                </li>
+              </ul>
             </div>
           </div>
         </section>
@@ -532,13 +542,13 @@ const contacts = [
     list-style: none;
   }
 
-  .entry__lines span {
+  .line {
     position: relative;
     display: block;
     padding: 5px 0 0 18px;
   }
 
-  .entry__lines span::before {
+  .line::before {
     content: '';
     position: absolute;
     top: 1em;
@@ -550,22 +560,26 @@ const contacts = [
 
   .skills {
     margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .skills li {
+    transition:
+      grid-template-rows 0.5s var(--ease-out),
+      opacity 0.35s ease;
   }
 
   .skills__row {
     display: grid;
     grid-template-columns: minmax(0, 0.42fr) minmax(0, 1fr);
     column-gap: 14px;
-    padding: 2.5px 0;
-    transition: opacity 0.35s ease;
-  }
-
-  .skills dt {
-    font-weight: 700;
-  }
-
-  .skills dd {
     margin: 0;
+    padding: 2.5px 0;
+  }
+
+  .skills b {
+    font-weight: 700;
   }
 
   /* ── folding ────────────────────────────
@@ -624,11 +638,12 @@ const contacts = [
   .cv:has([name='cv-lens'][value='systems']:checked) .entry[data-tags~='systems'] .entry__title,
   .cv:has([name='cv-lens'][value='web']:checked) .entry[data-tags~='web'] .entry__title,
   .cv:has([name='cv-lens'][value='design']:checked) .entry[data-tags~='design'] .entry__title,
-  .cv:has([name='cv-lens'][value='ai']:checked) .fold[data-tags~='ai'] dt,
-  .cv:has([name='cv-lens'][value='systems']:checked) .fold[data-tags~='systems'] dt,
-  .cv:has([name='cv-lens'][value='web']:checked) .fold[data-tags~='web'] dt,
-  .cv:has([name='cv-lens'][value='design']:checked) .fold[data-tags~='design'] dt {
+  .cv:has([name='cv-lens'][value='ai']:checked) .fold[data-tags~='ai'] b,
+  .cv:has([name='cv-lens'][value='systems']:checked) .fold[data-tags~='systems'] b,
+  .cv:has([name='cv-lens'][value='web']:checked) .fold[data-tags~='web'] b,
+  .cv:has([name='cv-lens'][value='design']:checked) .fold[data-tags~='design'] b {
     background: linear-gradient(var(--acid), var(--acid)) 0 78% / 100% 0.62em no-repeat;
+    justify-self: start;
   }
 
   @media (max-width: 899px) {

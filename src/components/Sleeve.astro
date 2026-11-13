@@ -71,7 +71,7 @@ const tint = tintFor(track.id);
     background:
       radial-gradient(60% 50% at 70% 18%, rgb(255 255 255 / 0.55), transparent 70%),
       var(--paper);
-    color: #2a2440;
+    color: #0c0d21;
   }
 
   .sleeve__blank[hidden] {
@@ -92,7 +92,7 @@ const tint = tintFor(track.id);
 
   .sleeve__artist {
     margin: 0;
-    font: 400 clamp(8px, 1.1cqw, 11px) / 1.2 var(--font-mono);
+    font: 500 clamp(8px, 1.1cqw, 11px) / 1.2 var(--font-mono);
     letter-spacing: 0.08em;
     text-transform: uppercase;
     opacity: 0.75;
@@ -100,7 +100,12 @@ const tint = tintFor(track.id);
 
   .sleeve__title {
     margin: 2% 0 0;
-    font: 400 clamp(17px, 2.6cqw, 34px) / 0.95 var(--font-display);
+    font-family: var(--font-display);
+    font-size: clamp(17px, 2.6cqw, 34px);
+    font-stretch: 68%;
+    font-weight: 900;
+    line-height: 0.95;
+    text-transform: uppercase;
     overflow-wrap: anywhere;
   }
 

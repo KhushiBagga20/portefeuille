@@ -254,7 +254,7 @@ const parts = at < 0 ? [lead] : [lead.slice(0, at), education.focus, lead.slice(
     left: 50%;
     width: 22px;
     height: calc(var(--drop) + clamp(40px, 6vw, 96px) + 20px);
-    background: var(--c-ink);
+    background: var(--fg);
     translate: -50% 0;
   }
 
@@ -431,6 +431,12 @@ const parts = at < 0 ? [lead] : [lead.slice(0, at), education.focus, lead.slice(
     opacity: var(--lit);
     pointer-events: none;
     transition: opacity 0.4s ease;
+  }
+
+  .id__flip {
+    --key-bg: var(--bg);
+    position: relative;
+    z-index: 1;
   }
 
   .id__flip svg {

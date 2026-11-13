@@ -47,6 +47,9 @@ export function initMusicRoom(room: HTMLElement) {
   const toggle = $<HTMLButtonElement>('[data-toggle]')!;
   const toggleLabel = $<HTMLElement>('[data-toggle-label]')!;
   const picks = [...room.querySelectorAll<HTMLButtonElement>('[data-pick]')];
+  const rows = [...room.querySelectorAll<HTMLButtonElement>('[data-track]')];
+  const rowList = room.querySelector<HTMLElement>('[data-tracks]');
+  const plateLabel = room.querySelector<HTMLElement>('[data-plate-label]');
 
   const ARM_REST = Number(deck.dataset.armRest ?? 0);
   const ARM_PLAY = Number(deck.dataset.armPlay ?? -27);
@@ -190,6 +193,7 @@ export function initMusicRoom(room: HTMLElement) {
   function setSpinning(next: boolean, tellSpotify = true) {
     if (next === spinning) return Promise.resolve();
     spinning = next;
+    room.dataset.playing = String(next);
     toggle.setAttribute('aria-pressed', String(next));
     power.setAttribute('aria-pressed', String(next));
     toggleLabel.textContent = next ? 'Pause' : 'Play';
@@ -322,6 +326,22 @@ export function initMusicRoom(room: HTMLElement) {
     info.title.textContent = t.title;
     info.artist.textContent = t.artist;
     info.link.href = `https://open.spotify.com/track/${t.id}`;
+    // the big record on the wall wears the same sleeve
+    if (plateLabel) plateLabel.style.backgroundImage = t.cover ? `url("${t.cover}")` : '';
+  }
+
+  /** Light the playing row in the index, and bring it into view inside its own scroller. */
+  function markRow(index: number) {
+    rows.forEach((row) => {
+      const on = Number(row.dataset.track) === index;
+      if (on) row.setAttribute('aria-current', 'true');
+      else row.removeAttribute('aria-current');
+      if (!on || !rowList || row.closest('li')?.hidden) return;
+      const top = row.offsetTop - rowList.offsetTop;
+      if (top < rowList.scrollTop || top + row.offsetHeight > rowList.scrollTop + rowList.clientHeight) {
+        rowList.scrollTop = top - rowList.clientHeight / 2 + row.offsetHeight / 2;
+      }
+    });
   }
 
   const markPicks = () => picks.forEach((p, i) => p.setAttribute('aria-pressed', String(i === slot)));
@@ -381,6 +401,7 @@ export function initMusicRoom(room: HTMLElement) {
     track = index;
     endedAt = -1;
     markPicks();
+    markRow(index);
     paintRecord(t);
     paintInfo(t);
 
@@ -432,6 +453,7 @@ export function initMusicRoom(room: HTMLElement) {
 
   // ── controls ──────────────────────────────────
   picks.forEach((pick, i) => pick.addEventListener('click', () => void load(crate[i])));
+  rows.forEach((row) => row.addEventListener('click', () => void load(Number(row.dataset.track))));
 
   toggle.addEventListener('click', () => (track < 0 ? void load(crate[0]) : void setSpinning(!spinning)));
   power.addEventListener('click', () => toggle.click());
