@@ -1,6 +1,8 @@
 ---
 // The link-preview card (1200 × 630). Not a real page: `npm run og` screenshots it into public/og.png.
-import '@fontsource-variable/archivo/wdth.css';
+import '@fontsource/anton/400.css';
+import '@fontsource/archivo-black/400.css';
+import '@fontsource-variable/manrope/wght.css';
 import '../styles/global.css';
 import Collage from '../components/Collage.astro';
 import Rosette from '../components/Rosette.astro';
@@ -67,9 +69,9 @@ const letters = [...site.name.toUpperCase()];
     position: relative;
     z-index: 1;
     margin: 0;
-    font-family: var(--font-display);
-    font-size: 250px;
-    font-weight: 900;
+    font-family: var(--font-head);
+    font-size: 249px;
+    font-weight: 400;
     line-height: 0.76;
     text-transform: uppercase;
     white-space: nowrap;
@@ -127,23 +129,22 @@ const letters = [...site.name.toUpperCase()];
   .headline__a {
     display: block;
     font-family: var(--font-display);
-    font-stretch: 66%;
-    font-weight: 800;
+    font-weight: 400;
     text-transform: uppercase;
   }
 
   .headline__b {
     display: block;
-    margin-top: 0.08em;
-    font-family: var(--font-display);
-    font-size: 0.84em;
+    margin-top: 0.1em;
+    font-family: var(--font-body);
+    font-size: 0.74em;
     font-weight: 300;
-    letter-spacing: -0.03em;
+    letter-spacing: -0.035em;
   }
 
   .meta {
     margin: 18px 0 0;
-    font: 600 semi-expanded 14px/1 var(--font-label);
+    font: 700 14px/1 var(--font-label);
     letter-spacing: 0.09em;
     text-transform: uppercase;
   }

@@ -22,7 +22,7 @@
       b.setAttribute('aria-checked', String(night));
       b.title = night ? 'Night — switch to day' : 'Day — switch to night';
     });
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', night ? '#0f1028' : '#f3f3ef');
+    document.querySelector('meta[name="theme-color"]:not([data-fixed])')?.setAttribute('content', night ? '#0f1028' : '#f3f3ef');
   };
 
   paint(root.dataset.theme === 'night');

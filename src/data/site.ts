@@ -15,12 +15,13 @@ export const site = {
   intro: 'I build things, explore ideas, and occasionally make the internet weird.',
   currently: 'currently: building this website',
 
-  // Absolute (/#…) so they also work from project pages.
+  // The main portfolio's bar. Absolute (/#…) so they also work from project pages.
+  // The Playground has its own navigation: see src/data/playground.ts.
   nav: [
     { label: 'projects', href: '/#projects' },
     { label: 'about', href: '/#about' },
+    { label: 'skills', href: '/#skills' },
     { label: 'résumé', href: '/#resume' },
-    { label: 'records', href: '/#records' },
     { label: 'contact', href: '/#contact' },
   ],
 

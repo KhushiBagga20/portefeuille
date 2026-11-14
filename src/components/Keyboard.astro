@@ -2,11 +2,14 @@
 // The keyboard, shown as the site's one big object: a cobalt room, the board floating in
 // it, and a wall of type behind that repeats whatever you press.
 //
+// It is the gateway to both halves of the site: bright keys jump around this page, dark
+// keys open rooms of the Playground (the list is src/data/keyboard.ts).
+//
 // The board itself (KeyboardScene, Garden, scripts/keyboard.ts) is unchanged.
 import KeyboardScene from './KeyboardScene.astro';
 import PosterHead from './PosterHead.astro';
 import { chapter } from '../data/chapters';
-import { desk, pad, sections } from '../data/keyboard';
+import { desk, pad, pageKeys, playKeys } from '../data/keyboard';
 import { basis, project } from '../scripts/iso';
 import { KEY } from '../scripts/keycap';
 
@@ -38,20 +41,28 @@ const stage = `--key-tall:${(highest / boxH).toFixed(4)};--key-wide:${(((boxH / 
   </div>
 
   <div class="strip">
-    <PosterHead id="keyboard" note="the coloured keys go places" />
+    <PosterHead id="keyboard" note="bright keys: this page · dark keys: the playground" />
   </div>
 
-  <div class="head">
+  <div class="console">
     <h2 id="keyboard-title" class="sr-only">Press a key</h2>
     <div class="screen" data-screen aria-hidden="true">
       <span class="screen__prompt">&gt;</span>
       <span class="screen__text" data-typed></span>
       <span class="screen__cursor"></span>
     </div>
-    <p class="hint hint--desk label">
-      or type {sections.map((s) => <kbd>{s.key}</kbd>)} on your own keyboard
+    <p class="legend hint--desk">
+      <span class="hint__row">
+        <span class="hint__k">this page</span>
+        {pageKeys.map((s) => <kbd>{s.key}</kbd>)}
+      </span>
+      <span class="hint__row hint__row--play">
+        <span class="hint__k">playground</span>
+        {playKeys.map((s) => <kbd>{s.key}</kbd>)}
+      </span>
+      <span class="hint__how">click a key, or type it on your own keyboard</span>
     </p>
-    <p class="hint hint--pad label">tap a coloured key</p>
+    <p class="hint hint--pad label">tap a coloured key · the lime one opens the playground</p>
     <p class="psst voice hint--desk">psst — spell hello</p>
     <p class="psst voice hint--pad">psst — the ✦ key does something</p>
   </div>
@@ -89,9 +100,8 @@ const stage = `--key-tall:${(highest / boxH).toFixed(4)};--key-wide:${(((boxH / 
     right: var(--gutter);
     left: var(--gutter);
     font-family: var(--font-display);
-    font-stretch: 62%;
-    font-weight: 900;
-    line-height: 0.78;
+    font-weight: 400;
+    line-height: 0.94;
     text-transform: uppercase;
     white-space: nowrap;
     pointer-events: none;
@@ -99,8 +109,8 @@ const stage = `--key-tall:${(highest / boxH).toFixed(4)};--key-wide:${(((boxH / 
 
   .wall span {
     display: block;
-    /* a 62%-wide capital averages about half an em, so n of them fill the measure */
-    font-size: min(22vw, calc((100vw - 2 * var(--gutter)) / (var(--n) * 0.5)));
+    /* an Anton capital averages a little under half an em, so n of them fill the measure */
+    font-size: min(22vw, calc((100vw - 2 * var(--gutter)) / (var(--n) * 0.452)));
     transition:
       opacity 0.25s ease,
       translate 0.5s var(--ease-out);
@@ -150,7 +160,7 @@ const stage = `--key-tall:${(highest / boxH).toFixed(4)};--key-wide:${(((boxH / 
   }
 
   /* ── the console ────────────────────── */
-  .head {
+  .console {
     position: absolute;
     left: var(--gutter);
     bottom: clamp(26px, 6svh, 64px);
@@ -168,8 +178,8 @@ const stage = `--key-tall:${(highest / boxH).toFixed(4)};--key-wide:${(((boxH / 
     padding: 0 16px;
     background: var(--c-ink);
     color: var(--marigold-pale);
-    font: 600 semi-expanded 15px/1 var(--font-label);
-    letter-spacing: 0.08em;
+    font: 500 15px/1 var(--font-mono);
+    letter-spacing: 0.02em;
   }
 
   .screen__prompt {
@@ -212,8 +222,43 @@ const stage = `--key-tall:${(highest / boxH).toFixed(4)};--key-wide:${(((boxH / 
   }
 
   .hint {
-    margin-top: 16px;
+    margin: 16px 0 0;
     line-height: 2;
+  }
+
+  /* which keys go where */
+  .legend {
+    display: grid;
+    gap: 7px;
+    margin: 16px 0 0;
+    font: 500 12px/1 var(--font-mono);
+  }
+
+  .hint__row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .hint__k {
+    width: 11ch;
+  }
+
+  .hint__row--play kbd {
+    border-color: var(--c-ink);
+    background: var(--c-ink);
+    color: #f3f3ef;
+  }
+
+  .hint__row--play kbd:first-of-type {
+    border-color: var(--play);
+    background: var(--play);
+    color: var(--c-ink);
+  }
+
+  .hint__how {
+    margin-top: 4px;
+    color: var(--fg-2);
   }
 
   .hint--pad {
@@ -223,21 +268,19 @@ const stage = `--key-tall:${(highest / boxH).toFixed(4)};--key-wide:${(((boxH / 
   .psst {
     margin: 6px 0 0;
     color: var(--accent);
-    font-size: 24px;
-    line-height: 1.1;
+    font-size: 22px;
+    line-height: 1.15;
   }
 
   kbd {
     display: inline-grid;
     place-items: center;
-    min-width: 20px;
-    height: 20px;
-    margin: 0 2px;
+    min-width: 21px;
+    height: 21px;
     padding: 0 4px;
     border: 1px solid currentColor;
     border-radius: 4px;
-    font: inherit;
-    line-height: 1;
+    font: 600 11px/1 var(--font-mono);
   }
 
   @media (max-width: 699px) {
@@ -278,7 +321,7 @@ const stage = `--key-tall:${(highest / boxH).toFixed(4)};--key-wide:${(((boxH / 
       margin-top: 6px;
     }
 
-    .head {
+    .console {
       position: relative;
       left: auto;
       bottom: auto;

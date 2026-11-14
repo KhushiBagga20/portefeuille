@@ -1,8 +1,16 @@
 ---
-import '@fontsource-variable/archivo/wdth.css';
+// Four faces, one job each (see styles/global.css). The subsets carry unicode ranges, so a
+// browser only downloads the files a page actually uses.
+import '@fontsource/anton/400.css';
+import '@fontsource/archivo-black/400.css';
+import '@fontsource-variable/manrope/wght.css';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/500.css';
 import '../styles/global.css';
-// The masthead is set in this file at 20vw, so it's worth fetching before the CSS asks for it.
-import archivo from '@fontsource-variable/archivo/files/archivo-latin-wdth-normal.woff2?url';
+// The three that set the first screen are worth fetching before the CSS asks for them.
+import anton from '@fontsource/anton/files/anton-latin-400-normal.woff2?url';
+import archivoBlack from '@fontsource/archivo-black/files/archivo-black-latin-400-normal.woff2?url';
+import manrope from '@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2?url';
 import { site } from '../data/site';
 import { about, education } from '../data/profile';
 
@@ -10,9 +18,12 @@ interface Props {
   title?: string;
   description?: string;
   noindex?: boolean;
+  /** a class for <body>: the Playground uses it to turn the whole page dark */
+  bodyClass?: string;
+  themeColor?: string;
 }
 
-const { title = site.title, description = site.description, noindex = false } = Astro.props;
+const { title = site.title, description = site.description, noindex = false, bodyClass, themeColor = '#f3f3ef' } = Astro.props;
 
 // Absolute URLs need `site` in astro.config.mjs (set it once the domain exists).
 const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : undefined;
@@ -38,10 +49,10 @@ const person = {
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="author" content={site.fullName} />
-    <meta name="theme-color" content="#f3f3ef" />
+    <meta name="theme-color" content={themeColor} data-fixed={themeColor !== '#f3f3ef' ? '' : undefined} />
     {noindex && <meta name="robots" content="noindex" />}
     {canonical && <link rel="canonical" href={canonical} />}
-    <link rel="preload" href={archivo} as="font" type="font/woff2" crossorigin />
+    {[archivoBlack, anton, manrope].map((href) => <link rel="preload" href={href} as="font" type="font/woff2" crossorigin />)}
 
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content={site.fullName} />
@@ -65,10 +76,23 @@ const person = {
         } catch {}
         document.documentElement.dataset.theme = saved === 'night' ? 'night' : 'day';
       })();
+      // Name the kind of page change, so the stylesheet can stage it: going down into the
+      // Playground, coming back up, or walking from one room to the next.
+      addEventListener('pagereveal', (e) => {
+        if (!e.viewTransition) return;
+        try {
+          const inPlay = (path) => path.startsWith('/playground');
+          const from = document.referrer ? new URL(document.referrer) : null;
+          if (!from || from.origin !== location.origin) return;
+          const was = inPlay(from.pathname);
+          const is = inPlay(location.pathname);
+          e.viewTransition.types.add(is && !was ? 'dive' : was && !is ? 'surface' : is ? 'room' : 'page');
+        } catch {}
+      });
     </script>
     <script type="application/ld+json" set:html={JSON.stringify(person)} />
   </head>
-  <body>
+  <body class={bodyClass}>
     <slot />
 
     <!-- the card that wipes across when you jump between sections -->

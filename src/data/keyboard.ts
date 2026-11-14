@@ -3,24 +3,39 @@
 //
 // `sections` decides which letters do something. Change a letter, label or colour here
 // and both the desktop keyboard and the phone key pad update.
+//
+// The board is the gateway to both halves of the site:
+//   bright keys   sections of this page (an in-page jump)
+//   dark keys     rooms of the Playground (another page); the lime one is its front door
 // ─────────────────────────────────────────────
 import type { Camera } from '../scripts/iso';
 import { KEY } from '../scripts/keycap';
 
 const KEY_PLATE = KEY.plate;
 
-export type Tone = 'base' | 'lemon' | 'tomato' | 'lilac' | 'mint' | 'pink' | 'cream' | 'sky' | 'ink';
+export type Tone = 'base' | 'lemon' | 'tomato' | 'lilac' | 'mint' | 'pink' | 'cream' | 'sky' | 'ink' | 'acid';
 
 export const sections: { key: string; label: string; href: string; tone: Tone }[] = [
-  { key: 'A', label: 'about', href: '#about', tone: 'lemon' },
+  // ── this page ──
   { key: 'P', label: 'projects', href: '#projects', tone: 'tomato' },
-  { key: 'S', label: 'skills', href: '#skills', tone: 'lilac' },
-  { key: 'M', label: 'milestones', href: '#milestones', tone: 'mint' },
+  { key: 'A', label: 'about', href: '#about', tone: 'lemon' },
   { key: 'E', label: 'experience', href: '#experience', tone: 'pink' },
+  { key: 'M', label: 'milestones', href: '#milestones', tone: 'mint' },
+  { key: 'S', label: 'skills', href: '#skills', tone: 'lilac' },
+  { key: 'R', label: 'résumé', href: '#resume', tone: 'sky' },
   { key: 'C', label: 'contact', href: '#contact', tone: 'cream' },
-  { key: 'V', label: 'records', href: '#records', tone: 'sky' },
-  { key: 'R', label: 'résumé', href: '#resume', tone: 'ink' },
+  // ── the Playground ──
+  { key: 'Y', label: 'playground', href: '/playground/', tone: 'acid' },
+  { key: 'L', label: 'lab', href: '/playground/lab/', tone: 'ink' },
+  { key: 'I', label: 'art', href: '/playground/art/', tone: 'ink' },
+  { key: 'W', label: 'writing', href: '/playground/writing/', tone: 'ink' },
+  { key: 'V', label: 'records', href: '/playground/music/', tone: 'ink' },
+  { key: 'F', label: 'films', href: '/playground/films/', tone: 'ink' },
 ];
+
+/** the letters, split the way the hint under the board reads them out */
+export const pageKeys = sections.filter((s) => s.href.startsWith('#'));
+export const playKeys = sections.filter((s) => !s.href.startsWith('#'));
 
 // Top face, light side, dark side, legend.
 export const tones: Record<Tone, [string, string, string, string]> = {
@@ -33,6 +48,7 @@ export const tones: Record<Tone, [string, string, string, string]> = {
   cream: ['#fffaf0', '#f1dfc3', '#d2b98f', '#1b1526'],
   sky: ['#a9ccff', '#7fabf4', '#5a85d8', '#1b1526'],
   ink: ['#2b2f63', '#1c1f47', '#0c0d21', '#f3f3ef'],
+  acid: ['#d6ff3d', '#b4de1c', '#86aa06', '#0c0d21'],
 };
 
 export type KeyDef = {
@@ -98,7 +114,7 @@ export const desk: Scene = {
 const padKeys = [
   ...row(0, [['G', 1], ['A', 1], ['P', 1]]),
   ...row(1, [['S', 1], ['M', 1], ['E', 1]]),
-  ...row(2, [['C', 1], ['V', 1], ['✦', 1, 'SPARKLE']]),
+  ...row(2, [['C', 1], ['Y', 1], ['✦', 1, 'SPARKLE']]),
 ].map((k) => (k.id === 'G' ? { ...k, hole: true } : k));
 
 export const pad: Scene = {

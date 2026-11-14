@@ -1,0 +1,13 @@
+---
+// Room 01. The bench where interactive experiments live. The first — and for now the
+// only — one is the cube; new experiments get added to `bench` below as they are built.
+import Play from '../../layouts/Play.astro';
+import Rubik from '../../components/Rubik.astro';
+import { room } from '../../data/playground';
+
+const r = room('lab');
+---
+
+<Play here="lab" title="The lab" description="Interactive experiments. First on the bench: a real 3×3 cube you can orbit, turn, scramble and solve.">
+  <Rubik index={r.no} name={r.name} level="h1" solo />
+</Play>

@@ -1,5 +1,5 @@
 ---
-// The last poster. An acid dome rises over the record room, the address is set as large
+// The last poster. A marigold dome rises over the résumé room, the address is set as large
 // as it will go, and the name the site opened with comes back across the foot.
 import Arrow from './Arrow.astro';
 import ComingSoon from './ComingSoon.astro';
@@ -144,9 +144,8 @@ const year = new Date().getFullYear();
     margin: 0;
     font-family: var(--font-display);
     font-size: clamp(110px, 23vw, 430px);
-    font-stretch: 62%;
-    font-weight: 900;
-    line-height: 0.74;
+    font-weight: 400;
+    line-height: 0.94;
     letter-spacing: -0.02em;
     text-transform: uppercase;
   }
@@ -155,7 +154,6 @@ const year = new Date().getFullYear();
     max-width: 30ch;
     margin: clamp(20px, 3vw, 44px) 0 0;
     font-size: clamp(18px, 1.6vw, 24px);
-    font-stretch: 92%;
     font-weight: 550;
     line-height: 1.32;
   }
@@ -183,23 +181,22 @@ const year = new Date().getFullYear();
   .contact__mail {
     font-family: var(--font-display);
     font-size: clamp(27px, 6.3vw, 118px);
-    font-stretch: 66%;
-    font-weight: 900;
-    line-height: 0.92;
-    letter-spacing: -0.01em;
+    font-weight: 400;
+    line-height: 0.94;
+    letter-spacing: 0;
     text-decoration: none;
     text-transform: uppercase;
     overflow-wrap: anywhere;
     background: linear-gradient(currentColor, currentColor) 0 100% / 0 0.07em no-repeat;
     transition:
       background-size 0.5s var(--ease-out),
-      font-stretch 0.5s var(--ease-out);
+      letter-spacing 0.5s var(--ease-out);
   }
 
   .contact__mail:hover,
   .contact__mail:focus-visible {
     background-size: 100% 0.07em;
-    font-stretch: 70%;
+    letter-spacing: 0.012em;
   }
 
   .contact__links {
@@ -216,13 +213,13 @@ const year = new Date().getFullYear();
     align-items: baseline;
     gap: 0.3em;
     padding: 6px 0;
-    font-family: var(--font-display);
-    font-size: clamp(24px, 3vw, 50px);
-    font-stretch: 68%;
-    font-weight: 800;
+    font-family: var(--font-head);
+    font-size: clamp(19px, 2vw, 32px);
+    font-weight: 400;
     line-height: 1;
     text-decoration: none;
-    text-transform: uppercase;
+    text-transform: none;
+    letter-spacing: -0.035em;
   }
 
   .contact__link :global(svg) {
@@ -266,9 +263,9 @@ const year = new Date().getFullYear();
   /* the masthead again, sinking out of the bottom of the page */
   .end__name {
     margin: clamp(14px, 2vw, 30px) 0 -0.17em;
-    font-family: var(--font-display);
-    font-size: calc(100cqw / 4.44);
-    font-weight: 900;
+    font-family: var(--font-head);
+    font-size: calc(100cqw / 4.46);
+    font-weight: 400;
     line-height: 0.76;
     text-align: center;
     text-transform: uppercase;
@@ -277,8 +274,12 @@ const year = new Date().getFullYear();
 
   .end__name span {
     display: inline-block;
-    font-variation-settings: 'wdth' var(--w, 100);
-    transition: font-variation-settings 0.45s var(--ease-out);
+    transform-origin: 0 50%;
+    translate: var(--dx, 0px) 0;
+    scale: var(--sx, 1) 1;
+    transition:
+      translate 0.45s var(--ease-out),
+      scale 0.45s var(--ease-out);
   }
 
   @media (max-width: 859px) {

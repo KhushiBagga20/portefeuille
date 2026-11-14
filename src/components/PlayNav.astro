@@ -1,0 +1,304 @@
+---
+// The Playground's own bar. Same height and place as the portfolio's, so the rooms that
+// were built under that one still fit — but dark, numbered like channels, and with the
+// way back to the portfolio always in the same corner.
+import Arrow from './Arrow.astro';
+import SoundToggle from './SoundToggle.astro';
+import { playground, rooms, type RoomId } from '../data/playground';
+import { site } from '../data/site';
+
+interface Props {
+  /** which room this page is, or 'hub' for the front door */
+  here: RoomId | 'hub';
+}
+const { here } = Astro.props;
+---
+
+<header class="pnav s-play">
+  <a class="pnav__exit" href="/" aria-label={`Back to ${site.name}'s portfolio`}>
+    <Arrow dir="left" /><span>portfolio</span>
+  </a>
+
+  <a class="pnav__mark" href={playground.href} aria-current={here === 'hub' ? 'page' : undefined}>
+    <i aria-hidden="true"></i>{playground.name}
+  </a>
+
+  <nav class="pnav__rooms" aria-label="Playground rooms">
+    {
+      rooms.map((r) => (
+        <a href={r.href} aria-current={here === r.id ? 'page' : undefined} style={`--room:${r.accent}`}>
+          <span class="pnav__no">{r.no}</span>
+          {r.name}
+        </a>
+      ))
+    }
+  </nav>
+
+  <div class="pnav__tools">
+    <SoundToggle />
+    <button class="pnav__menu" type="button" popovertarget="play-menu" aria-label="Open the list of rooms">
+      <span aria-hidden="true"></span>rooms
+    </button>
+  </div>
+
+  <nav id="play-menu" class="pmenu s-play" popover aria-label="Playground rooms (mobile)">
+    <ul>
+      {
+        rooms.map((r) => (
+          <li style={`--room:${r.accent}`}>
+            <a href={r.href} aria-current={here === r.id ? 'page' : undefined}>
+              <span class="pmenu__no">{r.no}</span>
+              <span class="pmenu__name">{r.name}</span>
+            </a>
+          </li>
+        ))
+      }
+      <li class="pmenu__exit">
+        <a href="/"><Arrow dir="left" /> back to the portfolio</a>
+      </li>
+    </ul>
+  </nav>
+</header>
+
+<style>
+  .pnav {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    gap: clamp(12px, 2vw, 28px);
+    height: var(--bar);
+    padding: 0 var(--gutter);
+    border-bottom: 1px solid var(--line);
+    background-color: var(--bg);
+    color: var(--fg);
+  }
+
+  .pnav__exit {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 32px;
+    padding: 0 13px 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font: 650 13px/1 var(--font-body);
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+      background-color 0.22s var(--ease-out),
+      color 0.22s var(--ease-out),
+      border-color 0.22s var(--ease-out);
+  }
+
+  .pnav__exit :global(svg) {
+    transition: translate 0.3s var(--ease-out);
+  }
+
+  .pnav__exit:hover {
+    border-color: var(--c-paper);
+    background: var(--c-paper);
+    color: var(--c-ink);
+  }
+
+  .pnav__exit:hover :global(svg) {
+    translate: -3px 0;
+  }
+
+  .pnav__mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--accent);
+    font: 400 22px/1 var(--font-display);
+    letter-spacing: 0.03em;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  /* one loose cubie, turning */
+  .pnav__mark i {
+    width: 12px;
+    height: 12px;
+    border-radius: 2.5px;
+    background: currentColor;
+    transition: rotate 0.7s var(--spring);
+  }
+
+  .pnav__mark:hover i {
+    rotate: 135deg;
+  }
+
+  .pnav__rooms {
+    display: flex;
+    gap: clamp(12px, 1.9vw, 26px);
+    margin-left: auto;
+  }
+
+  .pnav__rooms a {
+    position: relative;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 8px 0;
+    font: 650 13.5px/1 var(--font-body);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .pnav__no {
+    color: var(--fg-2);
+    font: 500 11px/1 var(--font-mono);
+    transition: color 0.2s ease;
+  }
+
+  .pnav__rooms a::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 1px;
+    height: 2px;
+    background: var(--room);
+    scale: 0 1;
+    transform-origin: right;
+    transition: scale 0.3s var(--ease-out);
+  }
+
+  .pnav__rooms a:hover::after,
+  .pnav__rooms a[aria-current]::after {
+    scale: 1 1;
+    transform-origin: left;
+  }
+
+  .pnav__rooms a:hover .pnav__no,
+  .pnav__rooms a[aria-current] .pnav__no {
+    color: var(--room);
+  }
+
+  .pnav__tools {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .pnav__menu {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    margin-left: 6px;
+    padding: 0 14px;
+    border: 1.5px solid var(--fg);
+    border-radius: 999px;
+    background: none;
+    font: 700 13px/1 var(--font-body);
+    cursor: pointer;
+  }
+
+  .pnav__menu span {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    background: var(--accent);
+  }
+
+  /* ── the phone list: the rooms, set large ── */
+  .pmenu {
+    inset: var(--bar) 0 auto 0;
+    width: 100%;
+    max-width: none;
+    max-height: calc(100svh - var(--bar));
+    margin: 0;
+    padding: 14px var(--gutter) 26px;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--fg);
+    overflow-y: auto;
+  }
+
+  .pmenu ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .pmenu a {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    padding: 10px 0 8px;
+    border-bottom: 1px solid var(--line);
+    text-decoration: none;
+  }
+
+  .pmenu__no {
+    width: 3ch;
+    color: var(--room);
+    font: 500 12px/1 var(--font-mono);
+  }
+
+  .pmenu__name {
+    font: 400 clamp(44px, 14vw, 84px) / 0.98 var(--font-display);
+    text-transform: uppercase;
+  }
+
+  .pmenu a[aria-current] .pmenu__name {
+    color: var(--room);
+  }
+
+  .pmenu__exit a {
+    align-items: center;
+    gap: 10px;
+    padding-top: 18px;
+    border-bottom: 0;
+    color: var(--fg-2);
+    font: 650 15px/1 var(--font-body);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .pmenu:popover-open {
+      animation: pmenu-in 0.42s var(--ease-out);
+    }
+
+    @keyframes pmenu-in {
+      from {
+        clip-path: inset(0 0 100% 0);
+      }
+      to {
+        clip-path: inset(0 0 0 0);
+      }
+    }
+  }
+
+  @media (max-width: 899px) {
+    .pnav__rooms {
+      display: none;
+    }
+
+    .pnav__tools {
+      margin-left: auto;
+    }
+
+    .pnav__menu {
+      display: inline-flex;
+    }
+  }
+
+  @media (max-width: 419px) {
+    .pnav__exit span {
+      display: none;
+    }
+
+    .pnav__exit {
+      padding: 0 10px;
+    }
+  }
+</style>
+
+<script>
+  const menu = document.getElementById('play-menu');
+  menu?.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('a')) (menu as HTMLElement & { hidePopover(): void }).hidePopover();
+  });
+</script>

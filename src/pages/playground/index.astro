@@ -1,0 +1,663 @@
+---
+// The Playground's front door. The main portfolio opens on a name set in daylight; this is
+// its night side — the word PLAYGROUND the width of the page, and under it a floor plan of
+// the rooms. Each room on the plan holds a small working model of what's inside.
+import Play from '../../layouts/Play.astro';
+import Arrow from '../../components/Arrow.astro';
+import PosterHead from '../../components/PosterHead.astro';
+import { playground, rooms } from '../../data/playground';
+import { roomNotes } from '../../lib/content';
+
+const letters = [...playground.title.toUpperCase()];
+const notes = await roomNotes();
+
+// ── the model cube on the lab's door: three faces of a 3×3, drawn in isometric ──
+const S = 40;
+const g = 0.09;
+const pt = (x: number, y: number, z: number) => `${((x - y) * 0.866 * S).toFixed(1)},${((x + y) * 0.5 * S - z * S).toFixed(1)}`;
+const quad = (c: [number, number, number][]) => c.map((p) => pt(...p)).join(' ');
+const paint = ['#f3f3ef', 'var(--cobalt)', 'var(--magenta)'];
+const mixed = ['var(--signal)', 'var(--periwinkle)', '#f3f3ef', 'var(--violet)', 'var(--magenta)', 'var(--cobalt)'];
+const stickers: { points: string; a: string; b: string; d: number }[] = [];
+let n = 0;
+for (let i = 0; i < 3; i++) {
+  for (let j = 0; j < 3; j++) {
+    const lo = [i + g, j + g];
+    const hi = [i + 1 - g, j + 1 - g];
+    const faces: [number, number, number][][] = [
+      [[lo[0], lo[1], 3], [hi[0], lo[1], 3], [hi[0], hi[1], 3], [lo[0], hi[1], 3]],
+      [[lo[0], 3, lo[1]], [hi[0], 3, lo[1]], [hi[0], 3, hi[1]], [lo[0], 3, hi[1]]],
+      [[3, lo[0], lo[1]], [3, hi[0], lo[1]], [3, hi[0], hi[1]], [3, lo[0], hi[1]]],
+    ];
+    faces.forEach((f, face) => {
+      stickers.push({ points: quad(f), a: paint[face], b: mixed[(n * 7 + face * 3 + i) % mixed.length], d: (n % 9) * 28 });
+      n++;
+    });
+  }
+}
+const shell = quad([[0, 0, 3], [3, 0, 3], [3, 0, 0], [3, 3, 0], [0, 3, 0], [0, 3, 3]]);
+---
+
+<Play here="hub" title="Playground" description={`${playground.intro} ${rooms.map((r) => r.name).join(', ')}.`}>
+  <section class="hub s-play">
+    <div class="hub__top">
+      <PosterHead index="00" name={playground.name} note={playground.line} />
+
+      <div class="hub__mast-box">
+        <h1 class="hub__mast">
+          <span aria-hidden="true">{letters.map((ch, i) => <span class="hub__l" style={`--i:${i}`}>{ch}</span>)}</span>
+          <span class="sr-only">{playground.title}: {playground.line}</span>
+        </h1>
+      </div>
+
+      <div class="hub__intro">
+        <p class="hub__lede">{playground.intro}</p>
+        <p class="hub__how mono">
+          {rooms.length} rooms · pick a door<br />
+          <span class="hub__keys">or press its number, 1–{rooms.length}</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- the floor plan -->
+    <nav class="plan" aria-label="Rooms">
+      {
+        rooms.map((r, i) => (
+          <a class={`door door--${r.id}`} href={r.href} style={`--room:${r.accent};--on-room:${r.onAccent};--i:${i}`} data-door={i + 1}>
+            <span class="door__no mono">room {r.no}</span>
+            <span class="door__name">{r.name}</span>
+            <span class="door__line">{r.line}</span>
+            <span class="door__note mono">{notes[r.id]}</span>
+            <span class="door__go" aria-hidden="true">
+              <Arrow />
+            </span>
+
+            <span class="door__obj" aria-hidden="true">
+              {r.id === 'lab' && (
+                <span class="o-lab">
+                  <i class="o-lab__disc" />
+                  <svg viewBox="-112 -128 224 256">
+                    <polygon points={shell} fill="#0c0d21" />
+                    {stickers.map((s) => (
+                      <polygon class="o-lab__s" points={s.points} style={`--a:${s.a};--b:${s.b};--d:${s.d}ms`} />
+                    ))}
+                  </svg>
+                </span>
+              )}
+              {r.id === 'art' && (
+                <span class="o-art">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+              )}
+              {r.id === 'writing' && (
+                <span class="o-write">
+                  {[78, 92, 64, 0, 88, 70, 46].map((w, k) => (
+                    <i style={`--w:${w}%;--k:${k}`} />
+                  ))}
+                </span>
+              )}
+              {r.id === 'records' && (
+                <span class="o-disc">
+                  <i />
+                </span>
+              )}
+              {r.id === 'films' && (
+                <span class="o-film">
+                  <span>
+                    {Array.from({ length: 8 }, () => (
+                      <i />
+                    ))}
+                  </span>
+                </span>
+              )}
+            </span>
+          </a>
+        ))
+      }
+
+      <!-- not a door yet: kept on the plan so the next experiment has somewhere to go -->
+      <p class="door door--empty">
+        <span class="door__no mono">room {String(rooms.length + 1).padStart(2, '0')}</span>
+        <span class="door__name">empty</span>
+        <span class="door__line">Kept free on purpose. The next experiment moves in here.</span>
+      </p>
+    </nav>
+  </section>
+</Play>
+
+<script>
+  // 1–5 open the rooms, the way the letters do on the portfolio's keyboard.
+  addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return;
+    if ((e.target as HTMLElement).closest?.('input, textarea, select, [contenteditable]')) return;
+    const door = document.querySelector<HTMLAnchorElement>(`[data-door="${e.key}"]`);
+    if (!door) return;
+    door.classList.add('is-pressed');
+    window.setTimeout(() => (location.href = door.href), 260);
+  });
+</script>
+
+<style>
+  .hub {
+    position: relative;
+    min-height: calc(100svh - var(--bar));
+    padding: clamp(18px, 2.4vw, 34px) var(--gutter) clamp(36px, 5vw, 72px);
+    background: var(--bg);
+    color: var(--fg);
+    overflow: clip;
+  }
+
+  .hub__top {
+    max-width: calc(var(--wrap) + 240px);
+    margin: 0 auto;
+  }
+
+  /* ── the word ───────────────────────── */
+  .hub__mast-box {
+    container-type: inline-size;
+    margin-top: clamp(10px, 1.6vw, 22px);
+  }
+
+  .hub__mast {
+    margin: 0;
+    color: var(--accent);
+    font-family: var(--font-display);
+    /* PLAYGROUND is 4.714em wide in Anton: this fills the measure */
+    font-size: calc(100cqw / 4.76);
+    font-weight: 400;
+    line-height: 0.87;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .hub__l {
+    display: inline-block;
+  }
+
+  .hub__intro {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 20px 40px;
+    margin-top: clamp(16px, 2.2vw, 30px);
+  }
+
+  .hub__lede {
+    max-width: 44ch;
+    margin: 0;
+    font-size: var(--fs-lede);
+    font-weight: 400;
+    line-height: 1.34;
+    letter-spacing: -0.012em;
+    text-wrap: pretty;
+  }
+
+  .hub__how {
+    margin: 0;
+    color: var(--fg-2);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  @media not ((hover: hover) and (pointer: fine)) {
+    .hub__keys {
+      display: none;
+    }
+  }
+
+  /* ── the plan ───────────────────────── */
+  .plan {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-areas:
+      'lab lab lab lab lab art art art art wri wri wri'
+      'lab lab lab lab lab rec rec rec fil fil fil fil'
+      'emp emp emp emp emp emp emp emp emp emp emp emp';
+    grid-template-rows: repeat(2, minmax(240px, 33svh)) auto;
+    gap: 1px;
+    max-width: calc(var(--wrap) + 240px);
+    margin: clamp(22px, 3vw, 44px) auto 0;
+    border: 1px solid var(--line);
+    background: var(--line);
+  }
+
+  .door {
+    --room: var(--accent);
+    --on-room: #0c0d21;
+    position: relative;
+    display: grid;
+    align-content: start;
+    gap: 6px;
+    min-width: 0;
+    margin: 0;
+    padding: clamp(14px, 1.5vw, 22px);
+    background: var(--bg);
+    color: var(--fg);
+    text-decoration: none;
+    overflow: clip;
+    isolation: isolate;
+    container-type: size;
+    transition: color 0.35s var(--ease-out);
+  }
+
+  .door--lab {
+    grid-area: lab;
+  }
+  .door--art {
+    grid-area: art;
+  }
+  .door--writing {
+    grid-area: wri;
+  }
+  .door--records {
+    grid-area: rec;
+  }
+  .door--films {
+    grid-area: fil;
+  }
+  .door--empty {
+    grid-area: emp;
+    grid-template-columns: auto auto 1fr;
+    align-items: baseline;
+    gap: 6px 20px;
+    container-type: normal;
+    color: var(--fg-2);
+    background: repeating-linear-gradient(-45deg, transparent 0 9px, rgb(243 243 239 / 0.045) 9px 10px), var(--bg);
+  }
+
+  /* the room's own colour floods up from the floor */
+  a.door::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--room);
+    scale: 1 0;
+    transform-origin: bottom;
+    transition: scale 0.5s var(--ease-out);
+  }
+
+  .door__no {
+    color: var(--room);
+    transition: color 0.35s var(--ease-out);
+  }
+
+  .door--empty .door__no {
+    color: inherit;
+  }
+
+  .door__name {
+    font: 400 clamp(30px, 3.5vw, 58px) / 0.95 var(--font-head);
+    letter-spacing: -0.04em;
+  }
+
+  .door--lab .door__name {
+    font-size: clamp(40px, 5.4vw, 92px);
+  }
+
+  .door--empty .door__name {
+    font-size: clamp(20px, 1.8vw, 28px);
+  }
+
+  .door__line {
+    max-width: 26ch;
+    margin-top: 4px;
+    color: var(--fg-2);
+    font-size: 15px;
+    line-height: 1.4;
+    transition: color 0.35s var(--ease-out);
+  }
+
+  .door--empty .door__line {
+    max-width: none;
+    margin: 0;
+    color: inherit;
+  }
+
+  .door__note {
+    position: absolute;
+    left: clamp(14px, 1.5vw, 22px);
+    bottom: clamp(12px, 1.4vw, 20px);
+    color: var(--fg-2);
+    transition: color 0.35s var(--ease-out);
+  }
+
+  .door__go {
+    position: absolute;
+    top: clamp(14px, 1.5vw, 22px);
+    right: clamp(14px, 1.5vw, 22px);
+    font-size: 22px;
+    opacity: 0;
+    translate: -10px 0;
+    transition:
+      opacity 0.3s ease,
+      translate 0.45s var(--ease-out);
+  }
+
+  .door__obj {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  a.door:hover,
+  a.door:focus-visible,
+  a.door.is-pressed {
+    color: var(--on-room);
+  }
+
+  a.door:hover::before,
+  a.door:focus-visible::before,
+  a.door.is-pressed::before {
+    scale: 1 1;
+  }
+
+  a.door:hover :is(.door__no, .door__line, .door__note),
+  a.door:focus-visible :is(.door__no, .door__line, .door__note),
+  a.door.is-pressed :is(.door__no, .door__line, .door__note) {
+    color: var(--on-room);
+  }
+
+  a.door:hover .door__go,
+  a.door:focus-visible .door__go {
+    opacity: 1;
+    translate: 0 0;
+  }
+
+  a.door:focus-visible {
+    outline-offset: -4px;
+    box-shadow: none;
+  }
+
+  /* ── lab: a cube that scrambles while you look at it ── */
+  .o-lab {
+    position: absolute;
+    right: 5cqw;
+    bottom: 4cqh;
+    width: min(62cqw, 68cqh);
+    aspect-ratio: 224 / 256;
+  }
+
+  .o-lab__disc {
+    position: absolute;
+    inset: 6% 0 2%;
+    border-radius: 50%;
+    background: var(--room);
+    transition: background-color 0.35s var(--ease-out);
+  }
+
+  .o-lab svg {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    transition: rotate 0.9s var(--spring);
+  }
+
+  .o-lab__s {
+    fill: var(--a);
+    transition: fill 0.16s linear var(--d);
+  }
+
+  a.door:hover .o-lab__disc,
+  a.door:focus-visible .o-lab__disc {
+    background: #0c0d21;
+  }
+
+  a.door:hover .o-lab__s,
+  a.door:focus-visible .o-lab__s {
+    fill: var(--b);
+  }
+
+  a.door:hover .o-lab svg {
+    rotate: -8deg;
+  }
+
+  /* ── art: three frames that fan out ── */
+  .o-art {
+    position: absolute;
+    right: 7cqw;
+    bottom: 10cqh;
+    width: min(25cqw, 46cqh);
+    aspect-ratio: 4 / 5;
+  }
+
+  .o-art i {
+    position: absolute;
+    inset: 0;
+    border: 0.7cqw solid var(--c-paper);
+    background: var(--room);
+    box-shadow: 0 1.4cqw 2.4cqw rgb(0 0 0 / 0.35);
+    transition:
+      rotate 0.6s var(--spring),
+      translate 0.6s var(--spring),
+      background-color 0.35s var(--ease-out);
+  }
+
+  .o-art i:nth-child(1) {
+    background: var(--cobalt);
+    rotate: -9deg;
+    translate: -34% 6%;
+  }
+
+  .o-art i:nth-child(2) {
+    background: var(--marigold);
+    rotate: 6deg;
+    translate: 22% -8%;
+  }
+
+  .o-art i:nth-child(3) {
+    rotate: -2deg;
+  }
+
+  a.door:hover .o-art i:nth-child(1),
+  a.door:focus-visible .o-art i:nth-child(1) {
+    rotate: -16deg;
+    translate: -74% 4%;
+  }
+
+  a.door:hover .o-art i:nth-child(2),
+  a.door:focus-visible .o-art i:nth-child(2) {
+    rotate: 13deg;
+    translate: 58% -12%;
+  }
+
+  a.door:hover .o-art i:nth-child(3),
+  a.door:focus-visible .o-art i:nth-child(3) {
+    background: #0c0d21;
+    rotate: 0deg;
+    translate: -6% -4%;
+  }
+
+  /* ── writing: a page being written ── */
+  .o-write {
+    position: absolute;
+    right: 8cqw;
+    bottom: -6cqh;
+    display: grid;
+    align-content: start;
+    gap: 4.4cqh;
+    width: 46cqw;
+    height: 62cqh;
+    padding: 7cqh 5cqw;
+    background: var(--c-paper);
+    rotate: 4deg;
+    transition:
+      rotate 0.6s var(--spring),
+      translate 0.6s var(--spring);
+  }
+
+  .o-write i {
+    width: var(--w);
+    height: max(3px, 1.5cqh);
+    background: #0c0d21;
+    transform-origin: left;
+  }
+
+  a.door:hover .o-write,
+  a.door:focus-visible .o-write {
+    rotate: 0deg;
+    translate: 0 -8cqh;
+  }
+
+  /* ── records: a disc that turns ── */
+  .o-disc {
+    position: absolute;
+    right: -4cqw;
+    bottom: -42cqh;
+    width: min(62cqw, 112cqh);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle, transparent 0 21%, rgb(243 243 239 / 0.2) 21.4% 22%, transparent 22.4%), repeating-radial-gradient(circle, #05061a 0 2.4%, #24274f 2.4% 2.9%), #05061a;
+    box-shadow: 0 0 0 1.5px rgb(243 243 239 / 0.4);
+  }
+
+  .o-disc i {
+    position: absolute;
+    inset: 33%;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle, #0c0d21 0 9%, transparent 9.6%),
+      conic-gradient(var(--room) 0 62%, var(--marigold-deep) 62% 100%);
+  }
+
+  /* ── films: a strip running through the gate ── */
+  .o-film {
+    position: absolute;
+    right: 0;
+    bottom: 11cqh;
+    left: 0;
+    height: 44cqh;
+    background:
+      radial-gradient(circle, var(--bg) 0 2.4px, transparent 3px) 0 5px / 15px 9px repeat-x,
+      radial-gradient(circle, var(--bg) 0 2.4px, transparent 3px) 0 calc(100% - 5px) / 15px 9px repeat-x,
+      #f3f3ef;
+    rotate: -4deg;
+    scale: 1.1;
+    overflow: hidden;
+    transition: background-color 0.35s var(--ease-out);
+  }
+
+  .o-film > span {
+    position: absolute;
+    inset: 19px 0 19px -20%;
+    display: flex;
+    gap: 2.4%;
+    width: 180%;
+  }
+
+  .o-film i {
+    flex: 1;
+    background: var(--bg);
+  }
+
+  .o-film i:nth-child(3n + 1) {
+    background: var(--room);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    a.door:hover .o-disc,
+    a.door:focus-visible .o-disc {
+      animation: o-spin 2.4s linear infinite;
+    }
+
+    a.door:hover .o-film > span,
+    a.door:focus-visible .o-film > span {
+      animation: o-reel 1.6s linear infinite;
+    }
+
+    a.door:hover .o-write i,
+    a.door:focus-visible .o-write i {
+      animation: o-type 0.5s var(--ease-out) backwards;
+      animation-delay: calc(var(--k) * 70ms);
+    }
+
+    @keyframes o-spin {
+      to {
+        rotate: 360deg;
+      }
+    }
+
+    @keyframes o-reel {
+      to {
+        translate: -13.5% 0;
+      }
+    }
+
+    @keyframes o-type {
+      from {
+        scale: 0 1;
+      }
+    }
+
+    /* arriving: the word drops in letter by letter, then the rooms light up in order */
+    :global(.js) .hub__l {
+      animation: hub-rise 0.9s var(--ease-out) backwards;
+      animation-delay: calc(var(--i) * 45ms);
+    }
+
+    :global(.js) .door {
+      animation: hub-door 0.7s var(--ease-out) backwards;
+      animation-delay: calc(0.35s + var(--i, 5) * 70ms);
+    }
+
+    @keyframes hub-rise {
+      from {
+        opacity: 0;
+        translate: 0 0.4em;
+      }
+    }
+
+    @keyframes hub-door {
+      from {
+        opacity: 0;
+      }
+    }
+  }
+
+  /* ── narrower ───────────────────────── */
+  @media (max-width: 999px) {
+    .plan {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-areas:
+        'lab lab'
+        'art wri'
+        'rec fil'
+        'emp emp';
+      grid-template-rows: minmax(260px, 40svh) repeat(2, minmax(230px, 30svh)) auto;
+    }
+
+    .door--empty {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 599px) {
+    .hub__intro {
+      flex-direction: column;
+      align-items: start;
+    }
+
+    .hub__how {
+      text-align: left;
+    }
+
+    .plan {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: 'lab' 'art' 'wri' 'rec' 'fil' 'emp';
+      grid-template-rows: none;
+      grid-auto-rows: minmax(210px, auto);
+    }
+
+    .door--lab {
+      min-height: 300px;
+    }
+
+    .door__line {
+      max-width: 22ch;
+    }
+  }
+</style>

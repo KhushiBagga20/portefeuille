@@ -1,19 +1,20 @@
 // ─────────────────────────────────────────────
-// The running order of the home page.
+// The running order of the main portfolio — "what I've built".
 // Every section's index number — (03), (07)… — is its position in this list, so adding,
-// removing or reordering a section renumbers the whole site by itself.
+// removing or reordering a section renumbers the whole page by itself.
+//
+// The Playground ("how my brain works") is a separate set of pages with its own order:
+// see src/data/playground.ts.
 // ─────────────────────────────────────────────
 export const chapters = [
   { id: 'top', name: 'cover' },
-  { id: 'cube', name: 'fidget' },
   { id: 'keyboard', name: 'navigate' },
-  { id: 'about', name: 'about' },
   { id: 'projects', name: 'projects' },
-  { id: 'milestones', name: 'milestones' },
+  { id: 'about', name: 'about' },
   { id: 'experience', name: 'experience' },
+  { id: 'milestones', name: 'milestones' },
   { id: 'skills', name: 'skills' },
   { id: 'resume', name: 'résumé' },
-  { id: 'records', name: 'records' },
   { id: 'contact', name: 'contact' },
 ] as const;
 

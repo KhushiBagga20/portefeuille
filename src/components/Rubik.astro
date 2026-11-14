@@ -5,9 +5,17 @@
 // The mechanics live in scripts/rubik.ts. Everything the panel reads out — the move
 // count, the state, the last turn — comes from the cube itself.
 import PosterHead from './PosterHead.astro';
-import { chapter } from '../data/chapters';
 
-const c = chapter('cube');
+interface Props {
+  /** the room number and name for the strip along the top */
+  index: string;
+  name: string;
+  level?: 'h1' | 'h2';
+  /** on a page of its own: the room rises once on arrival instead of on scroll */
+  solo?: boolean;
+}
+const { index, name, level = 'h2', solo = false } = Astro.props;
+const Heading = level;
 
 // one colour per face, in the engine's order: +x −x +y −y +z −z
 const stickers = ['#f3f3ef', 'var(--periwinkle)', 'var(--magenta)', 'var(--violet)', 'var(--cobalt)', 'var(--signal)'];
@@ -27,22 +35,21 @@ const faces: [string, string, string][] = [
 
 <section
   id="cube"
-  class="cube poster s-ink"
+  class:list={['cube poster s-ink', { 'cube--solo': solo }]}
   data-rubik
-  data-view
+  data-view={solo ? undefined : ''}
   data-colors={JSON.stringify(stickers)}
   data-plastic="#0c0d21"
-  {...c.attrs}
   aria-labelledby="cube-title"
 >
   <div class="cube__frame">
-    <PosterHead id="cube" note="fig. 01 — 3×3×3 · 26 cubies · 54 stickers" />
+    <PosterHead index={index} name={name} note="experiment 01 — 3×3×3 · 26 cubies · 54 stickers" />
 
     <div class="cube__grid">
       <div class="cube__copy">
-        <h2 id="cube-title" class="cube__title">Turn <br />it.</h2>
+        <Heading id="cube-title" class="cube__title">Turn <br />it.</Heading>
         <p class="cube__voice voice">Twenty-six little boxes, forty-three quintillion ways to be wrong.</p>
-        <p class="cube__how label">
+        <p class="cube__how">
           Drag the cube to spin it.<br />
           Drag a sticker to turn that layer.
           <span class="cube__keys"><br />Or type U D L R F B — shift goes the other way.</span>
@@ -126,10 +133,15 @@ const faces: [string, string, string][] = [
     --on-accent: #0c0d21;
     display: flex;
     flex-direction: column;
-    min-height: 100svh;
-    padding: clamp(22px, 3vw, 40px) 0 calc(clamp(48px, 9vw, 150px) + clamp(8px, 1.4vw, 22px));
+    min-height: calc(100svh - var(--bar));
+    padding: clamp(18px, 2.4vw, 34px) 0 clamp(22px, 3vw, 40px);
     overflow: clip;
     clip-path: ellipse(calc(56% + pow(var(--dome), 3) * 650%) calc(100% + pow(var(--dome), 8) * 60%) at 50% 100%);
+  }
+
+  /* in a room of its own there is nothing above to rise out of */
+  .cube--solo {
+    clip-path: none;
   }
 
   .cube__frame {
@@ -156,25 +168,26 @@ const faces: [string, string, string][] = [
     margin: 0;
     font-family: var(--font-display);
     font-size: clamp(72px, 10.5vw, 190px);
-    font-stretch: 62%;
-    font-weight: 900;
-    line-height: 0.78;
-    letter-spacing: -0.015em;
+    font-weight: 400;
+    line-height: 0.94;
+    letter-spacing: 0;
     text-transform: uppercase;
   }
 
   .cube__voice {
-    max-width: 17ch;
+    max-width: 15ch;
     margin: clamp(16px, 2.6svh, 30px) 0 0;
     color: var(--accent);
-    font-size: clamp(23px, 2.2vw, 36px);
-    line-height: 1.05;
+    font-size: clamp(21px, 2vw, 32px);
+    line-height: 1.12;
   }
 
   .cube__how {
     margin-top: clamp(16px, 3svh, 34px);
     color: var(--fg-2);
-    line-height: 1.7;
+    line-height: 1.6;
+    max-width: 30ch;
+    font-size: 15px;
   }
 
   @media not ((hover: hover) and (pointer: fine)) {
@@ -256,9 +269,9 @@ const faces: [string, string, string][] = [
     display: grid;
     margin: 0;
     border-top: 1px solid var(--line);
-    font: 600 semi-expanded 11px/1 var(--font-label);
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
+    font: 500 12px/1 var(--font-mono);
+    letter-spacing: 0;
+    text-transform: none;
   }
 
   .cube__read div {
@@ -300,7 +313,7 @@ const faces: [string, string, string][] = [
     border: 1px solid var(--line);
     border-radius: 6px;
     background: none;
-    font: 600 semi-expanded 14px/1 var(--font-label);
+    font: 600 14px/1 var(--font-mono);
     cursor: pointer;
     transition:
       background-color 0.15s ease,

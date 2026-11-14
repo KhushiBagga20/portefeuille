@@ -19,7 +19,7 @@ const tones = [
     <PosterHead id="experience" note={`${communities.length} communities & roles`} />
 
     <header class="beyond__head">
-      <h2 id="experience-title" class="beyond__title" data-reveal>Beyond<br />projects</h2>
+      <h2 id="experience-title" class="beyond__title" data-reveal>Beyond projects</h2>
       <p class="beyond__lede voice" data-reveal>Clubs and societies I'm part of at university.</p>
     </header>
 
@@ -56,19 +56,18 @@ const tones = [
   .beyond__title {
     margin: 0;
     font-family: var(--font-display);
-    font-size: clamp(60px, 11.4vw, 210px);
-    font-stretch: 62%;
-    font-weight: 900;
-    line-height: 0.76;
-    letter-spacing: -0.015em;
+    font-size: clamp(46px, 6.6vw, 112px);
+    font-weight: 400;
+    line-height: 0.94;
+    letter-spacing: 0;
     text-transform: uppercase;
   }
 
   .beyond__lede {
-    max-width: 15ch;
+    max-width: 18ch;
     margin: 0 0 0.3em;
-    font-size: clamp(20px, 1.9vw, 30px);
-    line-height: 1.08;
+    font-size: clamp(19px, 1.7vw, 27px);
+    line-height: 1.14;
     text-align: right;
   }
 
@@ -106,36 +105,35 @@ const tones = [
   .row__no {
     align-self: start;
     padding-top: 0.5em;
-    font: 600 semi-expanded 11px/1 var(--font-label);
-    letter-spacing: 0.09em;
+    font: 500 12px/1 var(--font-mono);
+    letter-spacing: 0;
   }
 
   .row__name {
     margin: 0;
-    font-family: var(--font-display);
-    font-size: clamp(54px, 12.4vw, 220px);
-    font-stretch: 62%;
-    font-weight: 900;
-    line-height: 0.8;
-    letter-spacing: -0.012em;
-    text-transform: uppercase;
+    font-family: var(--font-head);
+    font-size: clamp(40px, 7vw, 120px);
+    font-weight: 400;
+    line-height: 0.96;
+    letter-spacing: -0.05em;
+    text-transform: none;
     white-space: nowrap;
     transition:
-      font-stretch 0.5s var(--ease-out),
+      letter-spacing 0.5s var(--ease-out),
       translate 0.5s var(--ease-out);
   }
 
   .row__role {
     margin: 0;
-    font-size: clamp(20px, 1.9vw, 30px);
-    font-stretch: 84%;
+    font-size: clamp(19px, 1.6vw, 25px);
     font-weight: 700;
     line-height: 1.05;
+    letter-spacing: -0.02em;
   }
 
   .row__meta {
     margin: 8px 0 0;
-    font: 600 semi-expanded 10.5px/1.5 var(--font-label);
+    font: 700 10.5px/1.5 var(--font-label);
     letter-spacing: 0.09em;
     text-transform: uppercase;
   }
@@ -156,7 +154,7 @@ const tones = [
     }
 
     .row:hover .row__name {
-      font-stretch: 68%;
+      letter-spacing: -0.02em;
       translate: 10px 0;
     }
   }

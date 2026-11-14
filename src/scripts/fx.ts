@@ -134,13 +134,14 @@ function tilts() {
 }
 
 /* ── 5 · kinetic letters ───────────────────────
-   Inside [data-kinetic], letters marked [data-k="n"] swell toward the cursor along the
-   variable font's width axis. The others give way by exactly as much, so the word never
-   changes length — it just shifts its weight around, like something breathing.
-   Elements sharing an n (the solid masthead and its outline twin) always move together. */
+   Inside [data-kinetic], letters marked [data-k="n"] swell sideways toward the cursor.
+   The others give way by exactly as much and every letter slides to stay shoulder to
+   shoulder, so the word never changes length — it just shifts its weight around, like
+   something breathing. Elements sharing an n (the solid masthead and its outline twin)
+   always move together. Done with transforms, so it works in a face with no width axis. */
 function kinetic() {
   if (reduce.matches || !fine.matches) return;
-  const SWELL = 34; // how many width units the favourite letter may gain
+  const SWELL = 0.3; // how much wider the favourite letter may get
 
   document.querySelectorAll<HTMLElement>('[data-kinetic]').forEach((root) => {
     const groups = new Map<string, HTMLElement[]>();
@@ -151,10 +152,11 @@ function kinetic() {
     const sets = [...groups.values()];
     if (!sets.length) return;
 
-    // each letter's share of the word, read once at rest (only the ratios matter)
-    let share: number[] = [];
-    const measure = () => (share = sets.map(([lead]) => lead.getBoundingClientRect().width || 1));
+    // each letter's width and resting centre, read from layout (transforms don't change them)
+    let width: number[] = [];
+    const measure = () => (width = sets.map(([lead]) => lead.offsetWidth || 1));
     document.fonts.ready.then(measure);
+    addEventListener('resize', () => (width = []));
 
     let raf = 0;
     let mx = 0;
@@ -163,20 +165,28 @@ function kinetic() {
 
     const paint = () => {
       raf = 0;
-      if (!share.length) measure();
+      if (!width.length) measure();
       const reach = Math.max(240, innerWidth * 0.24);
-      const k = sets.map(([lead]) => {
+      const box = sets[0][0].parentElement!.getBoundingClientRect();
+      let x = box.left;
+      const k = sets.map((_, i) => {
+        const centre = x + width[i] / 2;
+        x += width[i];
         if (!inside) return 0;
-        const r = lead.getBoundingClientRect();
-        const d = Math.hypot(mx - (r.left + r.width / 2), (my - (r.top + r.height / 2)) * 0.55);
+        const d = Math.hypot(mx - centre, (my - (box.top + box.height / 2)) * 0.55);
         const v = clamp(1 - d / reach);
         return v * v * (3 - 2 * v);
       });
-      const total = share.reduce((a, b) => a + b, 0);
-      const mean = k.reduce((a, v, i) => a + v * share[i], 0) / total;
+      const total = width.reduce((a, b) => a + b, 0);
+      const mean = k.reduce((a, v, i) => a + v * width[i], 0) / total;
+      let shift = 0;
       sets.forEach((set, i) => {
-        const w = (100 + SWELL * (k[i] - mean)).toFixed(1);
-        for (const el of set) el.style.setProperty('--w', w);
+        const sx = 1 + SWELL * (k[i] - mean);
+        for (const el of set) {
+          el.style.setProperty('--sx', sx.toFixed(4));
+          el.style.setProperty('--dx', `${shift.toFixed(2)}px`);
+        }
+        shift += width[i] * (sx - 1);
       });
     };
 

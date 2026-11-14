@@ -176,10 +176,10 @@ const now = site.currently.replace(/^currently:\s*/i, '');
 
   .mast {
     margin: 0;
-    font-family: var(--font-display);
-    /* the word is 4.423em wide at full width and weight, so this fills the measure exactly */
-    font-size: calc(100cqw / 4.44);
-    font-weight: 900;
+    font-family: var(--font-head);
+    /* the word is 4.443em wide in Archivo Black, so this fills the measure exactly */
+    font-size: calc(100cqw / 4.46);
+    font-weight: 400;
     line-height: 0.76;
     text-transform: uppercase;
     white-space: nowrap;
@@ -189,10 +189,16 @@ const now = site.currently.replace(/^currently:\s*/i, '');
     display: block;
   }
 
+  /* each letter can swell sideways from its left edge; fx.ts slides its neighbours along so
+     the word never changes length */
   .mast__l {
     display: inline-block;
-    font-variation-settings: 'wdth' var(--w, 100);
-    transition: font-variation-settings 0.45s var(--ease-out);
+    transform-origin: 0 50%;
+    translate: var(--dx, 0px) 0;
+    scale: var(--sx, 1) 1;
+    transition:
+      translate 0.45s var(--ease-out),
+      scale 0.45s var(--ease-out);
   }
 
   .mast-box--ghost .mast__l {
@@ -207,7 +213,7 @@ const now = site.currently.replace(/^currently:\s*/i, '');
     left: 3.25cqw;
     margin: 0;
     color: var(--bg);
-    font: 600 semi-expanded clamp(8px, 0.98cqw, 14px) / 1 var(--font-label);
+    font: 700 clamp(8px, 0.98cqw, 14px) / 1 var(--font-label);
     letter-spacing: 0.16em;
     text-transform: uppercase;
     white-space: nowrap;
@@ -255,9 +261,9 @@ const now = site.currently.replace(/^currently:\s*/i, '');
   }
 
   .fig__no {
-    font: 600 semi-expanded 11px/1 var(--font-label);
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
+    font: 500 12px/1 var(--font-mono);
+    letter-spacing: 0;
+    text-transform: none;
   }
 
   .fig__caps {
@@ -325,19 +331,18 @@ const now = site.currently.replace(/^currently:\s*/i, '');
   .headline__a {
     display: block;
     font-family: var(--font-display);
-    font-stretch: 66%;
-    font-weight: 800;
-    letter-spacing: -0.012em;
+    font-weight: 400;
+    letter-spacing: 0.004em;
     text-transform: uppercase;
   }
 
   /* the second line is set light and sized so both lines come out the same width */
   .headline__b {
     display: block;
-    margin-top: 0.1em;
-    font-size: 0.896em;
+    margin-top: 0.06em;
+    font-size: 0.782em;
     letter-spacing: -0.03em;
-    line-height: 0.95;
+    line-height: 1.02;
   }
 
   .intro {
@@ -354,9 +359,9 @@ const now = site.currently.replace(/^currently:\s*/i, '');
     margin: clamp(12px, 2.2svh, 24px) 0 0;
     padding-top: 12px;
     border-top: 1px solid var(--line);
-    font: 600 semi-expanded 11px/1.4 var(--font-label);
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
+    font: 600 13.5px/1.45 var(--font-body);
+    letter-spacing: 0;
+    text-transform: none;
   }
 
   .facts div {
@@ -366,6 +371,7 @@ const now = site.currently.replace(/^currently:\s*/i, '');
 
   .facts dt {
     color: var(--fg-2);
+    font: 500 12px/1.65 var(--font-mono);
   }
 
   .facts dd {
@@ -405,9 +411,9 @@ const now = site.currently.replace(/^currently:\s*/i, '');
     gap: 16px;
     padding-top: 10px;
     color: var(--fg-2);
-    font: 600 semi-expanded 10px/1 var(--font-label);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0;
+    text-transform: none;
   }
 
   .foot__scroll {

@@ -9,16 +9,16 @@ import Arrow from './Arrow.astro';
 import PosterHead from './PosterHead.astro';
 import Sleeve from './Sleeve.astro';
 import Turntable from './Turntable.astro';
-import { chapter } from '../data/chapters';
 import { CRATE, deckLabel, playlist, roomNote, tintFor } from '../data/music';
 
 interface Props {
-  /** h1 on its own page, h2 when it sits inside the home page */
+  /** the room number and name for the strip along the top */
+  index: string;
+  name: string;
   level?: 'h1' | 'h2';
 }
-const { level = 'h1' } = Astro.props;
+const { index, name, level = 'h1' } = Astro.props;
 const Heading = level;
-const c = chapter('records');
 
 const tracks = playlist.tracks;
 const crate = tracks.slice(0, CRATE);
@@ -50,14 +50,14 @@ const payload = {
 };
 ---
 
-<section id="records" class="room poster s-ink" data-room data-playing="false" data-playlist={JSON.stringify(payload)} {...c.attrs} aria-labelledby="room-title">
+<section id="records" class="room poster s-ink" data-room data-playing="false" data-playlist={JSON.stringify(payload)} aria-labelledby="room-title">
   <!-- one very large record, most of it off the edge of the room -->
   <div class="plate" aria-hidden="true">
     <span class="plate__disc"><span class="plate__label" data-plate-label></span></span>
   </div>
 
   <div class="wrap">
-    <PosterHead id="records" note={`${tracks.length} tracks · ${artists.length} artists · ${hours} h ${String(mins).padStart(2, '0')} min`} />
+    <PosterHead index={index} name={name} note={`${tracks.length} tracks · ${artists.length} artists · ${hours} h ${String(mins).padStart(2, '0')} min`} />
 
     <header class="room__head">
       <Heading id="room-title" class="room__title">Records</Heading>
@@ -288,7 +288,8 @@ const payload = {
 
 <style>
   .room {
-    padding-bottom: calc(clamp(64px, 9vw, 132px) + clamp(90px, 16vw, 260px));
+    min-height: calc(100svh - var(--bar));
+    padding-top: clamp(18px, 2.4vw, 34px);
     overflow: clip;
   }
 
@@ -350,9 +351,8 @@ const payload = {
     margin: 0;
     font-family: var(--font-display);
     font-size: clamp(72px, 15.5vw, 290px);
-    font-stretch: 62%;
-    font-weight: 900;
-    line-height: 0.76;
+    font-weight: 400;
+    line-height: 0.94;
     letter-spacing: -0.015em;
     text-transform: uppercase;
   }
@@ -499,8 +499,7 @@ const payload = {
     color: var(--fg);
     font-family: var(--font-display);
     font-size: 19px;
-    font-stretch: 74%;
-    font-weight: 800;
+    font-weight: 400;
     line-height: 1;
     text-overflow: ellipsis;
     text-transform: uppercase;
@@ -510,7 +509,7 @@ const payload = {
   .pick__artist {
     overflow: hidden;
     color: var(--fg-2);
-    font: 600 semi-expanded 10px/1.3 var(--font-label);
+    font: 700 10px/1.3 var(--font-label);
     letter-spacing: 0.08em;
     text-overflow: ellipsis;
     text-transform: uppercase;
@@ -627,7 +626,7 @@ const payload = {
     border: 0;
     background: none;
     color: var(--fg);
-    font: 600 semi-expanded 11px/1 var(--font-label);
+    font: 700 11px/1 var(--font-label);
     letter-spacing: 0.06em;
     cursor: pointer;
   }
@@ -696,9 +695,8 @@ const payload = {
   .now__line strong {
     font-family: var(--font-display);
     font-size: clamp(30px, 3.4vw, 54px);
-    font-stretch: 66%;
-    font-weight: 900;
-    line-height: 0.9;
+    font-weight: 400;
+    line-height: 0.94;
     text-transform: uppercase;
   }
 
@@ -809,16 +807,15 @@ const payload = {
     color: var(--fg-2);
     font-family: var(--font-display);
     font-size: clamp(26px, 2.5vw, 40px);
-    font-stretch: 64%;
-    font-weight: 900;
-    line-height: 0.9;
+    font-weight: 400;
+    line-height: 0.94;
     text-transform: uppercase;
     cursor: pointer;
     transition: color 0.2s ease;
   }
 
   .index__tab sup {
-    font: 600 semi-expanded 10px/1 var(--font-label);
+    font: 700 10px/1 var(--font-label);
     letter-spacing: 0.06em;
     vertical-align: top;
   }
@@ -856,7 +853,7 @@ const payload = {
     border-radius: 0;
     background: rgb(255 255 255 / 0.04);
     color: var(--fg);
-    font: 600 semi-expanded 12px/1 var(--font-label);
+    font: 700 12px/1 var(--font-label);
     letter-spacing: 0.04em;
     appearance: none;
   }
@@ -935,7 +932,7 @@ const payload = {
   .track__no {
     grid-area: no;
     color: var(--fg-2);
-    font: 600 semi-expanded 10px/1 var(--font-label);
+    font: 700 10px/1 var(--font-label);
     letter-spacing: 0.06em;
   }
 
@@ -943,7 +940,6 @@ const payload = {
     grid-area: title;
     overflow: hidden;
     font-size: 15px;
-    font-stretch: 88%;
     font-weight: 650;
     line-height: 1.25;
     text-overflow: ellipsis;
@@ -964,7 +960,7 @@ const payload = {
     grid-area: time;
     align-self: center;
     color: var(--fg-2);
-    font: 600 semi-expanded 10px/1 var(--font-label);
+    font: 700 10px/1 var(--font-label);
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.06em;
   }
@@ -1027,8 +1023,7 @@ const payload = {
     color: var(--fg);
     font-family: var(--font-display);
     font-size: calc(15px + (var(--n) - 1) * 6.5px);
-    font-stretch: 68%;
-    font-weight: 800;
+    font-weight: 400;
     line-height: 1.05;
     text-align: left;
     text-transform: uppercase;
@@ -1039,7 +1034,7 @@ const payload = {
   .name sup {
     margin-left: 2px;
     color: var(--fg-2);
-    font: 600 semi-expanded 9px/1 var(--font-label);
+    font: 700 9px/1 var(--font-label);
     vertical-align: top;
   }
 

@@ -1,0 +1,13 @@
+---
+// Room 04. The record room.
+import Play from '../../layouts/Play.astro';
+import MusicRoom from '../../components/MusicRoom.astro';
+import { room } from '../../data/playground';
+import { site } from '../../data/site';
+
+const r = room('records');
+---
+
+<Play here="records" title="Records" description={`A turntable you can actually use, loaded with the records ${site.name} keeps coming back to.`}>
+  <MusicRoom index={r.no} name={r.name} />
+</Play>

@@ -14,17 +14,22 @@
      ink + paper          every sheet starts here
      cobalt + marigold    the pair. Blue is structure; orange-yellow is the flower
      magenta              the spark, for one room only
-   Acid green belongs to the cube room and nowhere else. Violet survives on a
-   couple of objects (a disk, a sticker), never as a ground.
+   Acid green belongs to the Playground (it started as the cube room's light) and never
+   appears as a ground on the main portfolio. Violet survives on a couple of objects.
+   Every colour a component uses comes from a token in :root, so the palette can be
+   swapped here without touching the components.
 
    Paper sections follow the day/night switch. Coloured posters never change.
    Physical objects (cards, sheets, the keyboard, the deck) keep their own colours.
 
-   One typeface, Archivo, in four cuts:
-     condensed black      structure — titles, names, numbers
-     light                the quieter voice
-     wide small capitals  annotation — indices, metadata, instructions
-     regular              reading
+   FOUR TYPEFACES, FOUR JOBS. Components ask for a role, never a family, so the
+   whole system can be re-cast from the tokens below.
+     --font-display   Anton          the poster voice: huge condensed headlines, used sparingly
+     --font-head      Archivo Black  second rank: the name, project titles, graphic statements
+     --font-body      Manrope        everything that is read or pressed: text, nav, buttons, labels
+     --font-mono      IBM Plex Mono  the machine's voice only: indices, dates, counts, readouts
+   Hierarchy comes from contrast, not volume: one Anton moment per screen, Archivo Black
+   beneath it, and Manrope doing the talking.
    ───────────────────────────────────────────── */
 
 :root {
@@ -38,9 +43,17 @@
   --marigold-pale: #ffd24a;
   --signal: #ff4d1f;
   --periwinkle: #c6d0ff;
-  /* not part of the scheme: the cube room's light, and a colour two objects wear */
+  /* the Playground's light (it began in the cube room), and a colour two objects wear */
   --acid: #d6ff3d;
   --violet: #7a3cff;
+
+  /* ── the Playground: one accent per room. Re-point these to re-colour a room. ── */
+  --play: var(--acid);
+  --room-lab: var(--acid);
+  --room-art: var(--magenta);
+  --room-writing: #f3f3ef;
+  --room-records: var(--marigold);
+  --room-films: var(--signal);
 
   /* physical paper: index cards, the résumé sheet, the ID */
   --sheet: #ffffff;
@@ -49,10 +62,21 @@
   --sheet-line: rgb(12 13 33 / 0.16);
 
   /* ── type ── */
-  --font-display: 'Archivo Variable', 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
-  --font-body: 'Archivo Variable', 'Helvetica Neue', Arial, sans-serif;
-  /* labels are the same face again: small, wide, tracked capitals */
-  --font-label: 'Archivo Variable', 'Helvetica Neue', Arial, sans-serif;
+  --font-display: 'Anton', 'Arial Narrow', Impact, 'Helvetica Neue', sans-serif;
+  --font-head: 'Archivo Black', 'Arial Black', 'Helvetica Neue', Arial, sans-serif;
+  --font-body: 'Manrope Variable', 'Helvetica Neue', Arial, sans-serif;
+  /* interface labels are Manrope too: small, bold, tracked capitals */
+  --font-label: var(--font-body);
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* the heading scale. Only one step is allowed to shout on any one screen. */
+  --fs-poster: clamp(64px, 11vw, 190px); /* Anton, a page's single loudest line */
+  --fs-title: clamp(46px, 6.6vw, 112px); /* Anton, a section's title */
+  --fs-head: clamp(26px, 3vw, 46px); /* Archivo Black, second rank */
+  --fs-sub: clamp(18px, 1.5vw, 23px); /* Archivo Black, third rank */
+  --fs-lede: clamp(19px, 1.65vw, 26px); /* Manrope, an opening paragraph */
+  --fs-read: clamp(16px, 1.08vw, 18px); /* Manrope, running text */
+  --fs-meta: 12px; /* Plex Mono annotations */
 
   /* ── measure ── */
   --gutter: clamp(16px, 3.4vw, 56px);
@@ -118,6 +142,16 @@
   --on-accent: #0c0d21;
 }
 
+/* the Playground's own ground: the ink room, lit in the Playground's colour */
+.s-play {
+  --bg: var(--ink-room);
+  --fg: #f3f3ef;
+  --fg-2: #b9bbd6;
+  --line: rgb(243 243 239 / 0.22);
+  --accent: var(--play);
+  --on-accent: #0c0d21;
+}
+
 .s-cobalt {
   --bg: var(--cobalt);
   --fg: #ffffff;
@@ -166,6 +200,9 @@ html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
   scroll-padding-top: var(--bar);
+  /* Anton and Archivo Black have one weight each: never let the browser fake a bold.
+     (A slanted Manrope for emphasis in running text is still allowed.) */
+  font-synthesis: style;
 }
 
 body {
@@ -175,11 +212,17 @@ body {
   color: var(--ink);
   font-family: var(--font-body);
   font-size: 17px;
-  font-weight: 420;
-  line-height: 1.5;
+  font-weight: 450;
+  line-height: 1.55;
   overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* the Playground is dark from edge to edge, whatever the day/night switch says */
+body.play {
+  background-color: var(--ink-room);
+  color: #f3f3ef;
 }
 
 img,
@@ -245,11 +288,11 @@ button {
    Type roles
    ───────────────────────────────────────────── */
 
-/* annotation */
+/* interface label: field names, kickers, instructions */
 .label {
   margin: 0;
-  font: 600 semi-expanded 11px/1.35 var(--font-label);
-  letter-spacing: 0.09em;
+  font: 700 11px/1.35 var(--font-label);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -257,36 +300,58 @@ button {
   color: var(--fg-2);
 }
 
-/* the quieter voice: the same face, light, set against the heavy caps */
-.voice {
-  font-family: var(--font-display);
-  font-stretch: 100%;
-  font-style: normal;
-  font-weight: 300;
-  letter-spacing: -0.022em;
+/* the machine's voice: indices, dates, counts, readouts. Never capitals, never large. */
+.mono {
+  font: 500 var(--fs-meta) / 1.4 var(--font-mono);
+  letter-spacing: 0;
   text-transform: none;
 }
 
-/* condensed poster caps */
+/* the quieter voice: Manrope set light and large against the heavy caps */
+.voice {
+  font-family: var(--font-body);
+  font-style: normal;
+  font-weight: 300;
+  letter-spacing: -0.035em;
+  text-transform: none;
+}
+
+/* Anton: condensed poster caps */
 .head {
   margin: 0;
   font-family: var(--font-display);
-  font-stretch: 68%;
-  font-weight: 800;
-  line-height: 0.86;
-  letter-spacing: -0.012em;
+  font-weight: 400;
+  line-height: 0.94;
+  letter-spacing: 0.004em;
   text-transform: uppercase;
 }
 
-/* the widest, heaviest cut */
-.mega {
+/* Archivo Black: the wide, heavy second rank */
+.mega,
+.title {
   margin: 0;
-  font-family: var(--font-display);
-  font-stretch: 125%;
-  font-weight: 900;
-  line-height: 0.8;
-  letter-spacing: -0.045em;
+  font-family: var(--font-head);
+  font-weight: 400;
+  line-height: 0.9;
+  letter-spacing: -0.035em;
   text-transform: uppercase;
+}
+
+.title {
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-transform: none;
+}
+
+/* running text */
+.read {
+  max-width: 62ch;
+  font-size: var(--fs-read);
+  line-height: 1.68;
+}
+
+.read > :first-child {
+  margin-top: 0;
 }
 
 /* ─────────────────────────────────────────────
@@ -307,7 +372,7 @@ button {
   border-radius: 999px;
   background: var(--key-bg);
   color: var(--key-fg);
-  font: 600 semi-expanded 12px/1 var(--font-label);
+  font: 700 12px/1 var(--font-label);
   letter-spacing: 0.08em;
   text-decoration: none;
   text-transform: uppercase;
@@ -421,14 +486,14 @@ button {
   }
 }
 
-/* small mono tag */
+/* small tag */
 .tag {
   display: inline-flex;
   align-items: center;
   padding: 4px 8px 3px;
   border: 1px solid currentColor;
   border-radius: 999px;
-  font: 600 semi-expanded 10px/1.2 var(--font-label);
+  font: 700 10px/1.2 var(--font-label);
   letter-spacing: 0.07em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -491,7 +556,7 @@ button {
 }
 
 .jump__idx {
-  font: 600 semi-expanded clamp(12px, 1.2vw, 16px) / 1 var(--font-label);
+  font: 700 clamp(12px, 1.2vw, 16px) / 1 var(--font-label);
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -508,12 +573,11 @@ button {
   --n: 6;
   display: inline-block;
   font-family: var(--font-display);
-  /* a 62%-wide capital is about half an em: n of them fill the measure, up to a cap */
-  font-size: min(30vw, 62vh, calc((100vw - 2 * var(--gutter)) / (var(--n) * 0.535)));
-  font-stretch: 62%;
-  font-weight: 900;
-  line-height: 0.8;
-  letter-spacing: -0.012em;
+  /* an Anton capital is a little under half an em: n of them fill the measure, up to a cap */
+  font-size: min(30vw, 62vh, calc((100vw - 2 * var(--gutter)) / (var(--n) * 0.49)));
+  font-weight: 400;
+  line-height: 0.94;
+  letter-spacing: 0.004em;
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -535,6 +599,58 @@ button {
 ::view-transition-group(*) {
   animation-duration: 0.5s;
   animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Between the two halves of the site the whole page changes hands, and the change has a
+   direction. Going into the Playground, the dark room rises from the foot of the screen as
+   a dome (the same dome that brings in the contact page); coming back, daylight drops in
+   from the top; from room to room, the next one wipes across like a jump card.
+   The kind of change is named in Base.astro. */
+@media (prefers-reduced-motion: no-preference) {
+  html:active-view-transition-type(dive)::view-transition-old(root),
+  html:active-view-transition-type(surface)::view-transition-old(root),
+  html:active-view-transition-type(room)::view-transition-old(root) {
+    animation: none;
+  }
+
+  html:active-view-transition-type(dive)::view-transition-new(root) {
+    animation: vt-dive 0.75s cubic-bezier(0.7, 0, 0.2, 1) both;
+  }
+
+  html:active-view-transition-type(surface)::view-transition-new(root) {
+    animation: vt-surface 0.7s cubic-bezier(0.7, 0, 0.2, 1) both;
+  }
+
+  html:active-view-transition-type(room)::view-transition-new(root) {
+    animation: vt-room 0.55s cubic-bezier(0.7, 0, 0.2, 1) both;
+  }
+
+  @keyframes vt-dive {
+    from {
+      clip-path: ellipse(56% 0% at 50% 100%);
+    }
+    to {
+      clip-path: ellipse(170% 220% at 50% 100%);
+    }
+  }
+
+  @keyframes vt-surface {
+    from {
+      clip-path: ellipse(56% 0% at 50% 0%);
+    }
+    to {
+      clip-path: ellipse(170% 220% at 50% 0%);
+    }
+  }
+
+  @keyframes vt-room {
+    from {
+      clip-path: inset(0 0 0 100%);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

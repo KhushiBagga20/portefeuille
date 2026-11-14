@@ -32,7 +32,7 @@ const stats = [
     <PosterHead id="skills" note="no percentage bars" />
 
     <header class="tools__head">
-      <h2 id="skills-title" class="tools__title head" data-reveal>What it's<br />made of</h2>
+      <h2 id="skills-title" class="tools__title head" data-reveal>What it's made of</h2>
       <dl class="tools__stats" data-reveal>
         {
           stats.map((s) => (
@@ -211,10 +211,8 @@ const stats = [
   }
 
   .tools__title {
-    font-size: clamp(54px, 9.4vw, 176px);
-    font-stretch: 62%;
-    font-weight: 900;
-    line-height: 0.78;
+    font-size: clamp(46px, 6.6vw, 112px);
+    line-height: 0.94;
   }
 
   /* three counts, set as figures */
@@ -233,15 +231,14 @@ const stats = [
     margin: 0;
     color: var(--accent);
     font-family: var(--font-display);
-    font-size: clamp(46px, 6vw, 104px);
-    font-stretch: 62%;
-    font-weight: 900;
-    line-height: 0.78;
+    font-size: clamp(38px, 4.4vw, 76px);
+    font-weight: 400;
+    line-height: 0.94;
     font-variant-numeric: tabular-nums;
   }
 
   .tools__stats dt {
-    font: 600 semi-expanded 10.5px/1 var(--font-label);
+    font: 700 10.5px/1 var(--font-label);
     letter-spacing: 0.1em;
     text-transform: uppercase;
   }
@@ -337,18 +334,18 @@ const stats = [
 
   .node__name {
     flex: 1;
-    font-family: var(--font-display);
-    font-size: clamp(26px, 3.5vw, 62px);
-    font-stretch: 64%;
-    font-weight: 900;
-    line-height: 0.9;
-    text-transform: uppercase;
+    font-family: var(--font-head);
+    font-size: clamp(19px, 1.95vw, 31px);
+    font-weight: 400;
+    line-height: 1.05;
+    text-transform: none;
+    letter-spacing: -0.035em;
   }
 
   .node__n {
     color: var(--fg-2);
-    font: 600 semi-expanded 11px/1 var(--font-label);
-    letter-spacing: 0.08em;
+    font: 500 12px/1 var(--font-mono);
+    letter-spacing: 0;
   }
 
   /* the jack the cables plug into */
@@ -388,7 +385,6 @@ const stats = [
     background: var(--bg);
     color: var(--fg);
     font-size: 15.5px;
-    font-stretch: 90%;
     font-weight: 600;
     line-height: 1.1;
     cursor: pointer;
@@ -438,7 +434,6 @@ const stats = [
     padding-top: 14px;
     border-top: 1px solid var(--line);
     font-size: clamp(17px, 1.5vw, 22px);
-    font-stretch: 90%;
     font-weight: 600;
   }
 

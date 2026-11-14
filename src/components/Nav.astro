@@ -3,6 +3,7 @@ import Seal from './Seal.astro';
 import SoundToggle from './SoundToggle.astro';
 import ThemeToggle from './ThemeToggle.astro';
 import { chapters } from '../data/chapters';
+import { playground } from '../data/playground';
 import { site } from '../data/site';
 
 interface Props {
@@ -40,6 +41,11 @@ const numbered = site.nav.map((item) => {
     {numbered.map((item) => <a href={item.href}>{item.label}</a>)}
   </nav>
 
+  <!-- the door to the other half of the site -->
+  <a class="nav__play" href={playground.href} data-no-jump>
+    <i aria-hidden="true"></i>{playground.name}
+  </a>
+
   <div class="nav__tools">
     <ThemeToggle />
     <SoundToggle />
@@ -60,6 +66,13 @@ const numbered = site.nav.map((item) => {
           </li>
         ))
       }
+      <li class="menu__play">
+        <a href={playground.href}>
+          <span class="menu__idx">→</span>
+          <span class="menu__name">{playground.name}</span>
+        </a>
+        <p class="menu__line">{playground.line}</p>
+      </li>
     </ul>
   </nav>
 </header>
@@ -90,11 +103,10 @@ const numbered = site.nav.map((item) => {
     display: inline-flex;
     align-items: center;
     gap: 9px;
-    font-family: var(--font-display);
-    font-size: 21px;
-    font-stretch: 112%;
-    font-weight: 900;
-    letter-spacing: -0.03em;
+    font-family: var(--font-head);
+    font-size: 19px;
+    font-weight: 400;
+    letter-spacing: -0.035em;
     line-height: 1;
     text-decoration: none;
     text-transform: uppercase;
@@ -109,14 +121,13 @@ const numbered = site.nav.map((item) => {
     rotate: 120deg;
   }
 
+  /* where you are: the machine's voice */
   .nav__now {
     display: flex;
     gap: 8px;
     margin: 0;
     color: var(--fg-2);
-    font: 600 semi-expanded 11px/1 var(--font-label);
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
+    font: 500 12px/1 var(--font-mono);
     white-space: nowrap;
   }
 
@@ -129,10 +140,9 @@ const numbered = site.nav.map((item) => {
   .nav__links a {
     position: relative;
     padding: 8px 0;
-    font: 600 semi-expanded 11px/1 var(--font-label);
-    letter-spacing: 0.09em;
+    font: 650 13.5px/1 var(--font-body);
+    letter-spacing: -0.005em;
     text-decoration: none;
-    text-transform: uppercase;
   }
 
   .nav__links a::after {
@@ -152,6 +162,52 @@ const numbered = site.nav.map((item) => {
     transform-origin: left;
   }
 
+  /* the Playground's door: the one dark thing in the bar */
+  .nav__play {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 32px;
+    padding: 0 14px 0 12px;
+    border-radius: 999px;
+    background: var(--c-ink);
+    color: #f3f3ef;
+    font: 700 13px/1 var(--font-body);
+    letter-spacing: -0.005em;
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+      background-color 0.22s var(--ease-out),
+      color 0.22s var(--ease-out);
+  }
+
+  .nav__play i {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--play);
+    transition: scale 0.5s var(--spring);
+  }
+
+  .nav__play:hover {
+    background: var(--play);
+    color: #0c0d21;
+  }
+
+  .nav__play:hover i {
+    background: #0c0d21;
+    scale: 1.5;
+  }
+
+  :global([data-theme='night']) .nav__play {
+    background: var(--play);
+    color: #0c0d21;
+  }
+
+  :global([data-theme='night']) .nav__play i {
+    background: #0c0d21;
+  }
+
   .nav__tools {
     display: flex;
     align-items: center;
@@ -168,9 +224,7 @@ const numbered = site.nav.map((item) => {
     border: 1.5px solid var(--fg);
     border-radius: 999px;
     background: none;
-    font: 600 semi-expanded 11px/1 var(--font-label);
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
+    font: 700 13px/1 var(--font-body);
     cursor: pointer;
   }
 
@@ -213,16 +267,29 @@ const numbered = site.nav.map((item) => {
   .menu__idx {
     width: 4ch;
     color: var(--accent);
-    font: 600 semi-expanded 11px/1 var(--font-label);
-    letter-spacing: 0.09em;
+    font: 500 12px/1 var(--font-mono);
+  }
+
+  .menu__play a {
+    border-bottom: 0;
+    color: var(--play);
+  }
+
+  .menu__play .menu__idx {
+    color: inherit;
+  }
+
+  .menu__line {
+    margin: 0 0 0 calc(4ch + 14px);
+    color: var(--fg-2);
+    font-size: 15px;
   }
 
   .menu__name {
     font-family: var(--font-display);
     font-size: clamp(44px, 15vw, 88px);
-    font-stretch: 66%;
-    font-weight: 800;
-    line-height: 0.92;
+    font-weight: 400;
+    line-height: 0.94;
     text-transform: uppercase;
   }
 
@@ -241,8 +308,9 @@ const numbered = site.nav.map((item) => {
     }
   }
 
-  @media (max-width: 899px) {
-    .nav__links {
+  @media (max-width: 999px) {
+    .nav__links,
+    .nav__play {
       display: none;
     }
 
