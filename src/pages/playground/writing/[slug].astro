@@ -1,0 +1,586 @@
+---
+// One piece of writing, set to be read.
+//
+// The page does as little as it can: a title, the text at a comfortable measure, and room
+// around it. A poem keeps every line break and indent exactly as typed; an essay is set in
+// spaced paragraphs; a story in indented ones, the way a book does it.
+// The reader can change the page colour, the typeface and the size, and "focus" clears
+// everything off the screen except the piece.
+import { render } from 'astro:content';
+import Play from '../../../layouts/Play.astro';
+import Arrow from '../../../components/Arrow.astro';
+import { getWritingEntries } from '../../../lib/content';
+
+export async function getStaticPaths() {
+  const all = await getWritingEntries();
+  return all.map((x, i) => ({
+    params: { slug: x.meta.slug },
+    props: { meta: x.meta, entry: x.entry, next: all.length > 1 ? all[(i + 1) % all.length].meta : undefined },
+  }));
+}
+
+const { meta, entry, next } = Astro.props;
+const isPoem = meta.kind === 'poem';
+// a poem is shown exactly as it was typed, as text; everything else is Markdown
+const lines = isPoem ? (entry.body ?? '').replace(/^\s*\n/, '').trimEnd() : '';
+const Prose = isPoem ? undefined : (await render(entry)).Content;
+
+const kindWord = { poem: 'poem', essay: 'essay', fiction: 'fiction' }[meta.kind];
+const when = meta.date
+  ? new Date(`${meta.date}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+  : undefined;
+---
+
+<Play here="writing" title={meta.title} description={meta.dek ?? meta.excerpt.replace(/\s+/g, ' ').slice(0, 160)}>
+  <article class="page" data-reading data-kind={meta.kind} data-theme="paper" data-face="sans">
+    <!-- the reader's saved settings, applied before the first paint -->
+    <script is:inline>
+      (() => {
+        try {
+          const s = JSON.parse(localStorage.getItem('khushi:reading') || '{}');
+          const page = document.currentScript.parentElement;
+          if (s.theme) page.dataset.theme = s.theme;
+          if (s.face) page.dataset.face = s.face;
+          if (typeof s.size === 'number') page.style.setProperty('--scale', String([0.9, 1, 1.12, 1.26][s.size] || 1));
+        } catch {}
+      })();
+    </script>
+
+    <span class="progress" data-progress aria-hidden="true"></span>
+
+    <div class="tools" role="group" aria-label="Reading settings">
+      <a class="tools__back" href="/playground/writing/"><Arrow dir="left" /> <span>the writing room</span></a>
+
+      <div class="tools__sets">
+        <div class="tools__set" role="group" aria-label="Page colour">
+          <button type="button" data-set="theme" data-value="paper" aria-pressed="true" aria-label="Paper page" title="Paper"><i style="--sw:#f3f3ef"></i></button>
+          <button type="button" data-set="theme" data-value="sepia" aria-pressed="false" aria-label="Sepia page" title="Sepia"><i style="--sw:#eadfc6"></i></button>
+          <button type="button" data-set="theme" data-value="night" aria-pressed="false" aria-label="Night page" title="Night"><i style="--sw:#0c0d21"></i></button>
+        </div>
+        <div class="tools__set" role="group" aria-label="Typeface">
+          <button type="button" data-set="face" data-value="sans" aria-pressed="true" aria-label="Sans-serif text" title="Sans">Aa</button>
+          <button type="button" class="tools__mono" data-set="face" data-value="mono" aria-pressed="false" aria-label="Typewriter text" title="Typewriter">Aa</button>
+        </div>
+        <div class="tools__set" role="group" aria-label="Text size">
+          <button type="button" data-size="-1" aria-label="Smaller text">A−</button>
+          <button type="button" data-size="1" aria-label="Larger text">A+</button>
+        </div>
+        <button type="button" class="tools__focus" data-focus aria-pressed="false" title="Clear everything but the text (Esc to come back)">
+          <i aria-hidden="true"></i><span class="tools__focus-on">focus</span><span class="tools__focus-off">exit focus</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="page__in">
+      <header class="top">
+        <p class="top__k mono">
+          <span class="top__kind">{kindWord}</span>
+          {when && <time datetime={meta.date}>{when}</time>}
+          <span>{meta.minutes} min read</span>
+          <span>{meta.words.toLocaleString('en')} words</span>
+        </p>
+        <h1 class="top__title" style={`view-transition-name: writing-${meta.slug}`}>{meta.title}</h1>
+        {meta.dek && <p class="top__dek voice">{meta.dek}</p>}
+        {meta.sample && <p class="top__sample mono">sample text — a stand-in, not a piece of my writing</p>}
+      </header>
+
+      <div class:list={['text', `text--${meta.kind}`]} data-text>
+        {isPoem ? <div class="poem">{lines}</div> : Prose && <Prose />}
+      </div>
+
+      <footer class="end">
+        <p class="end__mark" aria-hidden="true"><i></i><i></i><i></i></p>
+        <div class="end__ways">
+          <a class="end__way" href="/playground/writing/">
+            <span class="mono">back to</span>
+            <span class="end__name"><Arrow dir="left" /> the writing room</span>
+          </a>
+          {
+            next && (
+              <a class="end__way end__way--next" href={`/playground/writing/${next.slug}/`}>
+                <span class="mono">next · {next.kind}</span>
+                <span class="end__name">
+                  {next.title} <Arrow />
+                </span>
+              </a>
+            )
+          }
+        </div>
+      </footer>
+    </div>
+  </article>
+</Play>
+
+<script>
+  import { initReading } from '../../../scripts/reading';
+  document.querySelectorAll<HTMLElement>('[data-reading]').forEach(initReading);
+</script>
+
+<style>
+  /* ── the page, in three colours ─────── */
+  .page {
+    --bg: #f3f3ef;
+    --fg: #14152b;
+    --fg-2: #55576f;
+    --line: rgb(12 13 33 / 0.18);
+    --accent: var(--signal);
+    --scale: 1;
+    --measure: 34em;
+    position: relative;
+    min-height: calc(100svh - var(--bar));
+    background: var(--bg);
+    color: var(--fg);
+    transition:
+      background-color 0.35s ease,
+      color 0.35s ease;
+  }
+
+  .page[data-theme='sepia'] {
+    --bg: #eadfc6;
+    --fg: #2b1d05;
+    --fg-2: #6a583a;
+    --line: rgb(43 29 5 / 0.22);
+    --accent: #b8430f;
+  }
+
+  .page[data-theme='night'] {
+    --bg: #0c0d21;
+    --fg: #e4e4dc;
+    --fg-2: #a4a6c2;
+    --line: rgb(243 243 239 / 0.2);
+    --accent: var(--marigold);
+  }
+
+  /* how far through: a hairline under the bar */
+  .progress {
+    position: fixed;
+    inset: var(--bar) 0 auto;
+    z-index: 30;
+    height: 3px;
+    background: var(--accent);
+    transform-origin: left;
+    scale: var(--done, 0) 1;
+    pointer-events: none;
+  }
+
+  /* ── the reader's controls ──────────── */
+  .tools {
+    position: sticky;
+    top: var(--bar);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 16px;
+    min-height: 54px;
+    padding: 8px var(--gutter);
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    transition:
+      background-color 0.35s ease,
+      opacity 0.3s ease;
+  }
+
+  .tools__back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font: 650 13.5px/1 var(--font-body);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .tools__back:hover span {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .tools__sets {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  .tools__set {
+    display: flex;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .tools button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 38px;
+    height: 36px;
+    padding: 0 10px;
+    border: 0;
+    background: none;
+    color: var(--fg);
+    font: 650 13px/1 var(--font-body);
+    cursor: pointer;
+    transition:
+      background-color 0.18s ease,
+      color 0.18s ease;
+  }
+
+  .tools__set button + button {
+    border-left: 1px solid var(--line);
+  }
+
+  .tools button:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--fg) 10%, transparent);
+  }
+
+  .tools button[aria-pressed='true'] {
+    background: var(--fg);
+    color: var(--bg);
+  }
+
+  .tools button:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  .tools button:focus-visible {
+    outline: 2px solid var(--fg);
+    outline-offset: -4px;
+    box-shadow: none;
+  }
+
+  .tools__mono {
+    font-family: var(--font-mono) !important;
+    font-weight: 500 !important;
+  }
+
+  /* a swatch of the page it gives you */
+  .tools__set i {
+    width: 15px;
+    height: 15px;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+    background: var(--sw);
+  }
+
+  .tools__focus {
+    padding: 0 14px !important;
+    border: 1px solid var(--line) !important;
+    border-radius: 999px;
+  }
+
+  .tools__focus i {
+    width: 9px;
+    height: 9px;
+    border: 1.5px solid currentColor;
+    border-radius: 2px;
+  }
+
+  .tools__focus-off {
+    display: none;
+  }
+
+  /* ── the column ─────────────────────── */
+  .page__in {
+    max-width: calc(46rem + 2 * var(--gutter));
+    margin: 0 auto;
+    padding: clamp(28px, 5vw, 80px) var(--gutter) clamp(60px, 9vw, 130px);
+  }
+
+  .top__k {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+    margin: 0;
+    color: var(--fg-2);
+  }
+
+  .top__kind {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .top__title {
+    width: fit-content;
+    margin: clamp(14px, 1.8vw, 24px) 0 0;
+    font: 400 clamp(40px, 7.4vw, 104px) / 0.96 var(--font-head);
+    letter-spacing: -0.05em;
+    text-wrap: balance;
+  }
+
+  .top__dek {
+    max-width: 30ch;
+    margin: clamp(14px, 1.8vw, 24px) 0 0;
+    color: var(--fg-2);
+    font-size: clamp(21px, 2.1vw, 31px);
+    line-height: 1.22;
+  }
+
+  .top__sample {
+    width: fit-content;
+    margin: clamp(16px, 2vw, 26px) 0 0;
+    padding: 6px 10px 5px;
+    border: 1px dashed currentColor;
+  }
+
+  /* ── the text ───────────────────────── */
+  .text {
+    max-width: var(--measure);
+    margin-top: clamp(34px, 5vw, 76px);
+    padding-top: clamp(26px, 3.4vw, 50px);
+    border-top: 1px solid var(--line);
+    font-size: calc(clamp(18px, 1.32vw, 21px) * var(--scale));
+    font-weight: 450;
+    line-height: 1.72;
+    letter-spacing: -0.003em;
+    hanging-punctuation: first;
+    transition: font-size 0.25s var(--ease-out);
+  }
+
+  .page[data-theme='night'] .text {
+    font-weight: 400;
+  }
+
+  .page[data-face='mono'] .text {
+    font-family: var(--font-mono);
+    font-size: calc(clamp(16px, 1.16vw, 18.5px) * var(--scale));
+    font-weight: 400;
+    line-height: 1.8;
+    letter-spacing: 0;
+  }
+
+  /* a poem: every break and indent as typed, the block sitting in the middle of the page */
+  .text--poem {
+    max-width: none;
+  }
+
+  .poem {
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 auto;
+    padding: clamp(6px, 2vw, 30px) 0;
+    font-size: 1.08em;
+    line-height: 1.86;
+    white-space: pre-wrap;
+    tab-size: 4;
+  }
+
+  /* prose, from Markdown */
+  .text :global(p) {
+    margin: 0 0 1.15em;
+    text-wrap: pretty;
+  }
+
+  .text :global(> p:first-child) {
+    font-size: 1.2em;
+    font-weight: 500;
+    line-height: 1.52;
+    letter-spacing: -0.014em;
+  }
+
+  .text :global(h2) {
+    margin: 2.1em 0 0.7em;
+    font: 400 1.5em/1.1 var(--font-head);
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+  }
+
+  .text :global(h3) {
+    margin: 1.8em 0 0.5em;
+    font-size: 1.1em;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+  }
+
+  .text :global(blockquote) {
+    margin: 1.7em 0;
+    padding-left: 1em;
+    border-left: 4px solid var(--accent);
+    font-size: 1.24em;
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: -0.018em;
+  }
+
+  .text :global(blockquote p:last-child) {
+    margin-bottom: 0;
+  }
+
+  /* a break in the text: three marks, centred */
+  .text :global(hr) {
+    width: 4.2em;
+    height: 0.5em;
+    margin: 2.4em auto;
+    border: 0;
+    background: radial-gradient(circle, currentColor 0 0.17em, transparent 0.2em) 0 50% / 1.4em 0.5em repeat-x;
+  }
+
+  .text :global(ul),
+  .text :global(ol) {
+    margin: 0 0 1.15em;
+    padding-left: 1.3em;
+  }
+
+  .text :global(li) {
+    margin: 0.3em 0;
+    padding-left: 0.2em;
+  }
+
+  .text :global(li::marker) {
+    color: var(--accent);
+  }
+
+  .text :global(a) {
+    color: inherit;
+    text-decoration-color: var(--accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+
+  .text :global(code) {
+    padding: 0.1em 0.34em;
+    border-radius: 4px;
+    background: color-mix(in srgb, var(--fg) 9%, transparent);
+    font: 500 0.86em/1 var(--font-mono);
+  }
+
+  .text :global(strong) {
+    font-weight: 800;
+  }
+
+  .text :global(em) {
+    font-style: italic;
+  }
+
+  /* a story: indented paragraphs, no gaps, like a printed book */
+  .text--fiction :global(p) {
+    margin: 0;
+    text-indent: 1.7em;
+  }
+
+  .text--fiction :global(> p:first-child),
+  .text--fiction :global(hr + p),
+  .text--fiction :global(h2 + p) {
+    text-indent: 0;
+  }
+
+  /* ── the end ────────────────────────── */
+  .end {
+    margin-top: clamp(40px, 6vw, 90px);
+  }
+
+  .end__mark {
+    display: flex;
+    gap: 10px;
+    margin: 0 0 clamp(30px, 4vw, 60px);
+  }
+
+  .end__mark i {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .end__ways {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+    border-top: 1.5px solid var(--fg);
+  }
+
+  .end__way {
+    display: grid;
+    gap: 10px;
+    padding: clamp(16px, 2vw, 26px) 0;
+    color: var(--fg);
+    text-decoration: none;
+  }
+
+  .end__way .mono {
+    color: var(--fg-2);
+  }
+
+  .end__way--next {
+    text-align: right;
+  }
+
+  .end__name {
+    font: 400 clamp(21px, 2.4vw, 34px) / 1.05 var(--font-head);
+    letter-spacing: -0.04em;
+    transition: color 0.2s ease;
+  }
+
+  .end__way:hover .end__name {
+    color: var(--accent);
+  }
+
+  /* ── focus: only the piece ──────────── */
+  :global(html.is-reading .pnav),
+  :global(html.is-reading .pfoot) {
+    display: none;
+  }
+
+  :global(html.is-reading .play) {
+    padding-top: 0;
+  }
+
+  :global(html.is-reading) .progress {
+    top: 0;
+  }
+
+  :global(html.is-reading) .tools {
+    top: 0;
+    justify-content: flex-end;
+    background: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    pointer-events: none;
+  }
+
+  :global(html.is-reading) .tools__back,
+  :global(html.is-reading) .tools__set,
+  :global(html.is-reading) .end__ways,
+  :global(html.is-reading) .tools__focus-on {
+    display: none;
+  }
+
+  :global(html.is-reading) .tools__focus-off {
+    display: inline;
+  }
+
+  /* the way out stays in the corner, faint until you look for it */
+  :global(html.is-reading) .tools__focus {
+    background: var(--bg) !important;
+    color: var(--fg) !important;
+    opacity: 0.4;
+    pointer-events: auto;
+    transition: opacity 0.25s ease;
+  }
+
+  :global(html.is-reading) .tools__focus:hover,
+  :global(html.is-reading) .tools__focus:focus-visible {
+    opacity: 1;
+  }
+
+  @media (max-width: 599px) {
+    .tools {
+      flex-wrap: wrap;
+    }
+
+    .tools__back span {
+      display: none;
+    }
+
+    .tools button {
+      min-width: 34px;
+      padding: 0 8px;
+    }
+
+    .top__title {
+      font-size: clamp(36px, 11.5vw, 60px);
+    }
+  }
+</style>

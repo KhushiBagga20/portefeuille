@@ -61,7 +61,7 @@ export const rooms: Room[] = [
     line: 'Poems, essays and fiction, set to be read slowly.',
     accent: 'var(--room-writing)',
     onAccent: '#0c0d21',
-    open: false,
+    open: true,
   },
   {
     id: 'records',
