@@ -1,7 +1,7 @@
 # Living portfolio backend
 
 FastAPI + PostgreSQL. No Supabase. A separate backend for the existing **Astro** portfolio.
-Nothing in the frontend has been edited. This is a tested backend MVP, not a deployed service.
+The frontend now includes an owner studio and an opt-in API content adapter. This is a tested MVP, not a deployed service.
 
 ## What works
 
@@ -36,7 +36,7 @@ uv run python -m app.worker
 
 API docs: http://localhost:8000/docs. Health: http://localhost:8000/health.
 The docs permit exploration; mutating owner requests still require the session cookie, trusted Origin,
-and X-CSRF-Token. There is no development authentication bypass and no visual studio yet.
+and X-CSRF-Token. Visit http://localhost:4321/studio/ for the private editor. There is no development authentication bypass.
 
 `examples/current-content.json` contains six projects exported from the supplied frontend on 2026-11-14.
 The export excludes private `todo` notes. Review it before approving any publication.
@@ -54,7 +54,7 @@ it never overwrites ongoing editing or publishes anything.
 1. Create a GitHub OAuth app with callback `http://localhost:8000/auth/github/callback` for local use.
 2. Set GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, and your numeric OWNER_GITHUB_ID in `.env`.
 3. Generate SESSION_SECRET using the command in `.env.example`.
-4. Visit `/auth/github`. After GitHub authorization, `/auth/session` returns your CSRF token.
+4. Visit `/auth/github`. After GitHub authorization, you return to `/studio/`; it fetches the CSRF token from `/auth/session`.
 5. All studio POSTs include `credentials: 'include'`, `X-CSRF-Token`, and the trusted browser Origin.
 
 OAuth is for login only; it requests no repository scope and does not persist the GitHub access token.
@@ -117,7 +117,7 @@ Run `uv run alembic check` against an upgraded database to check model/schema dr
 ## Remaining before production
 
 - Configure real OAuth, webhook and AI credentials; verify live provider flows.
-- Build the studio UI and connect Astro's content adapter (see docs/FRONTEND_HANDOFF.md).
+- Configure the studio and opt-in Astro content adapter (see docs/FRONTEND_HANDOFF.md).
 - Configure a rebuild after publication: Astro currently renders project pages at BUILD time.
 - Use a separate restricted worker DB login (scripts/worker-role.sql); keep migrations admin-only.
 - Add GitHub App installation token enrichment, scheduled reconciliation and direct-commit support.
@@ -127,8 +127,8 @@ Run `uv run alembic check` against an upgraded database to check model/schema dr
   review are required today; filtering URLs alone does not guarantee confidentiality.
 - Add approved asset storage, pagination and fine-grained sentence citations as the portfolio grows.
 
-No production deployment, paid API usage, frontend integration, automated rebuild or scheduled digest
-is enabled. Published snapshots are available immediately from the API, not automatically from Astro.
+No production deployment, paid API usage, automated rebuild or scheduled digest is enabled. The frontend
+adapter is opt-in; local content remains the default. Published snapshots are available immediately from the API, not automatically from Astro.
 
 ## Reference documentation
 

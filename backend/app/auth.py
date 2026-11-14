@@ -120,8 +120,7 @@ def github_callback(request: Request, code: str, state: str, db: Session = Depen
         )
     )
     db.commit()
-    # Until a studio UI is built, land on the authenticated session endpoint.
-    response = RedirectResponse(f"{cfg.backend_origin}/auth/session")
+    response = RedirectResponse(f"{cfg.frontend_origin}/studio/")
     response.delete_cookie("portfolio_oauth", path="/auth")
     response.set_cookie(
         COOKIE, token, max_age=43200, httponly=True, secure=cfg.environment == "production", samesite="lax"

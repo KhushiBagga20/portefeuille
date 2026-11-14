@@ -263,3 +263,24 @@ Nothing below is built with stand-ins, on purpose.
 - [ ] **Albums / moods in the record room** — albums need the playlist script extended;
       moods need you to say which songs are which.
 - [ ] A domain, then `site` in `astro.config.mjs`.
+
+
+## Living portfolio / portefeuille
+
+This project now lives at https://github.com/KhushiBagga20/portefeuille.
+
+The FastAPI/PostgreSQL backend is in `backend/`. Start with [backend setup](backend/README.md).
+Run the frontend with `npm run dev`, then visit `/studio/` for the private owner editor.
+The studio requires backend owner login; private content is never bundled into static pages.
+
+Copy `.env.example` to `.env` only when configuring the connection.
+`PUBLIC_API_ORIGIN` is the browser-visible API URL (no secrets).
+`PORTFOLIO_API_URL` opts the build into approved backend content. Leave it blank to keep current local content.
+Do not enable it until your initial projects are published in the backend.
+
+Publishing changes the API. Astro still needs a new build/deployment to update the hosted website.
+A hosting-specific rebuild trigger is not configured yet.
+
+[Frontend integration details](backend/docs/FRONTEND_HANDOFF.md) · [Architecture](backend/docs/ARCHITECTURE.md)
+
+[Vercel deployment guide](backend/docs/VERCEL.md) — frontend configuration is included; live backend setup still requires your account and credentials.

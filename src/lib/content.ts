@@ -23,9 +23,18 @@ export const isLive = <T extends { status?: 'draft' | 'published' }>(item: T) =>
 
 export const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
+// Opt in at build time. Leave unset while migrating: the current local content stays live.
+const apiUrl = import.meta.env.PORTFOLIO_API_URL?.replace(/\/$/, '');
+async function published<T>(path: string): Promise<T> {
+  const response = await fetch(`${apiUrl}/api/v1${path}`, { signal: AbortSignal.timeout(10000) });
+  if (!response.ok) throw new Error(`Portfolio content unavailable (${response.status}) at ${path}`);
+  return response.json() as Promise<T>;
+}
+
 // ── projects ─────────────────────────────────
 
 export async function getProjects(): Promise<Project[]> {
+  if (apiUrl) return published<Project[]>('/projects');
   return projects.filter(isLive);
 }
 
@@ -40,6 +49,7 @@ export async function getArchive(): Promise<ArchiveItem[]> {
 // ── case studies ─────────────────────────────
 
 export async function getCaseStudy(slug: string): Promise<CaseStudy> {
+  if (apiUrl) return published<CaseStudy>(`/projects/${encodeURIComponent(slug)}/case-study`);
   const found = caseStudies.filter(isLive).find((c) => c.slug === slug);
   // a project with no case-study file still gets a page: an honest, empty one
   return found ?? { slug, status: 'published', intro: {} };

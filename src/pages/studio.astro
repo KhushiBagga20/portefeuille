@@ -1,0 +1,40 @@
+---
+import '@fontsource/anton/400.css';
+import '@fontsource-variable/manrope/wght.css';
+const api = import.meta.env.PUBLIC_API_ORIGIN || (import.meta.env.DEV ? 'http://localhost:8000' : '');
+---
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width"/><meta name="robots" content="noindex,nofollow"/><title>Studio · Khushi</title></head>
+<body>
+  <main id="studio" data-api={api}>
+    <header><a href="/">← Back to portfolio</a><span>PRIVATE WORKSPACE / 01</span></header>
+    <section class="intro"><p class="eyebrow">THE EDITOR'S DESK</p><h1>WORK IN<br/><em>PROGRESS.</em></h1><p>Your projects keep moving. Decide which parts of the story to share.</p></section>
+    <div id="notice" role="status" aria-live="polite">Connecting to your backend…</div>
+    <section id="login" hidden class="panel"><h2>Just for you.</h2><p>Sign in with your GitHub account to review drafts and publish updates.</p><a id="login-link" class="button">Sign in with GitHub ↗</a><p class="hint">If the backend is not configured yet, follow backend/README.md first.</p></section>
+    <section id="workspace" hidden>
+      <nav class="toolbar" aria-label="Studio controls"><label>Project<select id="project"></select></label><button id="refresh">Refresh</button><button id="logout" class="quiet">Sign out</button><span id="version" class="hint"></span></nav>
+      <div class="columns">
+        <aside class="panel"><p class="eyebrow">01 / SOURCES</p><h2>What changed?</h2><p class="hint">Select evidence to request a private AI draft. Review repository descriptions before sending them to AI.</p><div id="evidence"></div><button id="generate">Generate draft</button>
+          <details><summary>Connect a repository</summary><form id="repo-form"><label>Repository ID<input id="repo-id" required pattern="[0-9]+" placeholder="Numeric GitHub repository ID"/></label><label>Repository name<input id="repo-name" required placeholder="owner/repository"/></label><label class="check"><input id="repo-ai" type="checkbox"/> Allow selected descriptions to be sent to AI</label><button type="submit">Connect repository</button></form></details>
+          <details><summary>Background jobs</summary><div id="jobs"></div></details>
+        </aside>
+        <section class="panel"><p class="eyebrow">02 / EDIT</p><h2>Shape the story.</h2><label>Saved revision<select id="revision"></select></label><div id="review-notes" class="hint"></div>
+          <label>Update title<input id="update-title" placeholder="What did you build or improve?"/></label><label>Update details<textarea id="update-body" rows="6" placeholder="What changed, why it matters, and what you learned."></textarea></label><button id="append" class="quiet">Add update to draft</button>
+          <details><summary>Edit full case-study content</summary><label class="hint">Advanced: project and case-study JSON<textarea id="content" rows="18" spellcheck="false"></textarea></label></details>
+          <div class="actions"><button id="save">Save revision</button><button id="publish" disabled>Approve &amp; publish</button></div>
+          <p class="hint">Publication updates the API. Your public site also needs a rebuild; this editor does not claim it has deployed.</p>
+          <details><summary>Publication history</summary><div id="history"></div></details>
+        </section>
+        <section class="panel preview"><p class="eyebrow">03 / CONTENT PREVIEW</p><h2>Read before publishing.</h2><p class="hint">Every field of the saved candidate is shown below. This is a content preview, not the final page layout.</p><div id="preview"></div></section>
+      </div>
+    </section>
+    <footer>Nothing goes live without your approval.</footer>
+  </main>
+  <script src="../scripts/studio.ts"></script>
+</body>
+</html>
+<style>
+:global(*){box-sizing:border-box} :global(body){margin:0;background:#efeee8;color:#17182c;font-family:'Manrope Variable',sans-serif} :global([hidden]){display:none!important}
+main{max-width:1700px;margin:auto;padding:28px 4vw}header{display:flex;justify-content:space-between;border-bottom:1px solid #17182c;padding-bottom:20px;font-size:12px;letter-spacing:.06em}a{color:inherit}header a{text-decoration:none}h1{font-family:Anton,sans-serif;font-size:clamp(64px,9vw,135px);font-weight:400;line-height:.98;margin:16px 0;letter-spacing:-.025em}h1 em{font-style:normal;color:#e84c25}.intro{padding:30px 0 22px}.intro>p:last-child{max-width:520px;font-size:17px}.eyebrow{font-size:11px;font-weight:800;letter-spacing:.16em}h2{font-size:22px;margin:12px 0 18px}#notice{padding:15px 18px;border:1px solid #17182c;margin:12px 0 24px;background:#d6ff3d;overflow-wrap:anywhere}.panel{background:#fafaf5;padding:24px;border:1px solid #c8c7c0;min-width:0}.columns{display:grid;grid-template-columns:minmax(200px,.8fr) minmax(280px,1.2fr) minmax(250px,1fr);gap:16px}.toolbar{display:flex;align-items:center;gap:15px;margin-bottom:20px;flex-wrap:wrap}.toolbar label{min-width:220px}label{display:block;font-size:12px;font-weight:700;margin:14px 0}input:not([type=checkbox]),select,textarea{display:block;width:100%;margin-top:7px;padding:11px;background:white;border:1px solid #bcbcb6;border-radius:0;color:#17182c;font:inherit}textarea{resize:vertical;line-height:1.5}#content{font-family:monospace;font-size:12px}button,.button{display:inline-block;padding:12px 16px;background:#17182c;color:#fafaf5;border:1px solid #17182c;font:inherit;font-size:12px;font-weight:700;text-decoration:none;cursor:pointer}.quiet{background:transparent;color:#17182c}button:disabled{opacity:.4;cursor:not-allowed}button:hover:not(:disabled),.button:hover{background:#e84c25;color:white}.hint{font-size:12px;line-height:1.6;color:#60616a}.actions{display:flex;gap:8px;flex-wrap:wrap;margin:20px 0}#publish{background:#d6ff3d;color:#17182c}details{margin-top:25px;padding-top:15px;border-top:1px solid #d2d2c9}summary{cursor:pointer;font-size:13px;font-weight:700}.check{display:flex;gap:8px;align-items:start;line-height:1.5}.preview{background:#e3e3da}footer{font-size:12px;padding:30px 0;text-align:right}:global(#preview){font-size:13px;line-height:1.6;overflow-wrap:anywhere}:global(#preview ul){padding-left:20px}:global(#preview strong){font-size:12px}:global(#preview p){white-space:pre-wrap}:global(#evidence label){padding:10px 0;border-bottom:1px solid #ddd}:global(#history button){margin:5px 0}:global(:focus-visible){outline:3px solid #2238ff;outline-offset:3px}@media(max-width:1100px){.columns{grid-template-columns:1fr 1fr}.preview{grid-column:1/-1}}@media(max-width:650px){main{padding:20px}.columns{grid-template-columns:1fr}header span{display:none}.panel{padding:18px}.preview{grid-column:auto}}
+</style>
