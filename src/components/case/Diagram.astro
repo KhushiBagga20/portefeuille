@@ -1,0 +1,686 @@
+---
+// An architecture diagram you can read like a map: parts on a grid, lines showing which
+// way data moves, and a panel that explains whichever part you pick.
+//
+// The drawing is built from plain data (a `Diagram` in src/lib/types.ts): nodes placed by
+// column and row, edges between them. Nothing here knows about any one project.
+// Interaction lives in scripts/diagram.ts — select, zoom, pan, and a list view that says
+// the same thing in words for small screens and screen readers.
+import StageMark from './Stage.astro';
+import type { Diagram, DiagramEdge, DiagramNode } from '../../lib/types';
+
+interface Props {
+  diagram: Diagram;
+}
+const { diagram: d } = Astro.props;
+
+// ── the grid ──
+const CW = 278; // column pitch
+const RH = 76; // row pitch
+const NW = 212; // node width
+const NH = 52; // node height
+const PAD = 26;
+
+const box = (n: DiagramNode) => {
+  const x = n.col * CW;
+  const y = n.row * RH;
+  const h = ((n.rows ?? 1) - 1) * RH + NH;
+  return { x, y, w: NW, h, cx: x + NW / 2, cy: y + h / 2 };
+};
+const byId = new Map(d.nodes.map((n) => [n.id, n]));
+const boxes = new Map(d.nodes.map((n) => [n.id, box(n)]));
+
+const maxX = Math.max(...d.nodes.map((n) => box(n).x + NW));
+const maxY = Math.max(...d.nodes.map((n) => box(n).y + box(n).h));
+const vb = { x: -PAD, y: -PAD, w: maxX + PAD * 2, h: maxY + PAD * 2 };
+
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+
+// ── the lines ──
+const lines = d.edges.map((e: DiagramEdge, i) => {
+  const a = boxes.get(e.from)!;
+  const b = boxes.get(e.to)!;
+  const inset = 16;
+  let x1: number, y1: number, x2: number, y2: number, path: string, axis: 'x' | 'y';
+  if (Math.abs(b.x - a.x) < 1) {
+    // stacked: leave by the foot, arrive at the head
+    const down = b.y > a.y;
+    axis = 'y';
+    x1 = x2 = a.cx;
+    y1 = down ? a.y + a.h : a.y;
+    y2 = down ? b.y : b.y + b.h;
+    path = `M${x1} ${y1} L${x2} ${y2}`;
+  } else {
+    const right = b.x > a.x;
+    axis = 'x';
+    x1 = right ? a.x + a.w : a.x;
+    x2 = right ? b.x : b.x + b.w;
+    // a tall part is met level with whatever it connects to, so the line runs straight
+    y1 = clamp(b.cy, a.y + inset, a.y + a.h - inset);
+    y2 = clamp(a.cy, b.y + inset, b.y + b.h - inset);
+    if (a.h > NH) y2 = clamp(y1, b.y + inset, b.y + b.h - inset);
+    if (b.h > NH) y1 = clamp(y2, a.y + inset, a.y + a.h - inset);
+    const mid = (x2 - x1) / 2;
+    path = `M${x1} ${y1} C${x1 + mid} ${y1} ${x2 - mid} ${y2} ${x2} ${y2}`;
+  }
+  // arrowheads: a small chevron where the data arrives
+  const head = (x: number, y: number, dir: 1 | -1) =>
+    axis === 'x' ? `M${x - 9 * dir} ${y - 5} L${x} ${y} L${x - 9 * dir} ${y + 5}` : `M${x - 5} ${y - 9 * dir} L${x} ${y} L${x + 5} ${y - 9 * dir}`;
+  const dir = (axis === 'x' ? Math.sign(x2 - x1) : Math.sign(y2 - y1)) as 1 | -1;
+  const heads = [
+    ...(e.flow !== 'back' ? [head(x2, y2, dir)] : []),
+    ...(e.flow !== 'forward' ? [head(x1, y1, -dir as 1 | -1)] : []),
+  ];
+  return { ...e, i, path, heads };
+});
+
+// ── words ──
+const kindWord: Record<DiagramNode['kind'], string> = {
+  device: 'device',
+  app: 'app',
+  service: 'service',
+  link: 'link',
+  channel: 'stream',
+  store: 'store',
+  person: 'person',
+  step: 'step',
+  outcome: 'support',
+};
+const solid = new Set<DiagramNode['kind']>(['device', 'app', 'service']);
+
+/** break a long label into at most two lines */
+const wrap = (label: string) => {
+  if (label.length <= 23) return [label];
+  const words = label.split(' ');
+  let first = '';
+  while (words.length && (first + ' ' + words[0]).trim().length <= 23) first = (first + ' ' + words.shift()).trim();
+  return [first, words.join(' ')];
+};
+
+/** what a part sends to and hears from, worked out from the lines */
+const talk = (id: string) => {
+  const sends = new Set<string>();
+  const hears = new Set<string>();
+  for (const e of d.edges) {
+    if (e.from !== id && e.to !== id) continue;
+    const other = byId.get(e.from === id ? e.to : e.from)!.label;
+    const outward = e.from === id ? e.flow !== 'back' : e.flow !== 'forward';
+    const inward = e.from === id ? e.flow !== 'forward' : e.flow !== 'back';
+    if (outward) sends.add(other);
+    if (inward) hears.add(other);
+  }
+  return { sends: [...sends], hears: [...hears] };
+};
+
+const uid = `dg-${d.id}`;
+---
+
+<figure class="dg" data-diagram data-mode="map">
+  <header class="dg__head">
+    <div>
+      <h3 class="dg__title">{d.title}</h3>
+      <p class="dg__basis mono">
+        {d.basis === 'built' ? 'drawn from what is built' : 'design intent — not all of this is live yet'} · {d.nodes.length} parts · {d.edges.length} connections
+      </p>
+    </div>
+
+    <div class="dg__tools">
+      <div class="dg__seg" role="group" aria-label="How to show the diagram">
+        <button type="button" data-mode-to="map" aria-pressed="true">map</button>
+        <button type="button" data-mode-to="list" aria-pressed="false">list</button>
+      </div>
+      <div class="dg__zoom" role="group" aria-label="Zoom">
+        <button type="button" data-zoom="out" aria-label="Zoom out">−</button>
+        <button type="button" data-zoom="fit" aria-label="Fit the whole drawing">fit</button>
+        <button type="button" data-zoom="in" aria-label="Zoom in">+</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="dg__body">
+    <div class="dg__stage">
+      <svg
+        class="dg__svg"
+        data-canvas
+        viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`}
+        data-box={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`}
+        role="group"
+        aria-label={`${d.title}. A diagram of ${d.nodes.length} parts. Each part is a button that explains it.`}
+        tabindex="-1"
+      >
+        <g data-viewport>
+          <g class="dg__edges" aria-hidden="true">
+            {
+              lines.map((l) => (
+                <g class:list={['de', `de--${l.flow}`, l.stage && `de--${l.stage}`]} data-edge data-from={l.from} data-to={l.to}>
+                  <path class="de__line" d={l.path} />
+                  {l.flow !== 'back' && <path class="de__flow de__flow--fwd" d={l.path} />}
+                  {l.flow !== 'forward' && <path class="de__flow de__flow--back" d={l.path} />}
+                  {l.heads.map((h) => (
+                    <path class="de__head" d={h} />
+                  ))}
+                </g>
+              ))
+            }
+          </g>
+
+          {
+            d.nodes.map((n) => {
+              const b = boxes.get(n.id)!;
+              const label = wrap(n.label);
+              return (
+                <g
+                  class:list={['dn', `dn--${n.kind}`, solid.has(n.kind) && 'dn--solid', n.stage && `dn--${n.stage}`]}
+                  data-node={n.id}
+                  role="button"
+                  tabindex="0"
+                  aria-pressed="false"
+                  aria-controls={`${uid}-${n.id}`}
+                  aria-label={`${n.label}, ${kindWord[n.kind]}`}
+                  transform={`translate(${b.x} ${b.y})`}
+                >
+                  <rect class="dn__box" width={b.w} height={b.h} rx={n.kind === 'person' || n.kind === 'outcome' ? NH / 2 : 10} />
+                  <text class="dn__kind" x="14" y="17">{kindWord[n.kind]}</text>
+                  <text class="dn__label" x="14" y={b.h > NH ? 42 : label.length > 1 ? 31 : 37}>
+                    {label.map((line, i) => (
+                      <tspan x="14" dy={i ? 15 : 0}>
+                        {line}
+                      </tspan>
+                    ))}
+                  </text>
+                </g>
+              );
+            })
+          }
+        </g>
+      </svg>
+      <p class="dg__hint mono" aria-hidden="true">drag to move · pinch or ⌘ + scroll to zoom · pick a part</p>
+    </div>
+
+    <!-- the explanation: one block per part. In map view only the chosen one shows; in list
+         view they all do, so the whole diagram can be read top to bottom. -->
+    <div class="dg__panel" aria-live="polite">
+      <p class="dg__empty" data-empty>
+        <span class="dg__empty-k mono">nothing selected</span>
+        Pick any part of the drawing to see what it does and what it talks to.
+      </p>
+      {
+        d.nodes.map((n) => {
+          const t = talk(n.id);
+          return (
+            <section class="dd" id={`${uid}-${n.id}`} data-detail={n.id} hidden>
+              <p class="dd__kind mono">
+                {kindWord[n.kind]}
+                {n.stage && <StageMark stage={n.stage} word={n.stage === 'done' ? 'working' : undefined} />}
+              </p>
+              <h4 class="dd__name">{n.label}</h4>
+              {n.summary && <p class="dd__sum">{n.summary}</p>}
+              {n.details && (
+                <ul class="dd__list">
+                  {n.details.map((x) => (
+                    <li>{x}</li>
+                  ))}
+                </ul>
+              )}
+              {n.tech && (
+                <p class="dd__tech">
+                  {n.tech.map((x) => (
+                    <span>{x}</span>
+                  ))}
+                </p>
+              )}
+              {(t.sends.length > 0 || t.hears.length > 0) && (
+                <dl class="dd__talk">
+                  {t.sends.length > 0 && (
+                    <div>
+                      <dt>sends to</dt>
+                      <dd>{t.sends.join(', ')}</dd>
+                    </div>
+                  )}
+                  {t.hears.length > 0 && (
+                    <div>
+                      <dt>receives from</dt>
+                      <dd>{t.hears.join(', ')}</dd>
+                    </div>
+                  )}
+                </dl>
+              )}
+            </section>
+          );
+        })
+      }
+    </div>
+  </div>
+
+  {d.caption && <figcaption class="dg__cap">{d.caption}</figcaption>}
+</figure>
+
+<script>
+  import { initDiagram } from '../../scripts/diagram';
+  document.querySelectorAll<HTMLElement>('[data-diagram]').forEach(initDiagram);
+</script>
+
+<style>
+  .dg {
+    margin: 0;
+  }
+
+  .dg + :global(.dg) {
+    margin-top: clamp(40px, 6vw, 90px);
+  }
+
+  .dg__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    justify-content: space-between;
+    gap: 14px 24px;
+  }
+
+  .dg__title {
+    margin: 0;
+    font: 400 var(--fs-head) / 1 var(--font-head);
+    letter-spacing: -0.035em;
+  }
+
+  .dg__basis {
+    margin: 10px 0 0;
+    color: var(--fg-2);
+  }
+
+  .dg__tools {
+    display: flex;
+    gap: 10px;
+  }
+
+  .dg__seg,
+  .dg__zoom {
+    display: flex;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .dg__tools button {
+    min-width: 40px;
+    height: 36px;
+    padding: 0 13px;
+    border: 0;
+    background: none;
+    color: var(--fg);
+    font: 600 12px/1 var(--font-mono);
+    cursor: pointer;
+    transition:
+      background-color 0.18s ease,
+      color 0.18s ease;
+  }
+
+  .dg__tools button + button {
+    border-left: 1px solid var(--line);
+  }
+
+  .dg__tools button:hover {
+    background: color-mix(in srgb, var(--fg) 14%, transparent);
+  }
+
+  .dg__tools button[aria-pressed='true'] {
+    background: var(--fg);
+    color: var(--bg);
+  }
+
+  .dg__tools button:focus-visible {
+    outline-offset: -3px;
+    box-shadow: none;
+  }
+
+  /* ── map + panel ────────────────────── */
+  .dg__body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(250px, 0.36fr);
+    gap: 0;
+    margin-top: clamp(16px, 2vw, 26px);
+    border: 1px solid var(--line);
+  }
+
+  .dg__stage {
+    position: relative;
+    min-width: 0;
+    /* a drafting grid under the drawing */
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 100% 24px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 24px 100%;
+    --grid: color-mix(in srgb, var(--fg) 7%, transparent);
+    overflow: hidden;
+  }
+
+  .dg__svg {
+    display: block;
+    width: 100%;
+    height: clamp(380px, 62svh, 680px);
+    cursor: grab;
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .dg__svg:focus {
+    outline: none;
+  }
+
+  .dg__svg.is-dragging {
+    cursor: grabbing;
+  }
+
+  .dg__hint {
+    margin: 0;
+    padding: 9px 14px 8px;
+    border-top: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--fg-2);
+    font-size: 11.5px;
+  }
+
+  @media (hover: none) {
+    .dg__hint {
+      display: none;
+    }
+  }
+
+  /* ── lines ──────────────────────────── */
+  .de__line {
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 1.5;
+    opacity: 0.34;
+    transition: opacity 0.25s ease;
+  }
+
+  .de--planned .de__line,
+  .de--ongoing .de__line {
+    stroke-dasharray: 5 5;
+  }
+
+  /* the data itself: dots running the way it travels */
+  .de__flow {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 0.1 17.9;
+    opacity: 0.95;
+    transition: opacity 0.25s ease;
+  }
+
+  .de__head {
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition:
+      opacity 0.25s ease,
+      stroke 0.25s ease;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .de__flow--fwd {
+      animation: de-run 1.5s linear infinite;
+    }
+
+    .de__flow--back {
+      animation: de-run 1.5s linear infinite reverse;
+    }
+
+    @keyframes de-run {
+      to {
+        stroke-dashoffset: -18;
+      }
+    }
+  }
+
+  /* ── parts ──────────────────────────── */
+  .dn {
+    cursor: pointer;
+    outline: none;
+    transition: opacity 0.25s ease;
+  }
+
+  .dn__box {
+    fill: var(--bg);
+    stroke: var(--fg);
+    stroke-width: 1.5;
+    transition:
+      fill 0.2s ease,
+      stroke 0.2s ease;
+  }
+
+  .dn--solid .dn__box {
+    fill: var(--fg);
+  }
+
+  .dn--link .dn__box,
+  .dn--planned .dn__box {
+    stroke-dasharray: 5 4;
+  }
+
+  .dn__kind {
+    fill: var(--fg-2);
+    font: 500 10px/1 var(--font-mono);
+    transition: fill 0.2s ease;
+  }
+
+  .dn__label {
+    fill: var(--fg);
+    font: 750 14.5px/1 var(--font-body);
+    letter-spacing: -0.015em;
+    transition: fill 0.2s ease;
+  }
+
+  .dn--solid .dn__kind,
+  .dn--solid .dn__label {
+    fill: var(--bg);
+  }
+
+  .dn--solid .dn__kind {
+    opacity: 0.7;
+  }
+
+  .dn:hover .dn__box {
+    stroke: var(--accent);
+    stroke-width: 2.5;
+  }
+
+  .dn:focus-visible .dn__box {
+    stroke: var(--accent);
+    stroke-width: 3.5;
+  }
+
+  .dn[aria-pressed='true'] .dn__box {
+    fill: var(--accent);
+    stroke: var(--accent);
+  }
+
+  .dn[aria-pressed='true'] .dn__kind,
+  .dn[aria-pressed='true'] .dn__label {
+    fill: var(--on-accent);
+    opacity: 1;
+  }
+
+  /* with a part chosen, everything it doesn't touch steps back */
+  .dg[data-active] .dn:not(.is-near),
+  .dg[data-active] .de:not(.is-near) :is(.de__line, .de__flow, .de__head) {
+    opacity: 0.16;
+  }
+
+  .dg[data-active] .de.is-near .de__line {
+    stroke: var(--accent);
+    opacity: 1;
+  }
+
+  .dg[data-active] .de.is-near .de__head {
+    stroke: var(--accent);
+  }
+
+  /* ── the panel ──────────────────────── */
+  .dg__panel {
+    min-width: 0;
+    padding: clamp(16px, 1.8vw, 26px);
+    border-left: 1px solid var(--line);
+  }
+
+  .dg__empty {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    color: var(--fg-2);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  .dg__empty-k {
+    color: var(--accent);
+  }
+
+  .dd__kind {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin: 0;
+    color: var(--accent);
+  }
+
+  .dd__name {
+    margin: 10px 0 0;
+    font: 400 clamp(22px, 2vw, 30px) / 1.02 var(--font-head);
+    letter-spacing: -0.035em;
+  }
+
+  .dd__sum {
+    margin: 12px 0 0;
+    font-size: 16px;
+    font-weight: 550;
+    line-height: 1.45;
+  }
+
+  .dd__list {
+    margin: 14px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  .dd__list li {
+    position: relative;
+    padding: 7px 0 7px 18px;
+    border-top: 1px solid var(--line);
+  }
+
+  .dd__list li::before {
+    content: '';
+    position: absolute;
+    top: 1.05em;
+    left: 2px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .dd__tech {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 14px 0 0;
+  }
+
+  .dd__tech span {
+    padding: 5px 9px 4px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font: 500 12px/1 var(--font-mono);
+  }
+
+  .dd__talk {
+    display: grid;
+    gap: 8px;
+    margin: 16px 0 0;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+    font-size: 14px;
+  }
+
+  .dd__talk dt {
+    color: var(--fg-2);
+    font: 500 11.5px/1.4 var(--font-mono);
+  }
+
+  .dd__talk dd {
+    margin: 2px 0 0;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .dd:not([hidden]) {
+      animation: dd-in 0.4s var(--ease-out);
+    }
+
+    @keyframes dd-in {
+      from {
+        opacity: 0;
+        translate: 0 10px;
+      }
+    }
+  }
+
+  .dg__cap {
+    max-width: 78ch;
+    margin: 14px 0 0;
+    color: var(--fg-2);
+    font-size: 14.5px;
+    line-height: 1.5;
+  }
+
+  /* ── list view: the same content, read top to bottom ── */
+  .dg[data-mode='list'] .dg__stage,
+  .dg[data-mode='list'] .dg__zoom,
+  .dg[data-mode='list'] .dg__empty {
+    display: none;
+  }
+
+  .dg[data-mode='list'] .dg__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dg[data-mode='list'] .dg__panel {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+    gap: 1px;
+    padding: 0;
+    border-left: 0;
+    background: var(--line);
+  }
+
+  .dg[data-mode='list'] .dd {
+    display: block;
+    padding: clamp(16px, 1.8vw, 24px);
+    background: var(--bg);
+    animation: none;
+  }
+
+  @media (max-width: 899px) {
+    .dg__body {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .dg__panel {
+      border-top: 1px solid var(--line);
+      border-left: 0;
+    }
+
+    .dg__svg {
+      height: clamp(340px, 58svh, 520px);
+    }
+  }
+</style>

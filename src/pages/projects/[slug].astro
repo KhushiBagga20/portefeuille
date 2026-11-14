@@ -1,81 +1,97 @@
 ---
-// A project's own page, laid out as a poster and a spec sheet rather than a column of text:
-//   1. a cover in the disk's colour, the name as wide as the page, the disk lying across it
-//   2. the stack running past as a ticker
-//   3. the numbers the data can honestly give
-//   4. the write-up, each kind of section set its own way, with a contents rail that follows you
-// Sections that haven't been written yet are gathered into one honest list instead of
-// five empty boxes.
+// A project's case study. One page, built from structured data, for two readers:
+//   · someone with a minute  — the cover, "in 60 seconds" and what it does
+//   · someone who wants all of it — architecture you can click through, a map of how the
+//     idea took shape, the timeline, technical deep dives and a reflection
+// The switch in the strip under the nav folds the page down to the short version.
+//
+// Nothing on this page is written here. The card-level facts come from src/data/projects.ts
+// and everything else from src/data/case-studies/<slug>.ts, both through src/lib/content.ts.
+// A section only appears when it has content; what is missing is gathered into one honest
+// list at the end rather than shown as empty boxes.
 import Base from '../../layouts/Base.astro';
 import Nav from '../../components/Nav.astro';
 import Arrow from '../../components/Arrow.astro';
 import Badge from '../../components/Badge.astro';
-import ComingSoon from '../../components/ComingSoon.astro';
 import FloppyDisk from '../../components/FloppyDisk.astro';
-import { diskTones, projects, type CaseSection, type Project } from '../../data/projects';
+import DeepDives from '../../components/case/DeepDives.astro';
+import Diagram from '../../components/case/Diagram.astro';
+import MindMap from '../../components/case/MindMap.astro';
+import Reflection from '../../components/case/Reflection.astro';
+import StageMark from '../../components/case/Stage.astro';
+import Timeline from '../../components/case/Timeline.astro';
+import { diskTones } from '../../data/projects';
 import { site } from '../../data/site';
+import { caseOutline, getCaseStudy, getProjects } from '../../lib/content';
+import type { CaseSectionId, CaseStudy, Project } from '../../lib/types';
 
-export function getStaticPaths() {
-  return projects.map((project, i) => ({
-    params: { slug: project.slug },
-    props: {
-      project,
-      index: i,
-      prev: projects[(i - 1 + projects.length) % projects.length],
-      next: projects[(i + 1) % projects.length],
-    },
-  }));
+export async function getStaticPaths() {
+  const projects = await getProjects();
+  return Promise.all(
+    projects.map(async (project, i) => ({
+      params: { slug: project.slug },
+      props: {
+        project,
+        study: await getCaseStudy(project.slug),
+        index: i,
+        count: projects.length,
+        prev: projects[(i - 1 + projects.length) % projects.length],
+        next: projects[(i + 1) % projects.length],
+      },
+    })),
+  );
 }
 
 interface Props {
   project: Project;
+  study: CaseStudy;
   index: number;
+  count: number;
   prev: Project;
   next: Project;
 }
 
-const { project: p, index, prev, next } = Astro.props;
+const { project: p, study, index, count, prev, next } = Astro.props;
 const tone = diskTones[p.disk.tone];
-// on the dark ticker a dark disk colour would vanish: borrow the marigold instead
+// the ticker's dots sit on ink: a dark disk colour would vanish there
 const toneOnInk = p.disk.tone === 'mint' ? 'var(--marigold)' : tone.body;
 const no = (i: number) => String(i + 1).padStart(2, '0');
 
-const isWritten = (s: CaseSection) => Boolean(s.body || s.items || s.groups);
-const written = p.sections.filter(isWritten);
-const unwritten = p.sections.filter((s) => !isWritten(s));
+const { has, sections, missing, map } = caseOutline(p, study);
+const deep = sections.filter((s) => s.depth === 'deep');
+const order = (id: CaseSectionId) => no(sections.findIndex((s) => s.id === id));
 
 // ── the numbers the data can give, and no others ──
-const working = p.sections.filter((s) => s.kind === 'working');
-const featureCount = working.reduce((n, s) => n + (s.items?.length ?? 0) + (s.groups?.reduce((m, g) => m + g.items.length, 0) ?? 0), 0);
-const specs: { label: string; value: string; unit?: string }[] = [
-  ...(featureCount ? [{ label: 'working today', value: String(featureCount).padStart(2, '0'), unit: 'features' }] : []),
-  ...(p.stack ? [{ label: 'built with', value: String(p.stack.length).padStart(2, '0'), unit: 'technologies' }] : []),
-  { label: 'written up', value: `${written.length}/${p.sections.length}`, unit: 'sections' },
+const featureCount = (study.features ?? []).reduce((n, g) => n + g.items.length, 0);
+const numbers: { value: string; unit: string }[] = [
+  ...(featureCount ? [{ value: String(featureCount), unit: featureCount === 1 ? 'feature' : 'features' }] : []),
+  ...(p.stack ? [{ value: String(p.stack.length), unit: 'technologies' }] : []),
+  ...(study.diagrams?.length ? [{ value: String(study.diagrams.reduce((n, d) => n + d.nodes.length, 0)), unit: 'parts mapped' }] : []),
 ];
 
-// Event and result only make sense for hackathon projects; elsewhere they'd read as "missing".
-const isHackathon = p.labels.includes('Hackathon');
-const isOngoing = p.labels.includes('Ongoing');
-const facts: { label: string; value?: string }[] = [
+const facts: { label: string; value: string }[] = [
   { label: 'type', value: p.type },
-  ...(p.event || isHackathon ? [{ label: 'event', value: p.event }] : []),
-  ...(p.outcome || (isHackathon && !isOngoing) ? [{ label: 'result', value: p.outcome?.join(' · ') }] : []),
-  { label: 'my role', value: p.role },
+  ...(p.event ? [{ label: 'event', value: p.event }] : []),
+  ...(p.outcome ? [{ label: 'result', value: p.outcome.join(' · ') }] : []),
+  ...(p.role ? [{ label: 'my role', value: p.role }] : []),
+  ...(study.updated ? [{ label: 'last updated', value: study.updated }] : []),
 ];
 const links = [
   { label: 'GitHub', href: p.links.github },
   { label: 'Live demo', href: p.links.demo },
 ].filter((l): l is { label: string; href: string } => Boolean(l.href));
+
+const lede = [...(study.intro.problem ?? []), ...(study.intro.built ?? [])];
 ---
 
 <Base title={`${p.name} · ${site.fullName}`} description={p.oneLiner ?? `${p.name}: ${p.type}.`}>
   <Nav here={`projects / ${p.name}`} />
-  <main class="case" style={`--tone:${tone.body};--on-tone:${tone.on};--tone-on-ink:${toneOnInk}`}>
-    <!-- ── 1 · the cover ─────────────────────── -->
+  <main class="case" data-case style={`--tone:${tone.body};--on-tone:${tone.on};--tone-on-ink:${toneOnInk};--glow:${tone.glow}`}>
+    <!-- ── the cover ─────────────────────────── -->
     <header class="cover" data-pointer>
       <p class="cover__strip">
         <a class="cover__back" href="/#projects"><Arrow dir="left" /> all projects</a>
-        <span>{no(index)} / {no(projects.length - 1)}</span>
+        <span class="mono">{no(index)} / {no(count - 1)}</span>
         <span class="cover__kind">{[p.type, p.event].filter(Boolean).join(' · ')}</span>
       </p>
 
@@ -93,7 +109,7 @@ const links = [
       <div class="cover__foot">
         <div class="cover__say">
           {p.earlierName && <p class="cover__aka voice">earlier known as {p.earlierName}</p>}
-          {p.oneLiner ? <p class="cover__line">{p.oneLiner}</p> : <ComingSoon text="description coming soon" />}
+          {p.oneLiner && <p class="cover__line">{p.oneLiner}</p>}
         </div>
         <div class="cover__tags">
           {p.labels.map((l) => <Badge label={l} />)}
@@ -101,7 +117,7 @@ const links = [
       </div>
     </header>
 
-    <!-- ── 2 · the stack, running past ───────── -->
+    <!-- ── the stack, running past ───────────── -->
     {
       p.stack && (
         <div class="ticker" aria-hidden="true">
@@ -121,163 +137,289 @@ const links = [
       )
     }
 
-    <!-- ── 3 · the numbers ───────────────────── -->
-    <dl class="specs">
-      {
-        specs.map((s) => (
-          <div class="spec">
-            <dt>{s.label}</dt>
-            <dd>
-              <b>{s.value}</b>
-              {s.unit && <span>{s.unit}</span>}
-            </dd>
-          </div>
-        ))
-      }
-      {
-        p.outcome?.map((o) => (
-          <div class="spec spec--won">
-            <dt>result</dt>
-            <dd>
-              <b>{o}</b>
-            </dd>
-          </div>
-        ))
-      }
-    </dl>
-
-    <!-- ── 4 · the write-up ──────────────────── -->
-    <div class="doc">
-      <aside class="rail" aria-label="On this page, and the facts">
+    <!-- ── where you are, and how much you want ── -->
+    <div class="strip s-paper">
+      <nav class="strip__toc" aria-label="On this page">
         {
-          written.length > 0 && (
-            <nav class="toc" aria-label="On this page">
-              <p class="rail__label">on this disk</p>
-              <ol>
-                {written.map((s, i) => (
-                  <li>
-                    <a href={`#part-${i + 1}`} data-no-jump data-toc={`part-${i + 1}`}>
-                      <span>{no(i)}</span>
-                      {s.title}
-                    </a>
-                  </li>
-                ))}
-              </ol>
-            </nav>
-          )
+          sections.map((s) => (
+            <a href={`#${s.id}`} data-no-jump data-toc={s.id} data-depth-of={s.depth}>
+              <span class="mono">{order(s.id)}</span>
+              {s.label}
+            </a>
+          ))
         }
+      </nav>
+      {
+        deep.length > 0 && (
+          <fieldset class="depth">
+            <legend class="sr-only">How much to read</legend>
+            <label>
+              <input type="radio" name="depth" value="brief" />
+              <span>60 seconds</span>
+            </label>
+            <label>
+              <input type="radio" name="depth" value="full" checked />
+              <span>full study</span>
+            </label>
+          </fieldset>
+        )
+      }
+    </div>
 
-        <dl class="facts">
+    <!-- ── A · in 60 seconds ─────────────────── -->
+    <section id="brief" class="band band--brief s-paper" data-part aria-labelledby="brief-title">
+      <div class="wrap brief">
+        <div class="brief__main">
+          <p class="band__k mono">({order('brief')})</p>
+          <h2 id="brief-title" class="band__title">In 60 seconds</h2>
+
+          {p.oneLiner && <p class="brief__lede">{p.oneLiner}</p>}
+          {lede.map((para) => <p class="brief__para">{para}</p>)}
+          {p.preview && <p class="brief__para">{p.preview}</p>}
+          {!p.oneLiner && lede.length === 0 && <p class="brief__para brief__para--none">This project hasn’t been written up yet. What is confirmed is on the right; the rest is listed at the foot of the page.</p>}
+
           {
-            facts.map((f) => (
-              <div class="fact">
-                <dt>{f.label}</dt>
-                <dd>{f.value ?? <ComingSoon />}</dd>
-              </div>
-            ))
+            study.intro.highlights && (
+              <ul class="brief__points">
+                {study.intro.highlights.map((h) => (
+                  <li>{h}</li>
+                ))}
+              </ul>
+            )
           }
-          <div class="fact">
-            <dt>stack</dt>
-            <dd>
-              {
-                p.stack ? (
-                  <ul class="stack">
-                    {p.stack.map((s) => (
-                      <li>{s}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <ComingSoon />
-                )
-              }
-            </dd>
-          </div>
-          <div class="fact">
-            <dt>links</dt>
-            <dd>
-              {
-                links.length ? (
-                  <div class="links">
+        </div>
+
+        <aside class="brief__side" aria-label="Fact sheet">
+          {
+            numbers.length > 0 && (
+              <dl class="nums">
+                {numbers.map((n) => (
+                  <div>
+                    <dd>{n.value}</dd>
+                    <dt>{n.unit}</dt>
+                  </div>
+                ))}
+              </dl>
+            )
+          }
+          <dl class="facts">
+            {
+              facts.map((f) => (
+                <div class="fact">
+                  <dt>{f.label}</dt>
+                  <dd>{f.value}</dd>
+                </div>
+              ))
+            }
+            {
+              p.stack && (
+                <div class="fact">
+                  <dt>stack</dt>
+                  <dd>
+                    <ul class="stack">
+                      {p.stack.map((s) => (
+                        <li>{s}</li>
+                      ))}
+                    </ul>
+                  </dd>
+                </div>
+              )
+            }
+            {
+              links.length > 0 && (
+                <div class="fact">
+                  <dt>links</dt>
+                  <dd class="links">
                     {links.map((l) => (
                       <a class="key key--sm" href={l.href}>
                         {l.label} <Arrow dir="out" />
                       </a>
                     ))}
-                  </div>
-                ) : (
-                  <ComingSoon text="links coming soon" />
-                )
-              }
-            </dd>
-          </div>
-        </dl>
-      </aside>
-
-      <article class="body" aria-labelledby="case-title">
-        {
-          written.map((s, i) => (
-            <section id={`part-${i + 1}`} class:list={['part', s.kind && `part--${s.kind}`, s.groups && 'part--grid']} data-part>
-              <header class="part__head">
-                <span class="part__no">{no(i)}</span>
-                <h2>{s.title}</h2>
-              </header>
-
-              {s.note && <p class="part__note">{s.note}</p>}
-              {s.body && <p class="part__body">{s.body}</p>}
-
-              {s.items && (
-                <ul class="list">
-                  {s.items.map((item) => (
-                    <li>{item}</li>
-                  ))}
-                </ul>
-              )}
-
-              {s.groups && (
-                <div class="tiles">
-                  {s.groups.map((g) => (
-                    <div class="tile">
-                      <h3>
-                        {g.title}
-                        <sup>{String(g.items.length).padStart(2, '0')}</sup>
-                      </h3>
-                      <ul class="list">
-                        {g.items.map((item) => (
-                          <li>{item}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
+                  </dd>
                 </div>
-              )}
-            </section>
-          ))
-        }
+              )
+            }
+          </dl>
+        </aside>
 
         {
-          unwritten.length > 0 && (
-            <section class="part part--todo">
-              <header class="part__head">
-                <span class="part__no">{no(written.length)}</span>
-                <h2>{written.length ? 'Still to be written' : 'Not written up yet'}</h2>
-              </header>
-              <p class="part__body">
-                {written.length
-                  ? 'These parts of the write-up are on the way.'
-                  : "This project's write-up is on the way. It will cover:"}
-              </p>
-              <ul class="todo">
-                {unwritten.map((s) => (
-                  <li>{s.title}</li>
-                ))}
-              </ul>
-            </section>
+          study.intro.media && (
+            <div class="shots">
+              {study.intro.media.map((m) => (
+                <figure class="shot">
+                  {m.kind === 'image' ? (
+                    <img src={m.src} alt={m.alt} width={m.width} height={m.height} loading="lazy" decoding="async" />
+                  ) : (
+                    <video src={m.src} controls preload="metadata" aria-label={m.alt} />
+                  )}
+                  {m.caption && <figcaption>{m.caption}</figcaption>}
+                </figure>
+              ))}
+            </div>
           )
         }
-      </article>
-    </div>
+      </div>
+    </section>
 
-    <nav class="pager" aria-label="More projects">
+    <!-- ── what it does ──────────────────────── -->
+    {
+      has.features && (
+        <section id="features" class="band s-paper-2" data-part aria-labelledby="features-title">
+          <div class="wrap">
+            <header class="band__head">
+              <p class="band__k mono">({order('features')})</p>
+              <h2 id="features-title" class="band__title">What it does</h2>
+              <p class="band__note mono">
+                {featureCount} {featureCount === 1 ? 'feature' : 'features'} in {study.features!.length} {study.features!.length === 1 ? 'group' : 'groups'}
+              </p>
+            </header>
+
+            <div class:list={['tiles', { 'tiles--one': study.features!.length === 1 }]}>
+              {study.features!.map((g) => (
+                <div class="tile" data-reveal>
+                  <header class="tile__head">
+                    <h3>{g.title}</h3>
+                    {g.stage && <StageMark stage={g.stage} word={g.stage === 'done' ? 'working' : g.stage === 'ongoing' ? 'being built' : undefined} />}
+                  </header>
+                  {g.note && <p class="tile__note">{g.note}</p>}
+                  <ul class="list">
+                    {g.items.map((item) => (
+                      <li>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )
+    }
+
+    <!-- the fold: everything after this is the full study -->
+    {
+      deep.length > 0 && (
+        <div class="fold s-paper-2">
+          <p class="fold__brief">
+            <span class="mono">that was the short version</span>
+            <button class="key key--solid" type="button" data-depth-to="full">
+              read the full study <Arrow dir="down" />
+            </button>
+          </p>
+          <p class="fold__full mono" aria-hidden="true">
+            the full study <i /> {deep.map((s) => s.label.toLowerCase()).join(' · ')}
+          </p>
+        </div>
+      )
+    }
+
+    <!-- ── B · architecture ──────────────────── -->
+    {
+      has.architecture && (
+        <section id="architecture" class="band s-ink" data-part data-deep aria-labelledby="architecture-title">
+          <div class="wrap">
+            <header class="band__head">
+              <p class="band__k mono">({order('architecture')})</p>
+              <h2 id="architecture-title" class="band__title">Architecture</h2>
+              <p class="band__note mono">every part is a button</p>
+            </header>
+            {study.diagrams!.map((d) => (
+              <Diagram diagram={d} />
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    <!-- ── C · how it took shape ─────────────── -->
+    {
+      has.thinking && (
+        <section id="thinking" class="band s-paper" data-part data-deep aria-labelledby="thinking-title">
+          <div class="wrap">
+            <header class="band__head">
+              <p class="band__k mono">({order('thinking')})</p>
+              <h2 id="thinking-title" class="band__title">How it took shape</h2>
+              <p class="band__note mono">a map: open a branch</p>
+            </header>
+            <MindMap root={p.name} branches={map} />
+          </div>
+        </section>
+      )
+    }
+
+    <!-- ── D · timeline ──────────────────────── -->
+    {
+      has.timeline && (
+        <section id="timeline" class="band s-paper-2" data-part data-deep aria-labelledby="timeline-title">
+          <div class="wrap">
+            <header class="band__head">
+              <p class="band__k mono">({order('timeline')})</p>
+              <h2 id="timeline-title" class="band__title">Timeline</h2>
+              <p class="band__note mono">oldest first</p>
+            </header>
+            <Timeline milestones={study.timeline} updates={study.updates} />
+          </div>
+        </section>
+      )
+    }
+
+    <!-- ── E · deep dives ────────────────────── -->
+    {
+      has['deep-dives'] && (
+        <section id="deep-dives" class="band s-ink" data-part data-deep aria-labelledby="deep-dives-title">
+          <div class="wrap">
+            <header class="band__head">
+              <p class="band__k mono">({order('deep-dives')})</p>
+              <h2 id="deep-dives-title" class="band__title">Deep dives</h2>
+              <p class="band__note mono">for the curious</p>
+            </header>
+            <DeepDives dives={study.deepDives!} />
+          </div>
+        </section>
+      )
+    }
+
+    <!-- ── F · reflection ────────────────────── -->
+    {
+      has.reflection && (
+        <section id="reflection" class="band band--tone" data-part data-deep aria-labelledby="reflection-title">
+          <div class="wrap">
+            <header class="band__head">
+              <p class="band__k mono">({order('reflection')})</p>
+              <h2 id="reflection-title" class="band__title">Reflection</h2>
+              <p class="band__note mono">looking back</p>
+            </header>
+            <Reflection reflection={study.reflection!} />
+          </div>
+        </section>
+      )
+    }
+
+    <!-- ── what isn't here yet ───────────────── -->
+    {
+      missing.length > 0 && (
+        <section class="band band--todo s-paper" aria-labelledby="todo-title">
+          <div class="wrap todo">
+            <header class="band__head">
+              <p class="band__k mono">(—)</p>
+              <h2 id="todo-title" class="band__title">{sections.length > 2 ? 'Still to come' : 'Not written up yet'}</h2>
+              <p class="band__note mono">{missing.length} to write</p>
+            </header>
+            <p class="todo__say">
+              {sections.length > 2
+                ? 'This case study is still being written. These parts aren’t here yet, and nothing on this page stands in for them.'
+                : 'Only the confirmed facts are on this page so far. The write-up will add:'}
+            </p>
+            <ul class="todo__list">
+              {missing.map((m) => (
+                <li>{m}</li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )
+    }
+
+    <nav class="pager s-paper" aria-label="More projects">
       {
         [
           { p: prev, dir: 'left' as const, word: 'previous' },
@@ -299,7 +441,37 @@ const links = [
 </Base>
 
 <script>
-  // The contents rail lights whichever part is under the middle of the screen.
+  const page = document.querySelector<HTMLElement>('[data-case]');
+
+  // ── how much to read ──
+  // The radios work without this (the stylesheet reads them with :has); the script only
+  // remembers the choice for the visit and wires up the "read the full study" button.
+  const KEY = 'khushi:case-depth';
+  const radios = [...document.querySelectorAll<HTMLInputElement>('input[name="depth"]')];
+  const setDepth = (depth: string, remember = true) => {
+    radios.forEach((r) => (r.checked = r.value === depth));
+    if (!remember) return;
+    try {
+      sessionStorage.setItem(KEY, depth);
+    } catch {}
+  };
+  try {
+    const saved = sessionStorage.getItem(KEY);
+    if (saved && radios.length) setDepth(saved, false);
+  } catch {}
+  radios.forEach((r) => r.addEventListener('change', () => setDepth(r.value)));
+  document.querySelectorAll<HTMLButtonElement>('[data-depth-to]').forEach((b) =>
+    b.addEventListener('click', () => {
+      setDepth(b.dataset.depthTo!);
+      const first = page?.querySelector<HTMLElement>('[data-deep]');
+      requestAnimationFrame(() => first?.scrollIntoView({ block: 'start' }));
+    }),
+  );
+  // a link into the full study opens it first
+  document.querySelectorAll<HTMLAnchorElement>('[data-toc][data-depth-of="deep"]').forEach((a) => a.addEventListener('click', () => setDepth('full')));
+  if (location.hash && document.querySelector(`${location.hash}[data-deep]`)) setDepth('full');
+
+  // ── where you are ──
   const links = [...document.querySelectorAll<HTMLAnchorElement>('[data-toc]')];
   if (links.length) {
     const io = new IntersectionObserver(
@@ -307,12 +479,14 @@ const links = [
         for (const e of entries) {
           if (!e.isIntersecting) continue;
           links.forEach((a) => {
-            if (a.dataset.toc === e.target.id) a.setAttribute('aria-current', 'true');
+            const on = a.dataset.toc === e.target.id;
+            if (on) a.setAttribute('aria-current', 'true');
             else a.removeAttribute('aria-current');
+            if (on) a.scrollIntoView({ block: 'nearest', inline: 'nearest' });
           });
         }
       },
-      { rootMargin: '-40% 0px -55% 0px' },
+      { rootMargin: '-35% 0px -60% 0px' },
     );
     document.querySelectorAll('[data-part]').forEach((part) => io.observe(part));
   }
@@ -320,6 +494,7 @@ const links = [
 
 <style>
   .case {
+    --strip: 46px;
     padding-top: var(--bar);
   }
 
@@ -497,171 +672,295 @@ const links = [
     }
   }
 
-  /* ── 3 · specs ──────────────────────── */
-  .specs {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+
+  /* ── the strip: sections, and the depth switch ── */
+  .strip {
+    position: sticky;
+    top: var(--bar);
+    z-index: 20;
+    display: flex;
+    align-items: stretch;
+    height: var(--strip);
+    border-bottom: 1px solid var(--fg);
+    background: var(--bg);
+    color: var(--fg);
+  }
+
+  .strip__toc {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    padding: 0 calc(var(--gutter) - 12px);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .strip__toc::-webkit-scrollbar {
+    display: none;
+  }
+
+  .strip__toc a {
+    position: relative;
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 7px;
+    padding: 0 12px;
+    font: 650 13.5px/1 var(--font-body);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .strip__toc a .mono {
+    color: var(--fg-2);
+    font-size: 11px;
+  }
+
+  .strip__toc a::after {
+    content: '';
+    position: absolute;
+    inset: auto 12px 0;
+    height: 3px;
+    background: var(--tone-on-ink);
+    scale: 0 1;
+    transform-origin: left;
+    transition: scale 0.3s var(--ease-out);
+  }
+
+  .strip__toc a:hover::after,
+  .strip__toc a[aria-current]::after {
+    scale: 1 1;
+  }
+
+  .strip__toc a:focus-visible {
+    outline-offset: -4px;
+    box-shadow: none;
+  }
+
+  .depth {
+    display: flex;
+    flex: none;
     margin: 0;
+    padding: 0;
+    border: 0;
+    border-left: 1px solid var(--fg);
+  }
+
+  .depth label {
+    position: relative;
+    display: grid;
+    cursor: pointer;
+  }
+
+  .depth input {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  .depth span {
+    display: grid;
+    place-items: center;
+    padding: 0 16px;
+    font: 500 12px/1 var(--font-mono);
+    white-space: nowrap;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .depth label + label span {
+    border-left: 1px solid var(--line);
+  }
+
+  .depth input:checked + span {
+    background: var(--fg);
+    color: var(--bg);
+  }
+
+  .depth input:focus-visible + span {
+    outline: 2px solid var(--fg);
+    outline-offset: -5px;
+  }
+
+  /* the 60-second read: the full study folds away */
+  .case:has(input[name='depth'][value='brief']:checked) :is([data-deep], [data-depth-of='deep'], .fold__full) {
+    display: none;
+  }
+
+  .case:has(input[name='depth'][value='full']:checked) .fold__brief,
+  .case:not(:has(input[name='depth'])) .fold__brief {
+    display: none;
+  }
+
+  /* ── bands ──────────────────────────── */
+  .band {
+    position: relative;
+    padding: clamp(48px, 6.4vw, 104px) var(--gutter);
+    background: var(--bg);
+    color: var(--fg);
+    scroll-margin-top: calc(var(--bar) + var(--strip) - 1px);
+  }
+
+  .band--tone {
+    --bg: var(--tone);
+    --fg: var(--on-tone);
+    --fg-2: var(--on-tone);
+    --line: color-mix(in srgb, var(--on-tone) 40%, transparent);
+    --accent: var(--on-tone);
+    --on-accent: var(--tone);
+  }
+
+  /* on the dark bands the project's own colour, lifted, is the light */
+  .band.s-ink {
+    --accent: var(--glow);
+    --on-accent: #0c0d21;
+  }
+
+  .band__head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: baseline;
+    gap: 6px clamp(12px, 1.6vw, 22px);
+    margin-bottom: clamp(24px, 3.4vw, 52px);
+    padding-bottom: clamp(12px, 1.4vw, 18px);
     border-bottom: 1px solid var(--fg);
   }
 
-  .spec {
-    display: grid;
-    align-content: space-between;
-    gap: clamp(14px, 2.4vw, 36px);
-    padding: clamp(16px, 2vw, 28px) var(--gutter) clamp(16px, 2vw, 26px);
-    border-right: 1px solid var(--line);
-  }
-
-  .spec:last-child {
-    border-right: 0;
-  }
-
-  .spec dt {
+  .band__k {
+    margin: 0;
     color: var(--fg-2);
-    font: 700 10px/1 var(--font-label);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
   }
 
-  .spec dd {
+  .band__title {
+    margin: 0;
+    font: 400 clamp(30px, 3.9vw, 62px) / 0.98 var(--font-head);
+    letter-spacing: -0.045em;
+  }
+
+  .band__note {
+    margin: 0;
+    color: var(--fg-2);
+    text-align: right;
+  }
+
+  /* ── A · the brief ──────────────────── */
+  .brief {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.8fr);
+    gap: clamp(32px, 5.4vw, 96px);
+    align-items: start;
+  }
+
+  .brief .band__title {
+    margin-top: 8px;
+  }
+
+  .brief__lede {
+    max-width: 24ch;
+    margin: clamp(22px, 3vw, 44px) 0 0;
+    font-size: clamp(27px, 3.3vw, 52px);
+    font-weight: 600;
+    line-height: 1.06;
+    letter-spacing: -0.04em;
+    text-wrap: balance;
+  }
+
+  .brief__para {
+    max-width: 60ch;
+    margin: clamp(16px, 1.8vw, 24px) 0 0;
+    font-size: var(--fs-read);
+    line-height: 1.68;
+  }
+
+  .brief__lede + .brief__para {
+    margin-top: clamp(22px, 2.6vw, 36px);
+  }
+
+  .brief__para--none {
+    color: var(--fg-2);
+  }
+
+  .brief__points {
+    max-width: 60ch;
+    margin: clamp(20px, 2.4vw, 32px) 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--fs-read);
+    font-weight: 550;
+    line-height: 1.45;
+  }
+
+  .brief__points li {
+    position: relative;
+    padding: 10px 0 10px 26px;
+    border-top: 1px solid var(--line);
+  }
+
+  .brief__points li::before {
+    content: '';
+    position: absolute;
+    top: 1.05em;
+    left: 2px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--tone-on-ink);
+  }
+
+  .brief__side {
+    position: sticky;
+    top: calc(var(--bar) + var(--strip) + 22px);
+  }
+
+  .nums {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
-    gap: 6px 10px;
-    margin: 0;
+    gap: 14px clamp(18px, 2.4vw, 34px);
+    margin: 0 0 clamp(18px, 2vw, 28px);
   }
 
-  .spec b {
-    font-family: var(--font-display);
-    font-size: clamp(54px, 7.4vw, 124px);
-    font-weight: 400;
-    line-height: 0.94;
+  .nums div {
+    display: grid;
+    gap: 6px;
+  }
+
+  .nums dd {
+    margin: 0;
+    font: 400 clamp(46px, 5vw, 78px) / 0.9 var(--font-display);
     font-variant-numeric: tabular-nums;
   }
 
-  .spec span {
-    font: 700 11px/1.2 var(--font-label);
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
-  }
-
-  /* a result is a sentence, not a number: it gets the tone and a smaller cut */
-  .spec--won {
-    background: var(--tone);
-    color: var(--on-tone);
-  }
-
-  .spec--won dt {
-    color: inherit;
-  }
-
-  .spec--won b {
-    font-size: clamp(28px, 3.3vw, 54px);
-    line-height: 0.9;
-    text-transform: uppercase;
-  }
-
-  /* ── 4 · write-up ───────────────────── */
-  .doc {
-    display: grid;
-    grid-template-columns: minmax(220px, 0.42fr) minmax(0, 1.5fr);
-    align-items: start;
-    gap: clamp(28px, 5vw, 90px);
-    max-width: calc(var(--wrap) + 2 * var(--gutter));
-    margin: 0 auto;
-    padding: clamp(36px, 5vw, 80px) var(--gutter) clamp(56px, 8vw, 120px);
-  }
-
-  .rail {
-    position: sticky;
-    top: calc(var(--bar) + 22px);
-    display: grid;
-    gap: clamp(22px, 3vw, 36px);
-  }
-
-  .rail__label {
-    margin: 0 0 8px;
+  .nums dt {
     color: var(--fg-2);
-    font: 700 10px/1 var(--font-label);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
-
-  .toc ol {
-    margin: 0;
-    padding: 0;
-    border-top: 1px solid var(--fg);
-    list-style: none;
-  }
-
-  .toc a {
-    position: relative;
-    display: grid;
-    grid-template-columns: 3.4ch 1fr;
-    align-items: baseline;
-    padding: 9px 0 8px;
-    border-bottom: 1px solid var(--line);
-    font-family: var(--font-display);
-    font-size: 17px;
-    font-weight: 400;
-    line-height: 1.1;
-    text-decoration: none;
-    text-transform: uppercase;
-    transition: padding-left 0.3s var(--ease-out);
-  }
-
-  .toc a span {
-    color: var(--fg-2);
-    font: 700 10px/1 var(--font-label);
-    letter-spacing: 0.08em;
-  }
-
-  .toc a::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 0;
-    width: 8px;
-    height: 8px;
-    background: var(--tone);
-    outline: 1px solid var(--fg);
-    scale: 0;
-    translate: 0 -50%;
-    transition: scale 0.3s var(--spring);
-  }
-
-  .toc a:hover,
-  .toc a[aria-current] {
-    padding-left: 16px;
-  }
-
-  .toc a[aria-current]::before {
-    scale: 1;
+    font: 500 12px/1 var(--font-mono);
   }
 
   .facts {
-    display: grid;
     margin: 0;
     border-top: 1px solid var(--fg);
   }
 
   .fact {
-    padding: 11px 0 12px;
+    display: grid;
+    grid-template-columns: 11ch minmax(0, 1fr);
+    gap: 12px;
+    padding: 12px 0 11px;
     border-bottom: 1px solid var(--line);
   }
 
   .fact dt {
     color: var(--fg-2);
-    font: 700 10px/1 var(--font-label);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    font: 500 12px/1.6 var(--font-mono);
   }
 
   .fact dd {
-    margin: 7px 0 0;
-    font-weight: 650;
-    line-height: 1.3;
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.4;
   }
 
   .stack {
@@ -674,11 +973,10 @@ const links = [
   }
 
   .stack li {
-    padding: 4px 9px 3px;
-    border: 1px solid var(--fg);
-    border-radius: 999px;
-    font-size: 13px;
-    font-weight: 600;
+    padding: 4px 8px 3px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    font: 500 12px/1.2 var(--font-mono);
   }
 
   .links {
@@ -687,197 +985,170 @@ const links = [
     gap: 8px;
   }
 
-  /* each part: a rule, a number, a headline */
-  .part {
-    padding: clamp(18px, 2.4vw, 32px) 0 clamp(34px, 5vw, 76px);
-    border-top: 1px solid var(--fg);
-    scroll-margin-top: calc(var(--bar) + 12px);
-  }
-
-  .part__head {
+  .shots {
     display: grid;
-    grid-template-columns: 4ch minmax(0, 1fr);
-    align-items: baseline;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+    gap: clamp(14px, 2vw, 28px);
   }
 
-  .part__no {
-    color: var(--fg-2);
-    font: 700 11px/1 var(--font-label);
-    letter-spacing: 0.09em;
-  }
-
-  .part h2 {
+  .shot {
     margin: 0;
-    font-family: var(--font-display);
-    font-size: clamp(38px, 5.6vw, 96px);
-    font-weight: 400;
-    line-height: 0.94;
-    text-transform: uppercase;
   }
 
-  .part__note,
-  .part__body,
-  .part > .list,
-  .tiles,
-  .todo {
-    margin-left: clamp(0px, 4ch, 4ch);
+  .shot :is(img, video) {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--fg);
   }
 
-  .part__note {
-    max-width: 62ch;
-    margin-top: 18px;
-    margin-bottom: 0;
-    padding-left: 12px;
-    border-left: 3px solid var(--tone);
+  .shot figcaption {
+    margin-top: 8px;
     color: var(--fg-2);
-    font-size: 15px;
-    font-weight: 600;
-    line-height: 1.4;
+    font-size: 14px;
+    line-height: 1.45;
   }
 
-  /* a section that is only a paragraph is set as a statement */
-  .part__body {
-    max-width: 30em;
-    margin-top: clamp(16px, 2vw, 26px);
-    margin-bottom: 0;
-    font-size: clamp(20px, 2vw, 30px);
-    font-weight: 500;
-    line-height: 1.24;
-    letter-spacing: -0.012em;
-    text-wrap: pretty;
+  /* ── what it does ───────────────────── */
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+    gap: 1px;
+    border: 1px solid var(--fg);
+    background: var(--fg);
+  }
+
+  .tiles--one {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tile {
+    padding: clamp(16px, 1.8vw, 26px);
+    background: var(--bg);
+    transition: background-color 0.3s ease;
+  }
+
+  .tile__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px 14px;
+  }
+
+  .tile h3 {
+    margin: 0;
+    font: 400 var(--fs-head) / 1 var(--font-head);
+    letter-spacing: -0.04em;
+  }
+
+  .tile__note {
+    max-width: 70ch;
+    margin: 12px 0 0;
+    padding: 9px 12px;
+    border: 1px dashed var(--fg);
+    font-size: 14.5px;
+    line-height: 1.45;
   }
 
   .list {
-    margin-top: 16px;
-    margin-bottom: 0;
+    margin: clamp(12px, 1.4vw, 18px) 0 0;
     padding: 0;
     list-style: none;
+    font-size: 15.5px;
+    line-height: 1.42;
   }
 
-  .part > .list {
-    max-width: 62ch;
-    columns: 2 260px;
-    column-gap: clamp(20px, 3vw, 44px);
+  .tiles--one .list {
+    columns: 2 300px;
+    column-gap: clamp(20px, 3vw, 48px);
   }
 
   .list li {
     position: relative;
-    padding: 0 0 9px 22px;
-    line-height: 1.38;
+    padding: 9px 0 9px 20px;
+    border-top: 1px solid var(--line);
     break-inside: avoid;
   }
 
   .list li::before {
     content: '';
     position: absolute;
-    top: 0.66em;
-    left: 0;
-    width: 10px;
-    height: 1.5px;
-    background: currentColor;
+    top: 1.12em;
+    left: 1px;
+    width: 8px;
+    height: 8px;
+    background: var(--tone-on-ink);
   }
 
-  /* what already works: four panels, each counted */
-  .tiles {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin-top: clamp(18px, 2.4vw, 32px);
-    border: 1px solid var(--fg);
+  /* ── the fold ───────────────────────── */
+  .fold {
+    padding: 0 var(--gutter) clamp(30px, 4vw, 60px);
+    background: var(--bg);
+    color: var(--fg);
   }
 
-  .tile {
-    padding: clamp(14px, 1.8vw, 24px) clamp(14px, 1.8vw, 24px) clamp(10px, 1.4vw, 18px);
-    border-bottom: 1px solid var(--fg);
-  }
-
-  .tile:nth-child(odd) {
-    border-right: 1px solid var(--fg);
-  }
-
-  .tile:nth-last-child(-n + 2):nth-child(odd),
-  .tile:last-child {
-    border-bottom: 0;
-  }
-
-  .tile h3 {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 10px;
-    margin: 0;
-    font-family: var(--font-display);
-    font-size: clamp(24px, 2.6vw, 42px);
-    font-weight: 400;
-    line-height: 0.95;
-    text-transform: uppercase;
-  }
-
-  .tile h3 sup {
-    padding: 4px 7px 3px;
-    background: var(--tone);
-    color: var(--on-tone);
-    font: 700 11px/1 var(--font-label);
-    letter-spacing: 0.06em;
-  }
-
-  .part--working .list li::before,
-  .tile .list li::before {
-    top: 0.42em;
-    width: 9px;
-    height: 9px;
-    background: var(--tone);
-    outline: 1px solid var(--fg);
-  }
-
-  /* results: said out loud */
-  .part--outcome > .list {
-    max-width: none;
-    columns: auto;
-  }
-
-  .part--outcome > .list li {
-    padding: 0 0 0.3em;
-    font-family: var(--font-display);
-    font-size: clamp(26px, 3.4vw, 56px);
-    font-weight: 400;
-    line-height: 0.96;
-    text-transform: uppercase;
-  }
-
-  .part--outcome > .list li::before {
-    display: none;
-  }
-
-  /* history: a note clipped to the file */
-  .part--history .part__body {
-    padding: clamp(14px, 1.8vw, 24px);
-    border: 1px dashed var(--fg);
-    font-size: clamp(17px, 1.5vw, 21px);
-  }
-
-  .todo {
+  .fold__brief,
+  .fold__full {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 18px;
-    margin-bottom: 0;
-    padding: 0;
-    list-style: none;
+    align-items: center;
+    gap: 12px 20px;
+    max-width: var(--wrap);
+    margin: 0 auto;
   }
 
-  .todo li {
-    padding: 9px 14px 8px;
-    border: 1px dashed var(--fg);
-    font-family: var(--font-display);
-    font-size: clamp(17px, 1.6vw, 24px);
-    font-weight: 400;
-    line-height: 1;
-    text-transform: uppercase;
-  }
-
-  .part--todo .part__body {
+  .fold__full {
     color: var(--fg-2);
-    font-size: clamp(17px, 1.5vw, 21px);
+  }
+
+  .fold__full i {
+    flex: 1;
+    min-width: 30px;
+    height: 1px;
+    background: var(--line);
+  }
+
+  /* ── still to come ──────────────────── */
+  .band--todo {
+    border-top: 1px solid var(--fg);
+  }
+
+  .todo__say {
+    max-width: 62ch;
+    margin: 0;
+    font-size: var(--fs-read);
+    line-height: 1.6;
+  }
+
+  .todo__list {
+    margin: clamp(18px, 2.4vw, 32px) 0 0;
+    padding: 0;
+    columns: 2 340px;
+    column-gap: clamp(24px, 4vw, 64px);
+    list-style: none;
+    font-size: 15.5px;
+    font-weight: 550;
+    line-height: 1.4;
+  }
+
+  .todo__list li {
+    position: relative;
+    padding: 10px 0 10px 26px;
+    border-top: 1px dashed var(--fg);
+    break-inside: avoid;
+  }
+
+  .todo__list li::before {
+    content: '';
+    position: absolute;
+    top: 1.02em;
+    left: 2px;
+    width: 10px;
+    height: 10px;
+    border: 1.5px dashed currentColor;
+    border-radius: 50%;
   }
 
   /* ── pager ──────────────────────────── */
@@ -937,6 +1208,7 @@ const links = [
     font-size: clamp(22px, 2.4vw, 38px);
   }
 
+
   @media (max-width: 899px) {
     .cover {
       min-height: 0;
@@ -965,44 +1237,28 @@ const links = [
       margin-left: 0;
     }
 
-    .doc {
+    .brief {
       grid-template-columns: minmax(0, 1fr);
     }
 
-    /* phones: the write-up first, the fact sheet after it */
-    .rail {
+    .brief__side {
       position: static;
-      order: 2;
     }
 
-    .toc {
-      display: none;
+    .band__head {
+      grid-template-columns: auto minmax(0, 1fr);
     }
 
-    .part__note,
-    .part__body,
-    .part > .list,
-    .tiles,
-    .todo {
-      margin-left: 0;
-    }
-
-    .spec {
-      border-bottom: 1px solid var(--line);
+    .band__note {
+      grid-column: 1 / -1;
+      text-align: left;
     }
   }
 
   @media (max-width: 599px) {
-    .tiles {
-      grid-template-columns: minmax(0, 1fr);
-    }
-
-    .tile:nth-child(odd) {
-      border-right: 0;
-    }
-
-    .tile:nth-last-child(-n + 2):nth-child(odd) {
-      border-bottom: 1px solid var(--fg);
+    .depth span {
+      padding: 0 11px;
+      font-size: 11px;
     }
 
     .pager {

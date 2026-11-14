@@ -53,8 +53,8 @@ const shell = quad([[0, 0, 3], [3, 0, 3], [3, 0, 0], [3, 3, 0], [0, 3, 0], [0, 3
       <div class="hub__intro">
         <p class="hub__lede">{playground.intro}</p>
         <p class="hub__how mono">
-          {rooms.length} rooms · pick a door<br />
-          <span class="hub__keys">or press its number, 1–{rooms.length}</span>
+          {rooms.filter((r) => r.open).length} of {rooms.length} rooms open · pick a door<br />
+          <span class="hub__keys">or press an open room's number</span>
         </p>
       </div>
     </div>
@@ -62,12 +62,15 @@ const shell = quad([[0, 0, 3], [3, 0, 3], [3, 0, 0], [3, 3, 0], [0, 3, 0], [0, 3
     <!-- the floor plan -->
     <nav class="plan" aria-label="Rooms">
       {
-        rooms.map((r, i) => (
-          <a class={`door door--${r.id}`} href={r.href} style={`--room:${r.accent};--on-room:${r.onAccent};--i:${i}`} data-door={i + 1}>
+        rooms.map((r, i) => {
+          // a room that isn't built yet is drawn on the plan, but it is not a link
+          const Door = r.open ? 'a' : 'div';
+          return (
+          <Door class:list={['door', `door--${r.id}`, { 'door--soon': !r.open }]} href={r.open ? r.href : undefined} style={`--room:${r.accent};--on-room:${r.onAccent};--i:${i}`} data-door={r.open ? i + 1 : undefined}>
             <span class="door__no mono">room {r.no}</span>
             <span class="door__name">{r.name}</span>
             <span class="door__line">{r.line}</span>
-            <span class="door__note mono">{notes[r.id]}</span>
+            <span class="door__note mono">{r.open ? notes[r.id] : 'being built — not open yet'}</span>
             <span class="door__go" aria-hidden="true">
               <Arrow />
             </span>
@@ -113,8 +116,9 @@ const shell = quad([[0, 0, 3], [3, 0, 3], [3, 0, 0], [3, 3, 0], [0, 3, 0], [0, 3
                 </span>
               )}
             </span>
-          </a>
-        ))
+          </Door>
+          );
+        })
       }
 
       <!-- not a door yet: kept on the plan so the next experiment has somewhere to go -->
@@ -286,6 +290,21 @@ const shell = quad([[0, 0, 3], [3, 0, 3], [3, 0, 0], [3, 3, 0], [0, 3, 0], [0, 3
 
   .door--empty .door__no {
     color: inherit;
+  }
+
+  /* drawn on the plan, not open yet */
+  .door--soon {
+    color: var(--fg-2);
+  }
+
+  .door--soon .door__obj {
+    opacity: 0.32;
+  }
+
+  .door--soon .door__note {
+    padding: 4px 8px 3px;
+    border: 1px dashed currentColor;
+    background: var(--bg);
   }
 
   .door__name {

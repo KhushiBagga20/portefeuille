@@ -1,0 +1,84 @@
+---
+// Looking back: what worked, what didn't, what was learned, what would change.
+// Four plain lists, each shown only if it has something in it.
+import type { Reflection } from '../../lib/types';
+
+interface Props {
+  reflection: Reflection;
+}
+const { reflection: r } = Astro.props;
+
+const parts = [
+  { key: 'worked', title: 'What worked', mark: '+', items: r.worked },
+  { key: 'didnt', title: 'What didn’t', mark: '−', items: r.didnt },
+  { key: 'learned', title: 'What I learned', mark: '→', items: r.learned },
+  { key: 'improve', title: 'What I’d improve', mark: '↻', items: r.improve },
+].filter((p) => p.items?.length);
+---
+
+<div class="rf">
+  {
+    parts.map((p) => (
+      <section class={`rf__part rf__part--${p.key}`} data-reveal>
+        <h3 class="rf__title">
+          <i aria-hidden="true">{p.mark}</i>
+          {p.title}
+        </h3>
+        <ul class="rf__list">
+          {p.items!.map((x) => (
+            <li>{x}</li>
+          ))}
+        </ul>
+      </section>
+    ))
+  }
+</div>
+
+<style>
+  .rf {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+    gap: 1px;
+    border: 1px solid var(--line);
+    background: var(--line);
+  }
+
+  .rf__part {
+    padding: clamp(18px, 2.4vw, 34px);
+    background: var(--bg);
+  }
+
+  .rf__title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    font: 400 var(--fs-head) / 1 var(--font-head);
+    letter-spacing: -0.04em;
+  }
+
+  .rf__title i {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 1.2em;
+    height: 1.2em;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--on-accent);
+    font: 600 0.5em/1 var(--font-mono);
+  }
+
+  .rf__list {
+    margin: clamp(14px, 1.8vw, 24px) 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--fs-read);
+    line-height: 1.55;
+  }
+
+  .rf__list li {
+    padding: 11px 0;
+    border-top: 1px solid var(--line);
+  }
+</style>

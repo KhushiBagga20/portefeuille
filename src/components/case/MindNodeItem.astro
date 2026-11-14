@@ -1,0 +1,50 @@
+---
+// One node of the mind map and, by calling itself, everything under it.
+// (Styles are in MindMap.astro.)
+import StageMark from './Stage.astro';
+import type { MindNode } from '../../lib/types';
+
+interface Props {
+  node: MindNode;
+}
+const { node } = Astro.props;
+const kids = node.children ?? [];
+const opens = kids.length > 0 || Boolean(node.note);
+---
+
+<li class="mm__item" role="treeitem" aria-expanded={opens ? 'false' : undefined}>
+  {
+    opens ? (
+      <button class:list={['mm__node', kids.length ? 'mm__node--group' : 'mm__node--leaf']} type="button" data-mm-toggle>
+        <span class="mm__label">{node.label}</span>
+        {node.stage && (
+          <span class="mm__stage">
+            <StageMark stage={node.stage} word={node.stage === 'done' ? 'working' : undefined} />
+          </span>
+        )}
+        {node.note && <span class="mm__note">{node.note}</span>}
+        <i class="mm__n" aria-hidden="true">
+          {kids.length || '+'}
+        </i>
+      </button>
+    ) : (
+      <span class="mm__node mm__node--leaf">
+        <span class="mm__label">{node.label}</span>
+        {node.stage && (
+          <span class="mm__stage">
+            <StageMark stage={node.stage} word={node.stage === 'done' ? 'working' : undefined} />
+          </span>
+        )}
+      </span>
+    )
+  }
+  {
+    kids.length > 0 && (
+      <ul class="mm__kids" role="group">
+        {kids.map((k) => (
+          <Astro.self node={k} />
+        ))}
+      </ul>
+    )
+  }
+</li>

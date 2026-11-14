@@ -1,0 +1,908 @@
+[
+  {
+    "project": {
+      "slug": "conduit",
+      "name": "Conduit",
+      "earlierName": "PUL",
+      "type": "Personal project · native software",
+      "oneLiner": "Wireless Android-to-Mac integration: mirror your phone, control it from your Mac, and use it as an input device.",
+      "preview": "Screen mirroring with hardware H.264 decoding, mouse, trackpad and keyboard control, two-way clipboard, phone audio on the Mac, and automatic reconnection.",
+      "labels": [
+        "Personal project",
+        "Native software"
+      ],
+      "stack": [
+        "Swift",
+        "SwiftUI",
+        "macOS",
+        "Android",
+        "VideoToolbox",
+        "H.264",
+        "AVFoundation",
+        "ADB",
+        "Socket programming"
+      ],
+      "disk": {
+        "tone": "sky",
+        "scribble": "conduit"
+      },
+      "links": {}
+    },
+    "caseStudy": {
+      "slug": "conduit",
+      "status": "published",
+      "intro": {
+        "built": [
+          "Conduit is the final direction of my Android-to-Mac device integration project. It grew out of PUL, the earlier working version, and Conduit is the name it carries forward."
+        ]
+      },
+      "features": [
+        {
+          "title": "Screen",
+          "stage": "done",
+          "items": [
+            "Wireless Android-to-Mac screen mirroring",
+            "Hardware H.264 screen decoding",
+            "Phone screen can stay off while mirroring continues"
+          ]
+        },
+        {
+          "title": "Control",
+          "stage": "done",
+          "items": [
+            "Mouse and trackpad control",
+            "Tap, drag, swipe, scroll and long-press",
+            "Mac keyboard input",
+            "Phone as a trackpad / input device",
+            "Haptic feedback and media-key support"
+          ]
+        },
+        {
+          "title": "Sharing",
+          "stage": "done",
+          "items": [
+            "Two-way clipboard",
+            "Phone audio forwarded to Mac speakers",
+            "Live phone camera access on the Mac",
+            "IMU streaming"
+          ]
+        },
+        {
+          "title": "Connection",
+          "stage": "done",
+          "items": [
+            "Wi-Fi, no cable",
+            "Automatic reconnection after unplugging, sleeping or waking"
+          ]
+        }
+      ],
+      "diagrams": [
+        {
+          "id": "link",
+          "title": "What crosses the link",
+          "basis": "built",
+          "caption": "Two native apps and one wireless link, with every stream that crosses it and the way it travels. Drawn from the working feature list; how each stream works inside is still to be written up.",
+          "nodes": [
+            {
+              "id": "phone",
+              "label": "Android phone",
+              "kind": "device",
+              "col": 0,
+              "row": 0,
+              "rows": 8,
+              "summary": "The native Android side of Conduit.",
+              "details": [
+                "Its screen can stay off while mirroring continues",
+                "Doubles as a trackpad / input device for the Mac"
+              ],
+              "tech": [
+                "Android"
+              ],
+              "stage": "done"
+            },
+            {
+              "id": "mac",
+              "label": "Mac",
+              "kind": "device",
+              "col": 2,
+              "row": 0,
+              "rows": 8,
+              "summary": "The native macOS side of Conduit.",
+              "details": [
+                "Shows the mirrored screen",
+                "Its mouse, trackpad and keyboard drive the phone",
+                "Plays the phone’s audio through its speakers"
+              ],
+              "tech": [
+                "Swift",
+                "SwiftUI",
+                "macOS",
+                "VideoToolbox",
+                "AVFoundation"
+              ],
+              "stage": "done"
+            },
+            {
+              "id": "link",
+              "label": "Wireless link",
+              "kind": "link",
+              "col": 1,
+              "row": 0,
+              "summary": "Everything travels over Wi-Fi. There is no cable.",
+              "details": [
+                "Socket-based communication",
+                "Reconnects by itself after unplugging, sleeping or waking",
+                "Scrcpy protocol work and debugging"
+              ],
+              "tech": [
+                "Socket programming",
+                "ADB"
+              ],
+              "stage": "done"
+            },
+            {
+              "id": "screen",
+              "label": "Screen",
+              "kind": "channel",
+              "col": 1,
+              "row": 1,
+              "summary": "The phone’s screen, mirrored on the Mac.",
+              "details": [
+                "Wireless Android-to-Mac screen mirroring",
+                "Hardware H.264 screen decoding",
+                "Phone screen can stay off while mirroring continues"
+              ],
+              "tech": [
+                "H.264"
+              ],
+              "stage": "done"
+            },
+            {
+              "id": "control",
+              "label": "Control",
+              "kind": "channel",
+              "col": 1,
+              "row": 2,
+              "summary": "The Mac’s own input devices operate the phone.",
+              "details": [
+                "Mouse and trackpad control",
+                "Tap, drag, swipe, scroll and long-press",
+                "Mac keyboard input",
+                "Haptic feedback and media-key support"
+              ],
+              "stage": "done"
+            },
+            {
+              "id": "input",
+              "label": "Phone as input",
+              "kind": "channel",
+              "col": 1,
+              "row": 3,
+              "summary": "The other way round: the phone becomes an input device for the Mac.",
+              "details": [
+                "Phone as a trackpad / input device"
+              ],
+              "stage": "done"
+            },
+            {
+              "id": "clipboard",
+              "label": "Clipboard",
+              "kind": "channel",
+              "col": 1,
+              "row": 4,
+              "summary": "Copy on one, paste on the other.",
+              "details": [
+                "Two-way clipboard"
+              ],
+              "stage": "done"
+            },
+            {
+              "id": "audio",
+              "label": "Audio",
+              "kind": "channel",
+              "col": 1,
+              "row": 5,
+              "summary": "What the phone plays comes out of the Mac.",
+              "details": [
+                "Phone audio forwarded to Mac speakers"
+              ],
+              "stage": "done"
+            },
+            {
+              "id": "camera",
+              "label": "Camera",
+              "kind": "channel",
+              "col": 1,
+              "row": 6,
+              "summary": "The phone’s camera, live on the Mac.",
+              "details": [
+                "Live phone camera access on the Mac"
+              ],
+              "stage": "done"
+            },
+            {
+              "id": "imu",
+              "label": "IMU",
+              "kind": "channel",
+              "col": 1,
+              "row": 7,
+              "summary": "The phone’s motion sensors, as a stream.",
+              "details": [
+                "IMU streaming"
+              ],
+              "stage": "done"
+            }
+          ],
+          "edges": [
+            {
+              "from": "phone",
+              "to": "link",
+              "flow": "both"
+            },
+            {
+              "from": "link",
+              "to": "mac",
+              "flow": "both"
+            },
+            {
+              "from": "phone",
+              "to": "screen",
+              "flow": "forward"
+            },
+            {
+              "from": "screen",
+              "to": "mac",
+              "flow": "forward"
+            },
+            {
+              "from": "phone",
+              "to": "control",
+              "flow": "back"
+            },
+            {
+              "from": "control",
+              "to": "mac",
+              "flow": "back"
+            },
+            {
+              "from": "phone",
+              "to": "input",
+              "flow": "forward"
+            },
+            {
+              "from": "input",
+              "to": "mac",
+              "flow": "forward"
+            },
+            {
+              "from": "phone",
+              "to": "clipboard",
+              "flow": "both"
+            },
+            {
+              "from": "clipboard",
+              "to": "mac",
+              "flow": "both"
+            },
+            {
+              "from": "phone",
+              "to": "audio",
+              "flow": "forward"
+            },
+            {
+              "from": "audio",
+              "to": "mac",
+              "flow": "forward"
+            },
+            {
+              "from": "phone",
+              "to": "camera",
+              "flow": "forward"
+            },
+            {
+              "from": "camera",
+              "to": "mac",
+              "flow": "forward"
+            },
+            {
+              "from": "phone",
+              "to": "imu",
+              "flow": "forward"
+            },
+            {
+              "from": "imu",
+              "to": "mac",
+              "flow": "forward"
+            }
+          ]
+        }
+      ],
+      "mindmap": {
+        "idea": [
+          {
+            "label": "Wireless Android-to-Mac integration",
+            "children": [
+              {
+                "label": "Mirror your phone"
+              },
+              {
+                "label": "Control it from your Mac"
+              },
+              {
+                "label": "Use it as an input device"
+              }
+            ]
+          },
+          {
+            "label": "Began as PUL",
+            "note": "PUL was the earlier working version of this project, before it became Conduit."
+          }
+        ],
+        "implementation": [
+          {
+            "label": "Screen",
+            "stage": "done",
+            "children": [
+              {
+                "label": "Wireless screen mirroring"
+              },
+              {
+                "label": "Hardware H.264 decoding"
+              },
+              {
+                "label": "Phone screen can stay off"
+              }
+            ]
+          },
+          {
+            "label": "Control",
+            "stage": "done",
+            "children": [
+              {
+                "label": "Mouse and trackpad"
+              },
+              {
+                "label": "Tap, drag, swipe, scroll, long-press"
+              },
+              {
+                "label": "Mac keyboard input"
+              },
+              {
+                "label": "Phone as a trackpad"
+              },
+              {
+                "label": "Haptics and media keys"
+              }
+            ]
+          },
+          {
+            "label": "Sharing",
+            "stage": "done",
+            "children": [
+              {
+                "label": "Two-way clipboard"
+              },
+              {
+                "label": "Phone audio on Mac speakers"
+              },
+              {
+                "label": "Live phone camera"
+              },
+              {
+                "label": "IMU streaming"
+              }
+            ]
+          },
+          {
+            "label": "Connection",
+            "stage": "done",
+            "children": [
+              {
+                "label": "Wi-Fi, no cable"
+              },
+              {
+                "label": "Automatic reconnection"
+              }
+            ]
+          },
+          {
+            "label": "Under the hood",
+            "children": [
+              {
+                "label": "Native macOS and Android components"
+              },
+              {
+                "label": "Socket-based communication"
+              },
+              {
+                "label": "Scrcpy protocol work and debugging"
+              }
+            ]
+          }
+        ]
+      },
+      "timeline": [
+        {
+          "title": "PUL",
+          "stage": "done",
+          "body": "The earlier working version of this project, before it became Conduit."
+        },
+        {
+          "title": "Conduit",
+          "stage": "done",
+          "body": "The final direction of the project, and the name it carries forward.",
+          "items": [
+            "Screen mirroring with hardware H.264 decoding",
+            "Mouse, trackpad and keyboard control",
+            "Two-way clipboard, phone audio, live camera and IMU streaming",
+            "Wi-Fi, with automatic reconnection"
+          ]
+        }
+      ],
+      "deepDives": [
+        {
+          "title": "Native macOS and Android components",
+          "kind": "architecture"
+        },
+        {
+          "title": "Socket-based communication",
+          "kind": "protocol"
+        },
+        {
+          "title": "Scrcpy protocol work and debugging",
+          "kind": "debugging"
+        }
+      ]
+    }
+  },
+  {
+    "project": {
+      "slug": "sahaas",
+      "name": "Sahaas",
+      "type": "Ongoing project",
+      "oneLiner": "A crowdsourced civic and mental-health support platform for people affected by atrocities and prolonged legal and social difficulties.",
+      "preview": "Built around continuous support rather than one-time reporting: reaching people across channels, noticing early signs of distress, and routing them toward counselling, legal aid, compensation and protection.",
+      "labels": [
+        "Ongoing",
+        "Hackathon",
+        "Social impact",
+        "AI"
+      ],
+      "event": "Smart India Hackathon",
+      "stack": [
+        "React",
+        "FastAPI",
+        "Firebase",
+        "Supabase",
+        "LLMs",
+        "IVRS"
+      ],
+      "disk": {
+        "tone": "pink",
+        "scribble": "sahaas"
+      },
+      "links": {}
+    },
+    "caseStudy": {
+      "slug": "sahaas",
+      "status": "published",
+      "intro": {
+        "problem": [
+          "People affected by atrocities often go through prolonged legal and social difficulties. Sahaas focuses on continuous support through that time, not only a one-time report."
+        ]
+      },
+      "features": [
+        {
+          "title": "What it is designed to do",
+          "stage": "ongoing",
+          "note": "Ongoing project: these are the ideas it is being built around, and not all of them are live yet.",
+          "items": [
+            "Multi-channel access: web reporting, IVRS / helpline, and SMS, chatbot, mobile or web interfaces where applicable",
+            "Early signal identification",
+            "Distress and support-pattern analysis",
+            "Routing people toward counselling, legal aid, compensation and protection",
+            "Trauma-informed interaction design",
+            "Continuous support rather than one-time reporting"
+          ]
+        }
+      ],
+      "diagrams": [
+        {
+          "id": "flow",
+          "title": "The intended flow",
+          "basis": "designed",
+          "caption": "From first contact to the right kind of help. Ongoing project: these are the ideas it is being built around, and not all of them are live yet.",
+          "nodes": [
+            {
+              "id": "person",
+              "label": "Someone who needs support",
+              "kind": "person",
+              "col": 0,
+              "row": 1.5,
+              "summary": "A person affected by an atrocity, often through a long legal and social process.",
+              "details": [
+                "The design centres on staying with them over time, not on a single report"
+              ]
+            },
+            {
+              "id": "web",
+              "label": "Web reporting",
+              "kind": "channel",
+              "col": 1,
+              "row": 0.5,
+              "summary": "One of the ways in.",
+              "stage": "ongoing"
+            },
+            {
+              "id": "ivrs",
+              "label": "IVRS / helpline",
+              "kind": "channel",
+              "col": 1,
+              "row": 1.5,
+              "summary": "A helpline, as another of the ways in.",
+              "tech": [
+                "IVRS"
+              ],
+              "stage": "ongoing"
+            },
+            {
+              "id": "other",
+              "label": "SMS, chatbot, mobile",
+              "kind": "channel",
+              "col": 1,
+              "row": 2.5,
+              "summary": "SMS, chatbot, mobile or web interfaces where applicable.",
+              "stage": "ongoing"
+            },
+            {
+              "id": "signals",
+              "label": "Early signal identification",
+              "kind": "step",
+              "col": 2,
+              "row": 1,
+              "summary": "Noticing early signs of distress.",
+              "stage": "ongoing"
+            },
+            {
+              "id": "patterns",
+              "label": "Distress & support-pattern analysis",
+              "kind": "step",
+              "col": 2,
+              "row": 2,
+              "summary": "Distress and support-pattern analysis.",
+              "stage": "ongoing"
+            },
+            {
+              "id": "routing",
+              "label": "Routing",
+              "kind": "service",
+              "col": 3,
+              "row": 1.5,
+              "summary": "Routing people toward counselling, legal aid, compensation and protection.",
+              "details": [
+                "Trauma-informed interaction design"
+              ],
+              "stage": "ongoing"
+            },
+            {
+              "id": "counselling",
+              "label": "Counselling",
+              "kind": "outcome",
+              "col": 4,
+              "row": 0,
+              "stage": "ongoing"
+            },
+            {
+              "id": "legal",
+              "label": "Legal aid",
+              "kind": "outcome",
+              "col": 4,
+              "row": 1,
+              "stage": "ongoing"
+            },
+            {
+              "id": "compensation",
+              "label": "Compensation",
+              "kind": "outcome",
+              "col": 4,
+              "row": 2,
+              "stage": "ongoing"
+            },
+            {
+              "id": "protection",
+              "label": "Protection",
+              "kind": "outcome",
+              "col": 4,
+              "row": 3,
+              "stage": "ongoing"
+            }
+          ],
+          "edges": [
+            {
+              "from": "person",
+              "to": "web",
+              "flow": "forward"
+            },
+            {
+              "from": "person",
+              "to": "ivrs",
+              "flow": "forward"
+            },
+            {
+              "from": "person",
+              "to": "other",
+              "flow": "forward"
+            },
+            {
+              "from": "web",
+              "to": "signals",
+              "flow": "forward"
+            },
+            {
+              "from": "ivrs",
+              "to": "signals",
+              "flow": "forward"
+            },
+            {
+              "from": "other",
+              "to": "signals",
+              "flow": "forward"
+            },
+            {
+              "from": "web",
+              "to": "patterns",
+              "flow": "forward"
+            },
+            {
+              "from": "ivrs",
+              "to": "patterns",
+              "flow": "forward"
+            },
+            {
+              "from": "other",
+              "to": "patterns",
+              "flow": "forward"
+            },
+            {
+              "from": "signals",
+              "to": "routing",
+              "flow": "forward"
+            },
+            {
+              "from": "patterns",
+              "to": "routing",
+              "flow": "forward"
+            },
+            {
+              "from": "routing",
+              "to": "counselling",
+              "flow": "forward"
+            },
+            {
+              "from": "routing",
+              "to": "legal",
+              "flow": "forward"
+            },
+            {
+              "from": "routing",
+              "to": "compensation",
+              "flow": "forward"
+            },
+            {
+              "from": "routing",
+              "to": "protection",
+              "flow": "forward"
+            }
+          ]
+        }
+      ],
+      "mindmap": {
+        "idea": [
+          {
+            "label": "Continuous support, not a one-time report",
+            "note": "People affected by atrocities often go through prolonged legal and social difficulties. Sahaas focuses on continuous support through that time."
+          },
+          {
+            "label": "Crowdsourced civic and mental-health support"
+          }
+        ],
+        "implementation": [
+          {
+            "label": "Ways in",
+            "stage": "ongoing",
+            "children": [
+              {
+                "label": "Web reporting"
+              },
+              {
+                "label": "IVRS / helpline"
+              },
+              {
+                "label": "SMS, chatbot, mobile or web"
+              }
+            ]
+          },
+          {
+            "label": "Noticing",
+            "stage": "ongoing",
+            "children": [
+              {
+                "label": "Early signal identification"
+              },
+              {
+                "label": "Distress and support-pattern analysis"
+              }
+            ]
+          },
+          {
+            "label": "Routing toward",
+            "stage": "ongoing",
+            "children": [
+              {
+                "label": "Counselling"
+              },
+              {
+                "label": "Legal aid"
+              },
+              {
+                "label": "Compensation"
+              },
+              {
+                "label": "Protection"
+              }
+            ]
+          },
+          {
+            "label": "Trauma-informed interaction design",
+            "stage": "ongoing"
+          }
+        ]
+      },
+      "timeline": [
+        {
+          "title": "Smart India Hackathon",
+          "stage": "ongoing",
+          "body": "Ongoing, connected to the Smart India Hackathon."
+        }
+      ]
+    }
+  },
+  {
+    "project": {
+      "slug": "mind-pop",
+      "name": "Mind Pop",
+      "type": "Hackathon project",
+      "oneLiner": "An AI study tool with a neo-brutalist design.",
+      "preview": "Selected in the top 15 of roughly 400 teams at HackNWin 2025, with a shoutout from GDG Jalandhar.",
+      "labels": [
+        "Hackathon",
+        "Recognition",
+        "AI",
+        "Product design"
+      ],
+      "event": "HackNWin Hackathon · CGC · 2025",
+      "outcome": [
+        "Top 15 of ~400 teams",
+        "Shoutout from GDG Jalandhar"
+      ],
+      "disk": {
+        "tone": "lemon",
+        "scribble": "mind pop"
+      },
+      "links": {}
+    },
+    "caseStudy": {
+      "slug": "mind-pop",
+      "status": "published",
+      "intro": {
+        "built": [
+          "An AI study tool, designed in a neo-brutalist style."
+        ]
+      },
+      "timeline": [
+        {
+          "title": "HackNWin Hackathon",
+          "date": "2025",
+          "stage": "done",
+          "kind": "recognition",
+          "items": [
+            "Selected in the top 15 teams out of approximately 400",
+            "Received a shoutout from GDG Jalandhar"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "project": {
+      "slug": "kinetic",
+      "name": "Kinetic",
+      "type": "Agentic AI hackathon project",
+      "labels": [
+        "Hackathon",
+        "Recognition",
+        "AI"
+      ],
+      "outcome": [
+        "₹6000 prize"
+      ],
+      "disk": {
+        "tone": "lilac",
+        "scribble": "kinetic"
+      },
+      "links": {}
+    },
+    "caseStudy": {
+      "slug": "kinetic",
+      "status": "published",
+      "intro": {},
+      "timeline": [
+        {
+          "title": "Agentic AI hackathon",
+          "stage": "done",
+          "kind": "recognition",
+          "items": [
+            "₹6000 prize"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "project": {
+      "slug": "verifai",
+      "name": "VerifAI",
+      "type": "Hackathon project",
+      "oneLiner": "An AI system for identifying and analysing bias in decision-making, such as job and loan applications.",
+      "labels": [
+        "Hackathon",
+        "AI"
+      ],
+      "event": "Hack Helix 6.0 · Thapar · ~100 teams",
+      "disk": {
+        "tone": "mint",
+        "scribble": "verifai"
+      },
+      "links": {}
+    },
+    "caseStudy": {
+      "slug": "verifai",
+      "status": "published",
+      "intro": {
+        "built": [
+          "VerifAI is an AI system focused on identifying and analysing bias in decision-making systems, such as job applications, loan applications and similar decisions."
+        ]
+      },
+      "timeline": [
+        {
+          "title": "Hack Helix 6.0",
+          "stage": "done",
+          "items": [
+            "Competed among approximately 100 teams at Hack Helix 6.0, Thapar"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "project": {
+      "slug": "kinetic-city",
+      "name": "Kinetic City",
+      "type": "Hackathon project",
+      "labels": [
+        "Hackathon"
+      ],
+      "event": "Finvasia Hackathon",
+      "disk": {
+        "tone": "tomato",
+        "scribble": "kinetic city"
+      },
+      "links": {}
+    },
+    "caseStudy": {
+      "slug": "kinetic-city",
+      "status": "published",
+      "intro": {}
+    }
+  }
+]

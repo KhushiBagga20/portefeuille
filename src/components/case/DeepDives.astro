@@ -1,0 +1,294 @@
+---
+// Technical deep dives. Each one stays folded to a single line until someone wants it, so a
+// casual reader passes a tidy list of topics and a curious one can open any of them.
+// A topic that has no notes yet is listed, not offered: there is nothing to open.
+import type { DeepDive } from '../../lib/types';
+
+interface Props {
+  dives: DeepDive[];
+}
+const { dives } = Astro.props;
+const no = (i: number) => String(i + 1).padStart(2, '0');
+const written = dives.filter((d) => d.body?.length);
+---
+
+<div class="dv">
+  <p class="dv__sum mono">
+    {dives.length} {dives.length === 1 ? 'topic' : 'topics'} · {written.length} written up
+    {written.length > 0 && ' · open any of them'}
+  </p>
+
+  <ol class="dv__list">
+    {
+      dives.map((d, i) =>
+        d.body?.length ? (
+          <li class="dv__item">
+            <details>
+              <summary>
+                <span class="dv__no mono">{no(i)}</span>
+                <span class="dv__title">{d.title}</span>
+                {d.kind && <span class="dv__kind mono">{d.kind}</span>}
+                <i class="dv__plus" aria-hidden="true" />
+              </summary>
+              <div class="dv__body">
+                {d.summary && <p class="dv__lede">{d.summary}</p>}
+                <div class="dv__text read">
+                  {d.body.map((para) => (
+                    <p>{para}</p>
+                  ))}
+                </div>
+                {(d.chose || d.because || d.tradeoff) && (
+                  <dl class="dv__record">
+                    {d.chose && (
+                      <div>
+                        <dt>chose</dt>
+                        <dd>{d.chose}</dd>
+                      </div>
+                    )}
+                    {d.because && (
+                      <div>
+                        <dt>because</dt>
+                        <dd>{d.because}</dd>
+                      </div>
+                    )}
+                    {d.tradeoff && (
+                      <div>
+                        <dt>the cost</dt>
+                        <dd>{d.tradeoff}</dd>
+                      </div>
+                    )}
+                  </dl>
+                )}
+                {d.code && (
+                  <figure class="dv__code">
+                    <pre tabindex="0"><code data-lang={d.code.lang}>{d.code.source}</code></pre>
+                    <figcaption class="mono">{[d.code.lang, d.code.caption].filter(Boolean).join(' · ')}</figcaption>
+                  </figure>
+                )}
+              </div>
+            </details>
+          </li>
+        ) : (
+          <li class="dv__item dv__item--todo">
+            <p class="dv__row">
+              <span class="dv__no mono">{no(i)}</span>
+              <span class="dv__title">{d.title}</span>
+              {d.kind && <span class="dv__kind mono">{d.kind}</span>}
+              <span class="dv__soon mono">notes to come</span>
+            </p>
+            {d.summary && <p class="dv__lede dv__lede--todo">{d.summary}</p>}
+          </li>
+        ),
+      )
+    }
+  </ol>
+</div>
+
+<style>
+  .dv__sum {
+    margin: 0;
+    color: var(--fg-2);
+  }
+
+  .dv__list {
+    margin: clamp(16px, 2vw, 26px) 0 0;
+    padding: 0;
+    border-bottom: 1px solid var(--line);
+    list-style: none;
+  }
+
+  .dv__item {
+    border-top: 1px solid var(--line);
+  }
+
+  summary,
+  .dv__row {
+    display: grid;
+    grid-template-columns: 4ch minmax(0, 1fr) auto auto;
+    align-items: baseline;
+    gap: 6px clamp(12px, 2vw, 28px);
+    margin: 0;
+    padding: clamp(16px, 2vw, 26px) 0;
+    list-style: none;
+  }
+
+  summary {
+    cursor: pointer;
+    transition: padding 0.3s var(--ease-out);
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .dv__no {
+    color: var(--accent);
+  }
+
+  .dv__title {
+    font: 400 clamp(21px, 2.3vw, 36px) / 1.05 var(--font-head);
+    letter-spacing: -0.04em;
+  }
+
+  .dv__kind,
+  .dv__soon {
+    color: var(--fg-2);
+  }
+
+  .dv__soon {
+    padding: 5px 9px 4px;
+    border: 1px dashed currentColor;
+  }
+
+  .dv__item--todo .dv__title {
+    color: var(--fg-2);
+  }
+
+  .dv__plus {
+    position: relative;
+    align-self: center;
+    width: 22px;
+    height: 22px;
+  }
+
+  .dv__plus::before,
+  .dv__plus::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    border-top: 2px solid currentColor;
+    transition: rotate 0.35s var(--ease-out);
+  }
+
+  .dv__plus::after {
+    rotate: 90deg;
+  }
+
+  details[open] .dv__plus::after {
+    rotate: 0deg;
+  }
+
+  @media (hover: hover) {
+    summary:hover {
+      padding-left: 10px;
+    }
+
+    summary:hover .dv__title {
+      color: var(--accent);
+    }
+  }
+
+  .dv__body {
+    display: grid;
+    gap: clamp(16px, 2vw, 26px);
+    max-width: 78ch;
+    padding: 0 0 clamp(22px, 3vw, 40px) calc(4ch + clamp(12px, 2vw, 28px));
+  }
+
+  .dv__lede {
+    margin: 0;
+    font-size: var(--fs-lede);
+    font-weight: 500;
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+  }
+
+  .dv__lede--todo {
+    max-width: 70ch;
+    margin: -6px 0 clamp(16px, 2vw, 26px) calc(4ch + clamp(12px, 2vw, 28px));
+    color: var(--fg-2);
+    font-size: 16px;
+    font-weight: 450;
+    letter-spacing: 0;
+  }
+
+  .dv__text :global(p) {
+    margin: 0 0 1em;
+  }
+
+  /* the decision, as a record */
+  .dv__record {
+    display: grid;
+    margin: 0;
+    border: 1px solid var(--line);
+  }
+
+  .dv__record div {
+    display: grid;
+    grid-template-columns: 11ch minmax(0, 1fr);
+    gap: 14px;
+    padding: 12px 14px;
+  }
+
+  .dv__record div + div {
+    border-top: 1px solid var(--line);
+  }
+
+  .dv__record dt {
+    color: var(--accent);
+    font: 500 12px/1.6 var(--font-mono);
+  }
+
+  .dv__record dd {
+    margin: 0;
+    font-size: 15.5px;
+    line-height: 1.5;
+  }
+
+  .dv__code {
+    margin: 0;
+  }
+
+  .dv__code pre {
+    margin: 0;
+    padding: 16px 18px;
+    border: 1px solid var(--line);
+    background: color-mix(in srgb, var(--fg) 6%, transparent);
+    font: 400 13.5px/1.6 var(--font-mono);
+    overflow-x: auto;
+    tab-size: 2;
+  }
+
+  .dv__code figcaption {
+    margin-top: 8px;
+    color: var(--fg-2);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    details[open] .dv__body {
+      animation: dv-open 0.45s var(--ease-out);
+    }
+
+    @keyframes dv-open {
+      from {
+        opacity: 0;
+        translate: 0 -10px;
+      }
+    }
+  }
+
+  @media (max-width: 599px) {
+    summary,
+    .dv__row {
+      grid-template-columns: 4ch minmax(0, 1fr) auto;
+    }
+
+    .dv__kind {
+      grid-column: 2;
+      grid-row: 2;
+    }
+
+    .dv__soon {
+      grid-column: 2;
+      justify-self: start;
+    }
+
+    .dv__body,
+    .dv__lede--todo {
+      padding-left: 0;
+      margin-left: 0;
+    }
+  }
+</style>

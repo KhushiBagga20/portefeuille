@@ -1,6 +1,10 @@
 // ─────────────────────────────────────────────
-// Projects: one source of truth for the floppy disks, the archive cards
-// and every case-study page (/projects/<slug>).
+// Projects: the card-level facts — what the index, the floppy disks, the skills graph and
+// the top of each case study use. The case study itself (architecture, timeline, deep
+// dives…) lives beside this file in src/data/case-studies/<slug>.ts.
+//
+// Pages never import this file directly: they ask src/lib/content.ts, so this data can be
+// swapped for an API later without touching a component.
 //
 // House rules:
 // - Only write what's confirmed. Leave a field out (or an item list empty) when you don't
@@ -9,55 +13,18 @@
 // - `todo` is a note to yourself. It's never shown on the site.
 // ─────────────────────────────────────────────
 
-export type Label =
-  | 'Hackathon'
-  | 'Recognition'
-  | 'Ongoing'
-  | 'AI'
-  | 'Social impact'
-  | 'Product design'
-  | 'Native software'
-  | 'Personal project'
-  | 'Workshop';
+import type { ArchiveItem, DiskTone, Project } from '../lib/types';
+export type { ArchiveItem, DiskTone, Label, Project } from '../lib/types';
 
-export type DiskTone = 'tomato' | 'pink' | 'lilac' | 'lemon' | 'sky' | 'mint';
-
-/** Disk plastic, its shaded edge, and the ink that reads on it. Rows and case studies borrow these. */
-export const diskTones: Record<DiskTone, { body: string; shade: string; on: string }> = {
-  tomato: { body: '#ff4d1f', shade: '#d83a10', on: '#0c0d21' },
-  pink: { body: '#ff2a85', shade: '#d81a6b', on: '#0c0d21' },
-  lilac: { body: '#7a3cff', shade: '#5c22e0', on: '#ffffff' },
-  lemon: { body: '#d6ff3d', shade: '#b2dc1a', on: '#0c0d21' },
-  sky: { body: '#2238ff', shade: '#1426d4', on: '#ffffff' },
-  mint: { body: '#0c0d21', shade: '#000000', on: '#f3f3ef' },
-};
-
-/** A case-study block. Leave `body`/`items`/`groups` out to show "details coming soon". */
-export type CaseSection = {
-  title: string;
-  kind?: 'working' | 'planned' | 'history' | 'outcome';
-  body?: string;
-  items?: string[];
-  groups?: { title: string; items: string[] }[];
-  note?: string;
-};
-
-export type Project = {
-  slug: string;
-  name: string;
-  earlierName?: string;
-  type: string; // project type / status (the event is added after it automatically)
-  oneLiner?: string;
-  preview?: string; // short case-study teaser for the card
-  labels: Label[];
-  event?: string;
-  outcome?: string[]; // confirmed results only
-  role?: string; // confirmed contribution only
-  stack?: string[]; // confirmed technologies only
-  disk: { tone: DiskTone; scribble: string };
-  sections: CaseSection[];
-  links: { github?: string; demo?: string };
-  todo?: string[];
+/** Disk plastic, its shaded edge, the ink that reads on it, and `glow`: the same colour
+ *  lifted far enough to read on a dark ground (the case studies' dark bands use it). */
+export const diskTones: Record<DiskTone, { body: string; shade: string; on: string; glow: string }> = {
+  tomato: { body: '#ff4d1f', shade: '#d83a10', on: '#0c0d21', glow: '#ff6a40' },
+  pink: { body: '#ff2a85', shade: '#d81a6b', on: '#0c0d21', glow: '#ff4f9a' },
+  lilac: { body: '#7a3cff', shade: '#5c22e0', on: '#ffffff', glow: '#b196ff' },
+  lemon: { body: '#d6ff3d', shade: '#b2dc1a', on: '#0c0d21', glow: '#d6ff3d' },
+  sky: { body: '#2238ff', shade: '#1426d4', on: '#ffffff', glow: '#8f9bff' },
+  mint: { body: '#0c0d21', shade: '#000000', on: '#f3f3ef', glow: '#ffae00' },
 };
 
 export const projects: Project[] = [
@@ -72,54 +39,6 @@ export const projects: Project[] = [
     labels: ['Personal project', 'Native software'],
     stack: ['Swift', 'SwiftUI', 'macOS', 'Android', 'VideoToolbox', 'H.264', 'AVFoundation', 'ADB', 'Socket programming'],
     disk: { tone: 'sky', scribble: 'conduit' },
-    sections: [
-      {
-        title: 'What it is',
-        body: 'Conduit is the final direction of my Android-to-Mac device integration project. It grew out of PUL, the earlier working version, and Conduit is the name it carries forward.',
-      },
-      {
-        title: 'Working features',
-        kind: 'working',
-        groups: [
-          {
-            title: 'Screen',
-            items: [
-              'Wireless Android-to-Mac screen mirroring',
-              'Hardware H.264 screen decoding',
-              'Phone screen can stay off while mirroring continues',
-            ],
-          },
-          {
-            title: 'Control',
-            items: [
-              'Mouse and trackpad control',
-              'Tap, drag, swipe, scroll and long-press',
-              'Mac keyboard input',
-              'Phone as a trackpad / input device',
-              'Haptic feedback and media-key support',
-            ],
-          },
-          {
-            title: 'Sharing',
-            items: ['Two-way clipboard', 'Phone audio forwarded to Mac speakers', 'Live phone camera access on the Mac', 'IMU streaming'],
-          },
-          {
-            title: 'Connection',
-            items: ['Wi-Fi, no cable', 'Automatic reconnection after unplugging, sleeping or waking'],
-          },
-        ],
-      },
-      {
-        title: 'Under the hood',
-        items: ['Native macOS and Android components', 'Socket-based communication', 'Scrcpy protocol work and debugging'],
-      },
-      { title: 'Planned next', kind: 'planned' },
-      {
-        title: 'Earlier: PUL',
-        kind: 'history',
-        body: 'PUL was the earlier working version of this project, before it became Conduit.',
-      },
-    ],
     links: {},
     todo: [
       'Planned / future Conduit features',
@@ -140,26 +59,6 @@ export const projects: Project[] = [
     event: 'Smart India Hackathon',
     stack: ['React', 'FastAPI', 'Firebase', 'Supabase', 'LLMs', 'IVRS'],
     disk: { tone: 'pink', scribble: 'sahaas' },
-    sections: [
-      {
-        title: 'Who it is for',
-        body: 'People affected by atrocities often go through prolonged legal and social difficulties. Sahaas focuses on continuous support through that time, not only a one-time report.',
-      },
-      {
-        title: 'What it is designed to do',
-        note: 'Ongoing project: these are the ideas it is being built around, and not all of them are live yet.',
-        items: [
-          'Multi-channel access: web reporting, IVRS / helpline, and SMS, chatbot, mobile or web interfaces where applicable',
-          'Early signal identification',
-          'Distress and support-pattern analysis',
-          'Routing people toward counselling, legal aid, compensation and protection',
-          'Trauma-informed interaction design',
-          'Continuous support rather than one-time reporting',
-        ],
-      },
-      { title: 'My role' },
-      { title: 'Where it is now', kind: 'outcome', body: 'Ongoing, connected to the Smart India Hackathon.' },
-    ],
     links: {},
     todo: ['Your role / contribution', 'What is built so far vs. planned', 'SIH stage or result', 'Links or screenshots'],
   },
@@ -173,16 +72,6 @@ export const projects: Project[] = [
     event: 'HackNWin Hackathon · CGC · 2025',
     outcome: ['Top 15 of ~400 teams', 'Shoutout from GDG Jalandhar'],
     disk: { tone: 'lemon', scribble: 'mind pop' },
-    sections: [
-      { title: 'The idea', body: 'An AI study tool, designed in a neo-brutalist style.' },
-      { title: 'Features' },
-      { title: 'My role' },
-      {
-        title: 'Outcome',
-        kind: 'outcome',
-        items: ['Selected in the top 15 teams out of approximately 400', 'Received a shoutout from GDG Jalandhar'],
-      },
-    ],
     links: {},
     todo: ['Feature list', 'Technologies', 'Your contribution', 'Links or screenshots'],
   },
@@ -193,12 +82,6 @@ export const projects: Project[] = [
     labels: ['Hackathon', 'Recognition', 'AI'],
     outcome: ['₹6000 prize'],
     disk: { tone: 'lilac', scribble: 'kinetic' },
-    sections: [
-      { title: 'The idea' },
-      { title: 'What it does' },
-      { title: 'My role' },
-      { title: 'Outcome', kind: 'outcome', items: ['₹6000 prize'] },
-    ],
     links: {},
     todo: [
       'Exact hackathon name',
@@ -218,16 +101,6 @@ export const projects: Project[] = [
     labels: ['Hackathon', 'AI'],
     event: 'Hack Helix 6.0 · Thapar · ~100 teams',
     disk: { tone: 'mint', scribble: 'verifai' },
-    sections: [
-      {
-        title: 'The idea',
-        body: 'VerifAI is an AI system focused on identifying and analysing bias in decision-making systems, such as job applications, loan applications and similar decisions.',
-      },
-      { title: 'Features' },
-      { title: 'My role' },
-      { title: 'At the event', items: ['Competed among approximately 100 teams at Hack Helix 6.0, Thapar'] },
-      { title: 'Result', kind: 'outcome' },
-    ],
     links: {},
     todo: ['Final result', 'Features', 'Technologies', 'Your contribution', 'Links or screenshots'],
   },
@@ -238,7 +111,6 @@ export const projects: Project[] = [
     labels: ['Hackathon'],
     event: 'Finvasia Hackathon',
     disk: { tone: 'tomato', scribble: 'kinetic city' },
-    sections: [{ title: 'The idea' }, { title: 'What it does' }, { title: 'My role' }, { title: 'Demo' }, { title: 'Outcome', kind: 'outcome' }],
     links: {},
     todo: ['Description / problem statement', 'Features', 'Technologies', 'Your contribution', 'Demo link', 'Outcome'],
   },
@@ -247,17 +119,6 @@ export const projects: Project[] = [
 // ─────────────────────────────────────────────
 // Archive: smaller things that shouldn't compete with the featured disks.
 // ─────────────────────────────────────────────
-
-export type ArchiveItem = {
-  name: string;
-  type: string;
-  labels: Label[];
-  description?: string;
-  points?: string[];
-  stack?: string[];
-  links: { github?: string; demo?: string };
-  todo?: string[];
-};
 
 export const archive: ArchiveItem[] = [
   {

@@ -20,6 +20,8 @@ export type Room = {
   line: string;
   accent: string;
   onAccent: string;
+  /** false while the room is still being built: it shows on the plan but isn't a door yet */
+  open: boolean;
 };
 
 export const playground = {
@@ -39,6 +41,7 @@ export const rooms: Room[] = [
     line: 'Things to fidget with. First on the bench: a cube that really turns.',
     accent: 'var(--room-lab)',
     onAccent: '#0c0d21',
+    open: true,
   },
   {
     id: 'art',
@@ -48,6 +51,7 @@ export const rooms: Room[] = [
     line: 'A wall you can rearrange. Drag the frames, open one up close.',
     accent: 'var(--room-art)',
     onAccent: '#0c0d21',
+    open: false,
   },
   {
     id: 'writing',
@@ -57,6 +61,7 @@ export const rooms: Room[] = [
     line: 'Poems, essays and fiction, set to be read slowly.',
     accent: 'var(--room-writing)',
     onAccent: '#0c0d21',
+    open: false,
   },
   {
     id: 'records',
@@ -66,6 +71,7 @@ export const rooms: Room[] = [
     line: 'A turntable that works, and the crate that goes with it.',
     accent: 'var(--room-records)',
     onAccent: '#0c0d21',
+    open: true,
   },
   {
     id: 'films',
@@ -75,7 +81,11 @@ export const rooms: Room[] = [
     line: 'A filmstrip of the films and shows I keep.',
     accent: 'var(--room-films)',
     onAccent: '#0c0d21',
+    open: false,
   },
 ];
+
+/** the rooms a visitor can actually walk into today */
+export const openRooms = rooms.filter((r) => r.open);
 
 export const room = (id: RoomId) => rooms.find((r) => r.id === id)!;
