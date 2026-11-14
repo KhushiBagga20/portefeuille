@@ -51,7 +51,7 @@ export const rooms: Room[] = [
     line: 'A wall you can rearrange. Drag the frames, open one up close.',
     accent: 'var(--room-art)',
     onAccent: '#0c0d21',
-    open: false,
+    open: true,
   },
   {
     id: 'writing',

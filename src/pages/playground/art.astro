@@ -1,0 +1,962 @@
+---
+// Room 02. The art gallery: a lit wall in the middle of the dark Playground.
+//
+// Not a grid of cards. The frames are hung salon-style by scripts/hang.ts — large ones
+// alone, small ones stacked in pairs, nothing in a tidy row — on a wall longer than the
+// window. With a mouse you walk along it by scrolling and can take frames down and move
+// them; a click opens a piece in a dark viewer with everything known about it.
+// On phones and touch screens the same frames are laid out down the page instead.
+//
+// What hangs here is listed in src/data/art.ts.
+import Play from '../../layouts/Play.astro';
+import PosterHead from '../../components/PosterHead.astro';
+import { room } from '../../data/playground';
+import { getArtCollections, getArtworks } from '../../lib/content';
+import { hang } from '../../scripts/hang';
+
+const r = room('art');
+const works = await getArtworks();
+const collections = await getArtCollections();
+const { pieces, width } = hang(works.map((w) => ({ id: w.id, ratio: w.ratio, size: w.size })));
+const at = new Map(pieces.map((p) => [p.id, p]));
+const samples = works.some((w) => w.sample);
+const two = (n: number) => String(n).padStart(2, '0');
+
+// the nearest everyday name for a frame's shape, for the label on an empty one
+const shapes: [number, string][] = [
+  [1, '1 : 1'],
+  [4 / 5, '4 : 5'],
+  [5 / 4, '5 : 4'],
+  [3 / 4, '3 : 4'],
+  [4 / 3, '4 : 3'],
+  [2 / 3, '2 : 3'],
+  [3 / 2, '3 : 2'],
+  [16 / 9, '16 : 9'],
+  [9 / 16, '9 : 16'],
+];
+const shapeOf = (ratio: number) => shapes.reduce((best, s) => (Math.abs(s[0] - ratio) < Math.abs(best[0] - ratio) ? s : best))[1];
+const tints = ['var(--cobalt)', 'var(--marigold-deep)', 'var(--magenta)', 'var(--violet)', 'var(--signal)'];
+
+// what the browser needs to re-hang the wall and fill the viewer
+const payload = works.map((w) => ({
+  id: w.id,
+  no: w.no,
+  ratio: w.ratio,
+  size: w.size,
+  title: w.title,
+  date: w.date,
+  medium: w.medium,
+  collection: w.collection,
+  collectionName: w.collectionName,
+  description: w.description,
+  note: w.note,
+  sample: w.sample,
+  full: w.image?.full,
+  alt: w.image?.alt,
+}));
+---
+
+<Play here="art" title="Art" description="A gallery wall you can walk along and rearrange. Open any frame to see the piece up close, with its date, medium and notes.">
+  <section class="gallery" data-gallery data-works={JSON.stringify(payload)} style={`--wall-w:${width.toFixed(1)}`} aria-labelledby="gallery-title">
+    <div class="gallery__pin">
+      <header class="gallery__head">
+        <PosterHead index={r.no} name={r.name} note={`${works.length} ${works.length === 1 ? 'frame' : 'frames'} · ${collections.length} ${collections.length === 1 ? 'collection' : 'collections'}`} />
+
+        <div class="gallery__bar">
+          <h1 id="gallery-title" class="gallery__title">
+            The wall <sup class="mono" data-count>{two(works.length)}</sup>
+          </h1>
+
+          {
+            collections.length > 1 && (
+              <div class="filters" role="group" aria-label="Show one collection">
+                <button type="button" data-filter="all" aria-pressed="true">
+                  everything
+                </button>
+                {collections.map((c) => (
+                  <button type="button" data-filter={c.id} aria-pressed="false" title={c.line}>
+                    {c.name} <i>{two(c.count)}</i>
+                  </button>
+                ))}
+              </div>
+            )
+          }
+
+          <button class="rehang" type="button" data-rehang hidden>straighten the wall</button>
+        </div>
+
+        <p class="gallery__how mono">
+          <span class="gallery__how-walk">scroll to walk the wall · drag a frame to move it · click one to look closer</span>
+          <span class="gallery__how-tap">tap a frame to look closer</span>
+          {samples && <span class="gallery__sample">sample frames for now — the real work hangs here once it is added</span>}
+        </p>
+      </header>
+
+      <div class="wall" data-wall>
+        <div class="wall__track">
+          <!-- the room's name, painted on the wall behind the frames -->
+          <p class="wall__word" aria-hidden="true">Gallery</p>
+
+          <ul class="wall__list">
+            {
+              works.map((w, i) => {
+                const p = at.get(w.id)!;
+                return (
+                  <li
+                    class:list={['piece', { 'piece--low': p.y + p.h > 84 }]}
+                    data-piece={w.id}
+                    data-size={w.size}
+                    style={`--x:${p.x.toFixed(2)};--y:${p.y.toFixed(2)};--w:${p.w.toFixed(2)};--h:${p.h.toFixed(2)};--tilt:${p.tilt.toFixed(2)}deg;--depth:${p.depth.toFixed(3)};--ratio:${w.ratio.toFixed(4)};--i:${Math.min(i, 8)};--tint:${tints[i % tints.length]}`}
+                  >
+                    <button class="piece__hit" type="button" aria-haspopup="dialog" aria-label={`${w.title}${w.sample ? ' (a sample frame)' : ''}. Look closer.`}>
+                      <span class="piece__frame">
+                        {w.image ? (
+                          <img data-art src={w.image.src} alt={w.image.alt} width={w.image.width} height={w.image.height} loading={i < 4 ? 'eager' : 'lazy'} decoding="async" draggable="false" />
+                        ) : (
+                          <span class="blank" data-art>
+                            <span class="blank__no">sample {w.no}</span>
+                            <span class="blank__say">your artwork here</span>
+                            <span class="blank__shape">{shapeOf(w.ratio)}</span>
+                          </span>
+                        )}
+                      </span>
+                    </button>
+                    <p class="piece__plate">
+                      <span class="piece__no mono">{w.no}</span>
+                      <b>{w.title}</b>
+                      <span class="piece__meta">{[w.medium, w.date].filter(Boolean).join(' · ')}</span>
+                    </p>
+                  </li>
+                );
+              })
+            }
+          </ul>
+        </div>
+
+        <span class="wall__floor" aria-hidden="true"></span>
+        <span class="wall__meter" data-meter aria-hidden="true"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- the viewer: lights down, one piece at a time -->
+  <dialog class="viewer" data-viewer aria-labelledby="viewer-title">
+    <div class="viewer__in">
+      <div class="viewer__stage">
+        <div class="viewer__art" data-viewer-art></div>
+      </div>
+
+      <aside class="viewer__info">
+        <p class="viewer__k mono"><span data-v="count"></span><span data-v="collection"></span></p>
+        <h2 id="viewer-title" class="viewer__title" data-v="title"></h2>
+        <p class="viewer__sample mono" data-v-sample hidden>a sample frame, not a real piece</p>
+
+        <dl class="viewer__meta">
+          <div data-v-row="date">
+            <dt>date</dt>
+            <dd data-v="date"></dd>
+          </div>
+          <div data-v-row="medium">
+            <dt>medium</dt>
+            <dd data-v="medium"></dd>
+          </div>
+        </dl>
+
+        <p class="viewer__desc" data-v="description"></p>
+
+        <div class="viewer__note" data-v-row="note">
+          <p class="mono">a note</p>
+          <p data-v="note"></p>
+        </div>
+
+        <div class="viewer__nav">
+          <button type="button" data-viewer-prev aria-label="Previous piece">←</button>
+          <button type="button" data-viewer-next aria-label="Next piece">→</button>
+          <button type="button" class="viewer__close" data-viewer-close>close <kbd>esc</kbd></button>
+        </div>
+      </aside>
+    </div>
+  </dialog>
+</Play>
+
+<script>
+  import { initGallery } from '../../scripts/gallery';
+  document.querySelectorAll<HTMLElement>('[data-gallery]').forEach(initGallery);
+</script>
+
+<style>
+  /* ── the room: a lit wall ───────────── */
+  .gallery {
+    --wall: #e9e7df;
+    --bg: var(--wall);
+    --fg: #0c0d21;
+    --fg-2: #4b4d68;
+    --line: rgb(12 13 33 / 0.2);
+    --accent: var(--room-art);
+    --on-accent: #0c0d21;
+    position: relative;
+    background: var(--wall);
+    color: var(--fg);
+  }
+
+  .gallery__head {
+    position: relative;
+    z-index: 3;
+    padding: clamp(18px, 2.4vw, 34px) var(--gutter) 0;
+  }
+
+  .gallery__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px clamp(16px, 2.4vw, 36px);
+    margin-top: clamp(12px, 1.6vw, 22px);
+  }
+
+  .gallery__title {
+    margin: 0;
+    font: 400 clamp(34px, 4.4vw, 70px) / 0.95 var(--font-head);
+    letter-spacing: -0.045em;
+  }
+
+  .gallery__title sup {
+    margin-left: 0.2em;
+    color: var(--fg-2);
+    font-size: 12px;
+    letter-spacing: 0;
+    vertical-align: top;
+  }
+
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .filters button,
+  .rehang {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 14px;
+    border: 1.5px solid var(--fg);
+    border-radius: 999px;
+    background: none;
+    color: var(--fg);
+    font: 650 13.5px/1 var(--font-body);
+    cursor: pointer;
+    transition:
+      background-color 0.2s var(--ease-out),
+      color 0.2s var(--ease-out);
+  }
+
+  .filters i {
+    color: var(--fg-2);
+    font: 500 11px/1 var(--font-mono);
+    transition: color 0.2s var(--ease-out);
+  }
+
+  .filters button:hover {
+    background: color-mix(in srgb, var(--fg) 10%, transparent);
+  }
+
+  .filters button[aria-pressed='true'] {
+    background: var(--fg);
+    color: var(--wall);
+  }
+
+  .filters button[aria-pressed='true'] i {
+    color: inherit;
+  }
+
+  .rehang {
+    margin-left: auto;
+    border-color: var(--accent);
+    background: var(--accent);
+  }
+
+  .rehang[hidden] {
+    display: none;
+  }
+
+  .rehang:hover {
+    border-color: var(--fg);
+    background: var(--fg);
+    color: var(--wall);
+  }
+
+  .gallery__how {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 22px;
+    margin: clamp(10px, 1.2vw, 16px) 0 0;
+    color: var(--fg-2);
+  }
+
+  .gallery__how-walk {
+    display: none;
+  }
+
+  .gallery__sample {
+    padding: 0 0 0 16px;
+    background: radial-gradient(circle, var(--accent) 0 4px, transparent 4.5px) 0 50% / 10px 10px no-repeat;
+    color: var(--fg);
+  }
+
+  /* ── the stack: frames laid down the page (the default) ── */
+  .wall {
+    position: relative;
+    padding: clamp(26px, 5vw, 60px) var(--gutter) clamp(44px, 7vw, 100px);
+  }
+
+  .wall__word,
+  .wall__floor,
+  .wall__meter {
+    display: none;
+  }
+
+  .wall__list {
+    display: grid;
+    grid-auto-flow: dense;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    align-items: start;
+    gap: clamp(26px, 6vw, 60px) clamp(14px, 4vw, 40px);
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 0;
+    list-style: none;
+  }
+
+  .piece {
+    grid-column: span 4;
+  }
+
+  .piece[data-size='l'] {
+    grid-column: 1 / -1;
+  }
+
+  /* a frame the width of the page can't lean far without leaving it */
+  .piece[data-size='l'] .piece__frame {
+    rotate: calc(var(--tilt) * 0.35);
+  }
+
+  .piece[data-size='s'] {
+    grid-column: span 3;
+  }
+
+  .piece[data-size='m']:nth-child(even) {
+    grid-column: 3 / span 4;
+  }
+
+  .piece.is-away {
+    display: none;
+  }
+
+  .piece__hit {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    cursor: zoom-in;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .piece__hit:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 6px;
+    box-shadow: none;
+  }
+
+  /* the frame: a thin black edge, a white mount, and a shadow that says it hangs proud of the wall */
+  .piece__frame {
+    display: block;
+    width: 100%;
+    aspect-ratio: var(--ratio);
+    padding: 3.2%;
+    border: 1.5px solid #0c0d21;
+    background: #ffffff;
+    box-shadow:
+      0 0.5px 0 1px rgb(255 255 255 / 0.5) inset,
+      0 3px 4px rgb(12 13 33 / 0.12),
+      0 22px 30px -14px rgb(12 13 33 / 0.42);
+    container-type: size;
+    rotate: var(--tilt);
+    transition:
+      rotate 0.5s var(--spring),
+      scale 0.45s var(--ease-out),
+      box-shadow 0.45s var(--ease-out);
+  }
+
+  .piece__frame img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* an empty frame says plainly that it is one */
+  .blank {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    width: 100%;
+    height: 100%;
+    padding: 6cqmin;
+    background:
+      repeating-linear-gradient(-45deg, transparent 0 11px, color-mix(in srgb, var(--tint) 22%, transparent) 11px 12px),
+      color-mix(in srgb, var(--tint) 9%, #f6f5f0);
+    color: #0c0d21;
+    text-align: left;
+  }
+
+  .blank__no,
+  .blank__shape {
+    font: 500 clamp(9px, 5cqmin, 13px) / 1.2 var(--font-mono);
+  }
+
+  .blank__no {
+    color: var(--tint);
+    font-weight: 600;
+  }
+
+  .blank__say {
+    align-self: center;
+    max-width: 9em;
+    font: 400 clamp(13px, 11cqmin, 44px) / 0.98 var(--font-head);
+    letter-spacing: -0.04em;
+  }
+
+  .blank__shape {
+    justify-self: end;
+    color: #4b4d68;
+  }
+
+  .piece__plate {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 2px 10px;
+    margin: 14px 0 0;
+    font-size: 14.5px;
+    line-height: 1.3;
+  }
+
+  .piece__no {
+    grid-row: span 2;
+    padding-top: 3px;
+    color: var(--fg-2);
+  }
+
+  .piece__plate b {
+    font-weight: 750;
+    letter-spacing: -0.015em;
+  }
+
+  .piece__meta {
+    grid-column: 2;
+    color: var(--fg-2);
+    font-size: 13.5px;
+  }
+
+  @media (hover: hover) {
+    .piece__hit:hover .piece__frame {
+      rotate: 0deg;
+      scale: 1.025;
+      box-shadow:
+        0 0.5px 0 1px rgb(255 255 255 / 0.5) inset,
+        0 6px 8px rgb(12 13 33 / 0.14),
+        0 44px 50px -22px rgb(12 13 33 / 0.5);
+    }
+  }
+
+  /* ── the promenade: a wall longer than the window ──
+     scripts/gallery.ts adds .is-promenade (mouse, wide screen, motion allowed) and keeps
+     three numbers up to date: --u (one wall unit in px), --pan (how far along you are)
+     and --wall-w (how long the wall is, in units). */
+  .gallery.is-promenade {
+    height: calc(100svh - var(--bar) + max(0px, var(--wall-w) * var(--u, 6px) - 100vw));
+  }
+
+  .is-promenade .gallery__pin {
+    position: sticky;
+    top: var(--bar);
+    display: flex;
+    flex-direction: column;
+    height: calc(100svh - var(--bar));
+    overflow: clip;
+  }
+
+  .is-promenade .gallery__how-walk {
+    display: inline;
+  }
+
+  .is-promenade .gallery__how-tap {
+    display: none;
+  }
+
+  .is-promenade .wall {
+    flex: 1;
+    min-height: 0;
+    margin-top: clamp(8px, 1.4svh, 18px);
+    padding: 0;
+    cursor: grab;
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .is-promenade .wall.is-dragging {
+    cursor: grabbing;
+  }
+
+  .is-promenade .wall__track {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    /* a wall shorter than the window is hung in the middle of it */
+    left: max(0px, calc((100vw - var(--wall-w) * var(--u, 6px)) / 2));
+    width: calc(var(--wall-w) * var(--u, 6px));
+    transform: translate3d(calc(var(--pan, 0) * -1px), 0, 0);
+    will-change: transform;
+  }
+
+  .is-promenade .wall__word {
+    position: absolute;
+    top: 50%;
+    left: 4%;
+    display: block;
+    margin: 0;
+    color: color-mix(in srgb, var(--wall) 93%, #0c0d21);
+    font: 400 calc(var(--u, 6px) * 74) / 0.8 var(--font-display);
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    /* further away than the frames, so it slides more slowly */
+    translate: calc(var(--pan, 0) * 0.42px) -50%;
+    pointer-events: none;
+  }
+
+  .is-promenade .wall__list {
+    position: absolute;
+    inset: 0;
+    display: block;
+    max-width: none;
+  }
+
+  .is-promenade .piece {
+    position: absolute;
+    top: calc(var(--y) * var(--u, 6px));
+    left: calc(var(--x) * var(--u, 6px));
+    width: calc(var(--w) * var(--u, 6px));
+    height: calc(var(--h) * var(--u, 6px));
+    /* nearer frames pass a little faster than the wall; then wherever it was dragged to */
+    translate: calc(var(--pan, 0) * (1 - var(--depth)) * 0.2px + var(--dx, 0px)) var(--dy, 0px);
+    transition:
+      top 0.8s var(--ease-out),
+      left 0.8s var(--ease-out),
+      width 0.8s var(--ease-out),
+      height 0.8s var(--ease-out),
+      opacity 0.4s ease,
+      scale 0.5s var(--ease-out);
+  }
+
+  .is-promenade .piece.is-away {
+    display: block;
+    opacity: 0;
+    scale: 0.9;
+    pointer-events: none;
+  }
+
+  /* Walking has to stay glued to the scroll, so the slide itself is never eased. Only a
+     wall being straightened springs back (the script adds .is-settling for a moment). */
+  .is-promenade .piece.is-settling {
+    transition:
+      top 0.8s var(--ease-out),
+      left 0.8s var(--ease-out),
+      width 0.8s var(--ease-out),
+      height 0.8s var(--ease-out),
+      opacity 0.4s ease,
+      scale 0.5s var(--ease-out),
+      translate 0.7s var(--spring);
+  }
+
+  .is-promenade .piece__hit,
+  .is-promenade .piece__frame {
+    height: 100%;
+    aspect-ratio: auto;
+  }
+
+  .is-promenade .piece__hit {
+    cursor: inherit;
+  }
+
+  .is-promenade .piece:hover,
+  .is-promenade .piece:focus-within {
+    z-index: 4;
+  }
+
+  .is-promenade .piece.is-held {
+    z-index: 6;
+  }
+
+  .is-promenade .piece.is-moved {
+    z-index: 3;
+  }
+
+  .is-promenade .is-held .piece__frame {
+    rotate: 0deg;
+    scale: 1.05;
+    box-shadow:
+      0 8px 10px rgb(12 13 33 / 0.16),
+      0 64px 70px -26px rgb(12 13 33 / 0.55);
+  }
+
+  /* the label lights up beside the frame you are looking at */
+  .is-promenade .piece__plate {
+    position: absolute;
+    top: calc(100% + 12px);
+    left: 0;
+    margin: 0;
+    padding: 8px 12px 7px;
+    background: #0c0d21;
+    color: #f3f3ef;
+    white-space: nowrap;
+    opacity: 0;
+    translate: 0 -8px;
+    pointer-events: none;
+    transition:
+      opacity 0.25s ease,
+      translate 0.4s var(--ease-out);
+  }
+
+  .is-promenade .piece--low .piece__plate {
+    top: auto;
+    bottom: calc(100% + 12px);
+    translate: 0 8px;
+  }
+
+  .is-promenade .piece__no,
+  .is-promenade .piece__meta {
+    color: #b9bbd6;
+  }
+
+  .is-promenade .piece:hover .piece__plate,
+  .is-promenade .piece:focus-within .piece__plate {
+    opacity: 1;
+    translate: 0 0;
+  }
+
+  .is-promenade .is-held .piece__plate {
+    opacity: 0;
+  }
+
+  /* the skirting, and how far along the wall you are */
+  .is-promenade .wall__floor {
+    position: absolute;
+    inset: auto 0 0;
+    display: block;
+    height: calc(var(--u, 6px) * 5);
+    border-top: 1px solid var(--line);
+    background: linear-gradient(rgb(12 13 33 / 0.06), transparent);
+    pointer-events: none;
+  }
+
+  .is-promenade .wall__meter {
+    position: absolute;
+    right: var(--gutter);
+    bottom: calc(var(--u, 6px) * 1.4);
+    left: var(--gutter);
+    display: block;
+    height: 2px;
+    background: var(--line);
+    pointer-events: none;
+  }
+
+  .is-promenade .wall__meter::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--fg);
+    transform-origin: left;
+    scale: max(0.04, var(--at, 0)) 1;
+  }
+
+  .is-promenade.is-short .wall__meter {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    :global(.js) .piece {
+      animation: piece-in 0.7s var(--ease-out) backwards;
+      animation-delay: calc(0.15s + var(--i) * 60ms);
+    }
+
+    @keyframes piece-in {
+      from {
+        opacity: 0;
+        scale: 0.94;
+      }
+    }
+  }
+
+  /* ── the viewer ─────────────────────── */
+  .viewer {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #f3f3ef;
+    overflow: hidden;
+  }
+
+  .viewer :global([hidden]) {
+    display: none !important;
+  }
+
+  .viewer::backdrop {
+    background: rgb(7 8 26 / 0);
+    transition: background-color 0.45s ease;
+  }
+
+  .viewer.is-open::backdrop {
+    background: rgb(7 8 26 / 0.97);
+  }
+
+  .viewer__in {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 0.42fr);
+    height: 100%;
+  }
+
+  .viewer__stage {
+    display: grid;
+    place-items: center;
+    min-width: 0;
+    min-height: 0;
+    padding: clamp(18px, 5vw, 80px);
+    overflow: hidden;
+  }
+
+  /* as large as the space allows, in the piece's own shape */
+  .viewer__art {
+    --zx: 50%;
+    --zy: 50%;
+    width: min(100%, calc((100svh - 2 * clamp(18px, 5vw, 80px)) * var(--ratio, 1)));
+    aspect-ratio: var(--ratio, 1);
+    max-height: 100%;
+    border: 1.5px solid #f3f3ef;
+    background: #ffffff;
+    box-shadow: 0 50px 90px -30px rgb(0 0 0 / 0.8);
+    container-type: size;
+    transform-origin: 0 0;
+    overflow: hidden;
+  }
+
+  .viewer__art :global(img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transform-origin: var(--zx) var(--zy);
+    transition: scale 0.45s var(--ease-out);
+  }
+
+  .viewer__art.is-image {
+    cursor: zoom-in;
+  }
+
+  .viewer__art.is-zoomed {
+    cursor: zoom-out;
+  }
+
+  .viewer__art.is-zoomed :global(img) {
+    scale: 2.2;
+  }
+
+  .viewer__info {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(12px, 1.6vw, 20px);
+    padding: clamp(22px, 3vw, 46px) clamp(18px, 2.6vw, 40px);
+    border-left: 1px solid rgb(243 243 239 / 0.22);
+    background: #0c0d21;
+    opacity: 0;
+    translate: 40px 0;
+    overflow-y: auto;
+    transition:
+      opacity 0.4s ease,
+      translate 0.55s var(--ease-out);
+  }
+
+  .viewer.is-open .viewer__info {
+    opacity: 1;
+    translate: 0 0;
+  }
+
+  .viewer__k {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0;
+    color: var(--room-art);
+  }
+
+  .viewer__title {
+    margin: 0;
+    font: 400 clamp(30px, 3.4vw, 54px) / 0.98 var(--font-head);
+    letter-spacing: -0.045em;
+    text-wrap: balance;
+  }
+
+  .viewer__sample {
+    align-self: start;
+    margin: 0;
+    padding: 5px 9px 4px;
+    border: 1px dashed currentColor;
+    color: #b9bbd6;
+  }
+
+  .viewer__meta {
+    display: grid;
+    margin: 0;
+    border-top: 1px solid rgb(243 243 239 / 0.22);
+  }
+
+  .viewer__meta div {
+    display: grid;
+    grid-template-columns: 9ch minmax(0, 1fr);
+    gap: 12px;
+    padding: 10px 0 9px;
+    border-bottom: 1px solid rgb(243 243 239 / 0.22);
+  }
+
+  .viewer__meta dt {
+    color: #b9bbd6;
+    font: 500 12px/1.6 var(--font-mono);
+  }
+
+  .viewer__meta dd {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .viewer__desc {
+    margin: 0;
+    font-size: var(--fs-read);
+    line-height: 1.62;
+  }
+
+  .viewer__note {
+    padding: 14px 16px;
+    background: var(--room-art);
+    color: #0c0d21;
+  }
+
+  .viewer__note p {
+    margin: 0;
+    font-size: 15.5px;
+    font-weight: 550;
+    line-height: 1.5;
+  }
+
+  .viewer__note p + p {
+    margin-top: 6px;
+  }
+
+  .viewer__nav {
+    display: flex;
+    gap: 8px;
+    margin-top: auto;
+    padding-top: 12px;
+  }
+
+  .viewer__nav button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-width: 46px;
+    height: 46px;
+    padding: 0 16px;
+    border: 1.5px solid #f3f3ef;
+    border-radius: 999px;
+    background: none;
+    color: #f3f3ef;
+    font: 650 14px/1 var(--font-body);
+    cursor: pointer;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .viewer__nav button:hover {
+    background: #f3f3ef;
+    color: #0c0d21;
+  }
+
+  .viewer__nav button:focus-visible {
+    outline: 2px solid var(--room-art);
+    outline-offset: 3px;
+    box-shadow: none;
+  }
+
+  .viewer__close {
+    margin-left: auto;
+  }
+
+  .viewer__close kbd {
+    font: 500 11px/1 var(--font-mono);
+    opacity: 0.7;
+  }
+
+  @media (max-width: 899px) {
+    .viewer {
+      overflow-y: auto;
+    }
+
+    .viewer__in {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto auto;
+      height: auto;
+      min-height: 100%;
+    }
+
+    .viewer__stage {
+      padding: 18px;
+    }
+
+    .viewer__art {
+      width: min(100%, calc(62svh * var(--ratio, 1)));
+    }
+
+    .viewer__info {
+      border-top: 1px solid rgb(243 243 239 / 0.22);
+      border-left: 0;
+      translate: 0 30px;
+    }
+
+    .viewer__close kbd {
+      display: none;
+    }
+  }
+
+  @media (max-width: 599px) {
+    .piece[data-size='s'] {
+      grid-column: span 3;
+    }
+
+    .piece__plate {
+      font-size: 13.5px;
+    }
+
+    .rehang {
+      margin-left: 0;
+    }
+  }
+</style>

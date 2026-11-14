@@ -2,20 +2,38 @@
 // The content layer.
 //
 // Every page asks for its content through the functions in this file — never by importing
-// a data file directly. Today each function reads local data; when the "living portfolio"
-// backend exists, swap the body of a function for a `fetch()` and nothing else changes.
-// That is also why they are all `async` and return plain, JSON-shaped records
-// (the shapes are in ./types.ts).
+// a data file directly. Projects and case studies can already come from the backend (set
+// PORTFOLIO_API_URL); everything else reads local data and is written the same way, so it
+// can move behind the API by changing the body of one function. That is why they are all
+// `async` and return plain, JSON-shaped records (the shapes are in ./types.ts).
 //
 // Drafts (`status: 'draft'`) are shown while developing (`npm run dev`) and left out of
 // the built site.
 // ─────────────────────────────────────────────
+import type { ImageMetadata } from 'astro';
+import { getImage } from 'astro:assets';
+import { getCollection, type CollectionEntry } from 'astro:content';
+import { artworks, collections } from '../data/art';
 import { caseStudies } from '../data/case-studies';
+import { screenings, shelves } from '../data/films';
 import { playlist } from '../data/music';
 import type { RoomId } from '../data/playground';
 import { archive, projects } from '../data/projects';
 import { caseSections, mindBranches } from './types';
-import type { ArchiveItem, CaseSectionId, CaseStudy, MindBranch, MindNode, Project } from './types';
+import type {
+  ArchiveItem,
+  Artwork,
+  CaseSectionId,
+  CaseStudy,
+  Collection,
+  MindBranch,
+  MindNode,
+  Project,
+  Screening,
+  Shelf,
+  WritingKind,
+  WritingMeta,
+} from './types';
 
 /** drafts are visible in development only */
 export const showDrafts = import.meta.env.DEV;
@@ -121,14 +139,175 @@ export function caseOutline(project: Project, study: CaseStudy) {
 }
 
 // ── the Playground ───────────────────────────
+// The handoff in backend/docs keeps these collections local for now. They are written the
+// same way as the project functions all the same, so they can move behind the API later.
+
+const two = (n: number) => String(n).padStart(2, '0');
+
+/** Real entries if there are any; otherwise the labelled samples that ship with the site.
+ *  So the first real piece you add replaces the stand-ins without anything being deleted. */
+function realOrSamples<T extends { sample?: boolean; status?: 'draft' | 'published' }>(items: T[]): T[] {
+  const live = items.filter(isLive);
+  const real = live.filter((item) => !item.sample);
+  return real.length ? real : live;
+}
+
+/** an image in src/assets/<folder>/, found by its file name */
+function findImage(files: Record<string, ImageMetadata>, folder: string, file: string, forWhat: string): ImageMetadata {
+  const key = Object.keys(files).find((k) => k.endsWith(`/${file}`));
+  if (!key) throw new Error(`"${file}" (for "${forWhat}") is not in src/assets/${folder}/. Check the file name, including capitals.`);
+  return files[key];
+}
+
+// ── art ──
+
+const artFiles = import.meta.glob<ImageMetadata>('../assets/art/*.{png,jpg,jpeg,webp,avif,gif,PNG,JPG,JPEG,WEBP}', { eager: true, import: 'default' });
+
+/** an artwork as the gallery shows it: numbered, its shape known, its image made ready */
+export type HungArtwork = Omit<Artwork, 'file' | 'ratio' | 'size'> & {
+  no: string;
+  ratio: number;
+  size: 's' | 'm' | 'l';
+  collectionName: string;
+  /** `src` is sized for the wall, `full` for the viewer */
+  image?: { src: string; full: string; width: number; height: number; alt: string };
+};
+
+export async function getArtworks(): Promise<HungArtwork[]> {
+  const list = realOrSamples(artworks);
+  return Promise.all(
+    list.map(async ({ file, ...a }, i) => {
+      let image: HungArtwork['image'];
+      if (file) {
+        const meta = findImage(artFiles, 'art', file, a.title);
+        const [wall, full] = await Promise.all([
+          getImage({ src: meta, width: Math.min(meta.width, 1100) }),
+          getImage({ src: meta, width: Math.min(meta.width, 2400) }),
+        ]);
+        image = { src: wall.src, full: full.src, width: meta.width, height: meta.height, alt: a.alt ?? a.title };
+      }
+      return {
+        ...a,
+        no: two(i + 1),
+        ratio: image ? image.width / image.height : (a.ratio ?? 1),
+        size: a.size ?? 'm',
+        collectionName: collections.find((c) => c.id === a.collection)?.name ?? a.collection,
+        image,
+      };
+    }),
+  );
+}
+
+/** the collections that have something hanging in them, with a count */
+export async function getArtCollections(): Promise<(Collection & { count: number })[]> {
+  const hung = await getArtworks();
+  return collections.map((c) => ({ ...c, count: hung.filter((a) => a.collection === c.id).length })).filter((c) => c.count > 0);
+}
+
+// ── writing ──
+
+type WritingEntry = CollectionEntry<'writing'>;
+
+/** the opening of a piece, as plain text: a few lines of a poem, a sentence or two of prose */
+function openingOf(body: string, kind: WritingKind): string {
+  const plain = body
+    .replace(/^#{1,6}\s+.*$/gm, '')
+    .replace(/^>\s?/gm, '')
+    .replace(/^[-*]\s+/gm, '')
+    .replace(/^---+$/gm, '')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/[*_`]/g, '');
+  if (kind === 'poem') {
+    return plain
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .slice(0, 3)
+      .join('\n');
+  }
+  const first = plain.split(/\n\s*\n/).map((para) => para.replace(/\s+/g, ' ').trim()).find(Boolean) ?? '';
+  const words = first.split(' ');
+  return words.length > 42 ? `${words.slice(0, 42).join(' ')}…` : first;
+}
+
+function metaOf(entry: WritingEntry): WritingMeta {
+  const body = entry.body ?? '';
+  const words = body.split(/\s+/).filter((w) => /\w/.test(w)).length;
+  return {
+    slug: entry.id,
+    status: entry.data.status,
+    sample: entry.data.sample || undefined,
+    title: entry.data.title,
+    kind: entry.data.kind,
+    date: entry.data.date?.toISOString().slice(0, 10),
+    dek: entry.data.dek,
+    excerpt: entry.data.excerpt ?? openingOf(body, entry.data.kind),
+    words,
+    // poems are read slowly; prose at an ordinary pace
+    minutes: Math.max(1, Math.round(words / (entry.data.kind === 'poem' ? 90 : 220))),
+  };
+}
+
+/** every piece with its entry (for rendering), newest first; undated pieces keep file order */
+export async function getWritingEntries(): Promise<{ meta: WritingMeta; entry: WritingEntry }[]> {
+  const all = (await getCollection('writing')).map((entry) => ({ meta: metaOf(entry), entry }));
+  const shown = realOrSamples(all.map((x) => ({ ...x, sample: x.meta.sample, status: x.meta.status })));
+  return shown
+    .map(({ meta, entry }) => ({ meta, entry }))
+    .sort((a, b) => (b.meta.date ?? '').localeCompare(a.meta.date ?? '') || a.meta.slug.localeCompare(b.meta.slug));
+}
+
+export async function getWriting(): Promise<WritingMeta[]> {
+  return (await getWritingEntries()).map((x) => x.meta);
+}
+
+// ── films & television ──
+
+const posterFiles = import.meta.glob<ImageMetadata>('../assets/films/*.{png,jpg,jpeg,webp,avif,PNG,JPG,JPEG,WEBP}', { eager: true, import: 'default' });
+
+export type ShownScreening = Omit<Screening, 'file'> & {
+  no: string;
+  shelfNames: string[];
+  poster?: { src: string; width: number; height: number; alt: string };
+};
+
+export async function getScreenings(): Promise<ShownScreening[]> {
+  const list = realOrSamples(screenings);
+  return Promise.all(
+    list.map(async ({ file, ...f }, i) => {
+      let poster: ShownScreening['poster'];
+      if (file) {
+        const meta = findImage(posterFiles, 'films', file, f.title);
+        const sized = await getImage({ src: meta, width: Math.min(meta.width, 900) });
+        poster = { src: sized.src, width: meta.width, height: meta.height, alt: f.alt ?? `Poster for ${f.title}` };
+      }
+      return {
+        ...f,
+        no: two(i + 1),
+        shelfNames: f.shelves.map((id) => shelves.find((s) => s.id === id)?.name ?? id),
+        poster,
+      };
+    }),
+  );
+}
+
+/** the shelves that have something on them, with a count */
+export async function getShelves(): Promise<(Shelf & { count: number })[]> {
+  const shown = await getScreenings();
+  return shelves.map((s) => ({ ...s, count: shown.filter((f) => f.shelves.includes(s.id)).length })).filter((s) => s.count > 0);
+}
+
+// ── the doors ──
 
 /** the one-line stock count each room shows on its door */
 export async function roomNotes(): Promise<Record<RoomId, string>> {
+  const [art, writing, films] = await Promise.all([getArtworks(), getWriting(), getScreenings()]);
+  const sampled = (items: { sample?: boolean }[], word: string) => (items.some((x) => x.sample) ? `${word} · samples for now` : word);
   return {
     lab: plural(1, 'experiment'),
-    art: '',
-    writing: '',
+    art: sampled(art, plural(art.length, 'frame')),
+    writing: sampled(writing, plural(writing.length, 'piece')),
     records: plural(playlist.tracks.length, 'track'),
-    films: '',
+    films: sampled(films, plural(films.length, 'title')),
   };
 }
