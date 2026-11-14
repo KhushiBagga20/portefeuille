@@ -1,7 +1,8 @@
 import type { CaseStudy, Project } from '../lib/types';
 
 type Content = { project: Project; caseStudy: CaseStudy };
-type Revision = { id: string; base_version: number; content: Content; content_hash: string; source: string; review_notes: { questions?: string[] }; created_at: string };
+type Revision = { id: string; base_version: number; content: Content; content_hash: string; source: string; review_notes: { questions?: string[]; warning?: string; coverage?: { commit: string; inspected: { path: string }[]; skipped: { path: string; reason: string }[] }; citations?: { claim: string; basis: string; sources: string[] }[] }; created_at: string };
+type Repository = { id: string; full_name: string; scan_enabled: boolean };
 type ProjectState = { slug: string; version: number };
 type Evidence = { id: string; title: string; excerpt: string; source_url: string };
 type Publication = { version: number; snapshot: Content };
@@ -78,6 +79,21 @@ function selectRevision(revision: Revision) {
   editor.value = JSON.stringify(revision.content, null, 2);
   titleInput.value = ''; bodyInput.value = '';
   el('review-notes').textContent = (revision.review_notes.questions ?? []).join(' • ');
+  const notes = revision.review_notes;
+  const sources = el('source-review'); sources.replaceChildren();
+  if (notes.warning) { const p = document.createElement('p'); p.textContent = notes.warning; sources.append(p); }
+  if (notes.coverage) {
+    const p = document.createElement('p'); p.textContent = `Commit ${notes.coverage.commit.slice(0, 12)} · ${notes.coverage.inspected.length} files inspected · ${notes.coverage.skipped.length} skipped. Tests were not executed.`; sources.append(p);
+    const details = document.createElement('details'); const summary = document.createElement('summary'); summary.textContent = 'Scan coverage';
+    details.append(summary, contentTree(notes.coverage)); sources.append(details);
+  }
+  for (const citation of notes.citations ?? []) {
+    const p = document.createElement('p'); p.textContent = `${citation.claim} (${citation.basis})`; sources.append(p);
+    for (const url of citation.sources) {
+      if (!url.startsWith('https://github.com/')) continue;
+      const link = document.createElement('a'); link.href = url; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = decodeURIComponent(url.split('/blob/')[1] ?? url); sources.append(link, document.createElement('br'));
+    }
+  }
   preview(); controls();
 }
 function hasUnsaved() { return dirty || Boolean(titleInput.value.trim() || bodyInput.value.trim()); }
@@ -85,10 +101,11 @@ function mayDiscard() { return !hasUnsaved() || confirm('Discard your unsaved ch
 async function loadProject() {
   selected = undefined;
   if (!currentProject()) { notice('No projects yet. Import your existing content using the backend setup instructions.'); return; }
-  const [drafts, evidence, history, jobs] = await Promise.all([
+  const [drafts, evidence, history, jobs, repositories] = await Promise.all([
     request<Revision[]>(route('/revisions')), request<Evidence[]>(route('/evidence')),
     request<Publication[]>(route('/publications')),
-    request<{ kind: string; status: string; error?: string }[]>('/api/v1/studio/jobs'),
+    request<{ kind: string; status: string; error?: string; progress?: string }[]>('/api/v1/studio/jobs'),
+    request<Repository[]>(route('/repositories')),
   ]);
   revisions = drafts; revisionSelect.replaceChildren();
   drafts.forEach(r => revisionSelect.add(new Option(`${r.source} · ${new Date(r.created_at).toLocaleString()}`, r.id)));
@@ -109,7 +126,17 @@ async function loadProject() {
     details.append(summary, excerpt); label.append(checkbox, text, details); el('evidence').append(label);
   }
   if (!evidence.length) el('evidence').textContent = 'No GitHub activity received yet.';
-  el('jobs').replaceChildren(...jobs.map(j => { const p = document.createElement('p'); p.textContent = `${j.kind}: ${j.status}${j.error ? ` (${j.error})` : ''}`; return p; }));
+  el('jobs').replaceChildren(...jobs.map(j => { const p = document.createElement('p'); p.textContent = `${j.kind}: ${j.status} ${j.progress ?? ''}${j.error ? ` (${j.error})` : ''}`; return p; }));
+  el('repository-scans').replaceChildren();
+  for (const repo of repositories.filter(r => r.scan_enabled)) {
+    const p = document.createElement('p'); p.textContent = `${repo.full_name} · Checked daily for new commits.`;
+    const button = document.createElement('button'); button.textContent = 'Check GitHub & draft case study';
+    button.onclick = () => void perform(async () => {
+      const result = await request<{ status: string }>(route(`/repositories/${encodeURIComponent(repo.id)}/scan`), {});
+      notice(result.status === 'done' ? 'This commit is already analyzed. Refresh to review its saved draft.' : 'Repository analysis queued. Refresh to follow section progress and review the finished draft.');
+    });
+    el('repository-scans').append(p, button);
+  }
   el('history').replaceChildren();
   for (const publication of history) {
     const button = document.createElement('button'); button.textContent = `Restore version ${publication.version} as a draft`;

@@ -141,3 +141,8 @@ the static website updates after the queued rebuild succeeds.
 - https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries
 - https://developers.openai.com/api/docs/guides/structured-outputs
 - https://docs.sqlalchemy.org/en/20/orm/versioning.html
+
+## Full repository case studies
+
+See [repository scans](docs/REPOSITORY_SCANS.md) for source-code consent, daily GitHub checks,
+private drafts, incremental section analysis, coverage, citations, limits, and costs.

@@ -17,9 +17,11 @@ const api = import.meta.env.PUBLIC_API_ORIGIN || (import.meta.env.DEV ? 'http://
       <div class="columns">
         <aside class="panel"><p class="eyebrow">01 / SOURCES</p><h2>What changed?</h2><p class="hint">Select evidence to request a private AI draft. Review repository descriptions before sending them to AI.</p><div id="evidence"></div><button id="generate">Generate draft</button>
           <details><summary>Connect a repository</summary><form id="repo-form"><label>Repository ID<input id="repo-id" required pattern="[0-9]+" placeholder="Numeric GitHub repository ID"/></label><label>Repository name<input id="repo-name" required placeholder="owner/repository"/></label><label class="check"><input id="repo-ai" type="checkbox"/> Allow selected descriptions to be sent to AI</label><button type="submit">Connect repository</button></form></details>
-          <details><summary>Background jobs</summary><div id="jobs"></div></details>
+          <div id="repository-scans"></div>
+          <details open><summary>Background jobs</summary><div id="jobs"></div></details>
         </aside>
         <section class="panel"><p class="eyebrow">02 / EDIT</p><h2>Shape the story.</h2><label>Saved revision<select id="revision"></select></label><div id="review-notes" class="hint"></div>
+          <details><summary>Repository evidence &amp; scan coverage</summary><div id="source-review" class="hint"></div></details>
           <label>Update title<input id="update-title" placeholder="What did you build or improve?"/></label><label>Update details<textarea id="update-body" rows="6" placeholder="What changed, why it matters, and what you learned."></textarea></label><button id="append" class="quiet">Add update to draft</button>
           <details><summary>Edit full case-study content</summary><label class="hint">Advanced: project and case-study JSON<textarea id="content" rows="18" spellcheck="false"></textarea></label></details>
           <div class="actions"><button id="save">Save revision</button><button id="publish" disabled>Approve &amp; publish</button></div>

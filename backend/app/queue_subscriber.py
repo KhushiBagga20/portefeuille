@@ -19,7 +19,7 @@ def process_job(payload):
         job = db.get(Job, job_id)
         if job is not None and job.status in ("queued", "running"):
             # Includes DB backoff and an unexpired lease held by another delivery.
-            raise RetryAfter(60)
+            raise RetryAfter(5 if job.kind == "repository_scan" and not job.error else 60)
 
 
 @subscribe(topic=TOPIC, consumer_group="portfolio-worker", retry_after=60, max_concurrency=2, max_attempts=50)

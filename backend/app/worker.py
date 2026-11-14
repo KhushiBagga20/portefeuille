@@ -25,6 +25,7 @@ from app.models import (
     now,
     uid,
 )
+from app.repository_scan import ScanError, scan_step
 from app.schemas import AIProposal, Content, digest
 
 
@@ -212,9 +213,13 @@ def run_once(job_id=None, db_engine=None):
     try:
         with Session(connection) as db:
             job = db.get(Job, job_id)
-            {"ingest": ingest, "generate": generate_draft, "rebuild": request_rebuild}[job.kind](
-                db, job.payload
-            )
+            finished = True
+            if job.kind == "repository_scan":
+                finished = scan_step(db, job)
+            else:
+                {"ingest": ingest, "generate": generate_draft, "rebuild": request_rebuild}[job.kind](
+                    db, job.payload
+                )
             # Fencing token: a worker whose lease was reclaimed may not commit output.
             changed = db.execute(
                 update(Job)
@@ -224,7 +229,13 @@ def run_once(job_id=None, db_engine=None):
                     Job.status == "running",
                     Job.lease_until > now(),
                 )
-                .values(status="done", lease_until=None, lease_token=None, error=None)
+                .values(
+                    status="done" if finished else "queued",
+                    lease_until=None,
+                    lease_token=None,
+                    error=None,
+                    **({"attempts": 0, "available_at": now()} if not finished else {}),
+                )
                 .execution_options(synchronize_session=False)
             )
             if changed.rowcount != 1:
@@ -236,10 +247,12 @@ def run_once(job_id=None, db_engine=None):
             job = db.get(Job, job_id)
             if job.lease_token == token:
                 job.status = "failed" if job.attempts >= 3 else "queued"
-                job.available_at = now() + timedelta(seconds=30 * 2**job.attempts)
+                job.available_at = now() + timedelta(
+                    seconds=max(30 * 2**job.attempts, getattr(exc, "retry_delay", 0))
+                )
                 job.lease_until, job.lease_token = None, None
                 # Do not put provider bodies, secrets, or repository text into errors/logs.
-                job.error = type(exc).__name__
+                job.error = str(exc) if isinstance(exc, ScanError) else type(exc).__name__
                 db.commit()
     return True
 

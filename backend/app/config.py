@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     azure_openai_api_key: str = Field(default="", repr=False)
     azure_openai_endpoint: str = ""
     azure_openai_deployment: str = ""
+    # Explicit source-code consent, separate from consent to send PR descriptions.
+    github_scan_repositories: str = ""
+
+    @property
+    def scan_repository_ids(self):
+        return {item.strip() for item in self.github_scan_repositories.split(",") if item.strip()}
 
     @field_validator("azure_openai_endpoint")
     @classmethod

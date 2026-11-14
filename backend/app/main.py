@@ -15,6 +15,7 @@ from app.db import get_db
 from app.models import Delivery, Evidence, Job, OwnerSession, Project, Publication, Repository, Revision
 from app.publishing import latest, project_by_slug, publish, revision_view
 from app.queue_delivery import dispatch_job, dispatch_pending
+from app.repository_scan import ScanError, enqueue_scan, scan_allowed, schedule_scans
 from app.schemas import GenerateInput, PublishInput, RepositoryInput, RevisionInput, digest
 
 app = FastAPI(title="Portfolio editorial API", version="0.1.0")
@@ -210,6 +211,40 @@ def evidence(slug: str, db: Session = Depends(get_db)):
     ]
 
 
+@app.get("/api/v1/studio/projects/{slug}/repositories", dependencies=[Depends(auth.require_owner)])
+def repositories(slug: str, db: Session = Depends(get_db)):
+    project = project_by_slug(db, slug)
+    return [
+        {"id": r.id, "full_name": r.full_name, "scan_enabled": scan_allowed(r)}
+        for r in db.scalars(select(Repository).where(Repository.project_id == project.id))
+    ]
+
+
+@app.post(
+    "/api/v1/studio/projects/{slug}/repositories/{repository_id}/scan",
+    status_code=202,
+    dependencies=[Depends(auth.require_owner)],
+)
+def scan_repository(slug: str, repository_id: str, db: Session = Depends(get_db)):
+    project = project_by_slug(db, slug)
+    repo = db.get(Repository, repository_id)
+    if not repo or repo.project_id != project.id:
+        raise HTTPException(404, "Repository not found for this project")
+    try:
+        job = enqueue_scan(db, repo)
+        # Only an explicit owner request retries a failed scan; scheduled checks do not.
+        if job.status == "failed":
+            job.status, job.attempts, job.error = "queued", 0, None
+        db.commit()
+    except ScanError as exc:
+        raise HTTPException(422, str(exc)) from None
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "Scan already queued; refresh to see its status") from None
+    dispatch_job(job)
+    return {"job_id": job.id, "status": job.status}
+
+
 @app.post(
     "/api/v1/studio/projects/{slug}/generations", status_code=202, dependencies=[Depends(auth.require_owner)]
 )
@@ -257,7 +292,15 @@ def generate(slug: str, body: GenerateInput, db: Session = Depends(get_db)):
 @app.get("/api/v1/studio/jobs", dependencies=[Depends(auth.require_owner)])
 def jobs(db: Session = Depends(get_db)):
     return [
-        {"id": j.id, "kind": j.kind, "status": j.status, "attempts": j.attempts, "error": j.error}
+        {
+            "id": j.id,
+            "kind": j.kind,
+            "status": j.status,
+            "attempts": j.attempts,
+            "error": j.error,
+            "project_id": j.payload.get("project_id"),
+            "progress": j.payload.get("progress", ""),
+        }
         for j in db.scalars(select(Job).order_by(Job.available_at.desc()).limit(100))
     ]
 
@@ -272,9 +315,18 @@ def reconcile_jobs(request: Request, db: Session = Depends(get_db)):
     secret = settings().cron_secret
     if not secret or not hmac.compare_digest(request.headers.get("authorization", ""), f"Bearer {secret}"):
         raise HTTPException(401, "Unauthorized")
+    scan_failed = False
+    try:
+        schedule_scans(db)
+        db.commit()
+    except Exception:
+        db.rollback()
+        scan_failed = True
     result = dispatch_pending(db)
     if result["dispatched"] != result["attempted"]:
         raise HTTPException(503, "Queue delivery deferred")
+    if scan_failed:
+        raise HTTPException(503, "Repository check deferred; existing jobs dispatched")
     return result
 
 
