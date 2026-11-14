@@ -62,25 +62,26 @@ unmigrated database. GitHub CI verifies code and migrations; it does not deploy 
   with the free plan's default idle suspension. Database: `portfolio`.
 - Production branch: `br-patient-union-bbxd8j2x`. Migration `456462b07c49` was first applied
   successfully to isolated `deployment-check` (`br-dark-bread-bb5rravb`), then to production.
-- Six existing projects imported as private revisions; zero publications. The public site still
-  reads its checked-in content until the owner reviews and publishes the database baselines.
+- The owner approved all six imported baselines on 2026-11-14. They are published as version 1
+  using exact saved-revision hashes, with the configured owner ID recorded as approver.
 - Separate `portfolio_api` and `portfolio_worker_login` database logins created. Neither has
   superuser, role-creation, database-creation, or RLS-bypass privileges. Worker publication writes
   and session reads were verified denied.
 - Production-only Vercel variables configured: DATABASE_URL, WORKER_DATABASE_URL, ENVIRONMENT,
   OWNER_GITHUB_ID, FRONTEND_ORIGIN, BACKEND_ORIGIN, SESSION_SECRET, GITHUB_WEBHOOK_SECRET and
-  REBUILD_ON_PUBLISH=false, QUEUE_ENABLED=true and CRON_SECRET. Project OIDC is enabled, with
+  REBUILD_ON_PUBLISH=true, PORTFOLIO_API_URL, VERCEL_DEPLOY_HOOK, QUEUE_ENABLED=true and CRON_SECRET. Project OIDC is enabled, with
   functions in iad1. Database credentials and generated secrets are stored as Secret values.
   Preview deployments have not been given production credentials.
 - GitHub OAuth client ID and client secret are configured in Vercel Production.
 - Production API is deployed. /health returns 200 and the published-project endpoint returns an
-  empty list while baselines remain private. Anonymous studio/API access and unauthenticated cron
+  list of the six approved projects. Anonymous studio/API access and unauthenticated cron
   requests return 401. GitHub login redirects to the correct callback with a Secure cookie.
 - The owner confirmed successful GitHub login and visibility of all six projects in Studio.
 - A harmless hosted queue smoke job completed in one attempt without changing content or invoking
   a deploy hook. The queue consumer uses its restricted database login.
-- Still required: owner baseline approval, selected repository webhooks, AI provider credentials,
-  and a deploy hook. No paid plan has been enabled.
+- The owner saved a production Deploy Hook. API content builds and publication rebuilds are enabled;
+  the first end-to-end rebuild is being verified.
+- Still required: selected repository webhooks and AI provider credentials. No paid plan has been enabled.
 
 The root configuration enables frontend/API services and queue processing. Do not switch
 PORTFOLIO_API_URL on while publications are empty: doing so would remove the projects from the build.

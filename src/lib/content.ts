@@ -34,7 +34,12 @@ async function published<T>(path: string): Promise<T> {
 // ── projects ─────────────────────────────────
 
 export async function getProjects(): Promise<Project[]> {
-  if (apiUrl) return published<Project[]>('/projects');
+  if (apiUrl) {
+    const live = await published<Project[]>('/projects');
+    // Keep the portfolio's existing editorial order; append newly created projects.
+    const order = new Map(projects.map((project, index) => [project.slug, index]));
+    return live.sort((a, b) => (order.get(a.slug) ?? projects.length) - (order.get(b.slug) ?? projects.length));
+  }
   return projects.filter(isLive);
 }
 
