@@ -283,4 +283,4 @@ A hosting-specific rebuild trigger is not configured yet.
 
 [Frontend integration details](backend/docs/FRONTEND_HANDOFF.md) · [Architecture](backend/docs/ARCHITECTURE.md)
 
-[Vercel deployment guide](backend/docs/VERCEL.md) — frontend configuration is included; live backend setup still requires your account and credentials.
+[Vercel deployment guide](backend/docs/VERCEL.md) — the API, GitHub owner login, Neon database and queue consumer are live; initial publication and external content integrations remain to be configured.

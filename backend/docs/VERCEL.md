@@ -73,8 +73,13 @@ unmigrated database. GitHub CI verifies code and migrations; it does not deploy 
   functions in iad1. Database credentials and generated secrets are stored as Secret values.
   Preview deployments have not been given production credentials.
 - GitHub OAuth client ID and client secret are configured in Vercel Production.
-- Still required: API deployment/health and login verification, owner
-  baseline approval, an active job consumer, selected repository webhooks, AI provider credentials,
+- Production API is deployed. /health returns 200 and the published-project endpoint returns an
+  empty list while baselines remain private. Anonymous studio/API access and unauthenticated cron
+  requests return 401. GitHub login redirects to the correct callback with a Secure cookie.
+- The owner confirmed successful GitHub login and visibility of all six projects in Studio.
+- A harmless hosted queue smoke job completed in one attempt without changing content or invoking
+  a deploy hook. The queue consumer uses its restricted database login.
+- Still required: owner baseline approval, selected repository webhooks, AI provider credentials,
   and a deploy hook. No paid plan has been enabled.
 
 The root configuration enables frontend/API services and queue processing. Do not switch
@@ -91,8 +96,9 @@ job in Postgres; a daily authenticated cron re-dispatches pending jobs, includin
 The owner can also POST /api/v1/studio/jobs/dispatch with their session, Origin and CSRF token.
 Only job IDs enter the queue. Duplicate deliveries do not repeat completed database writes, and
 work stops after three execution attempts. Queue outages can delay processing until reconciliation.
-Local tests exercise actual SDK push delivery, retries, duplicates, and outage recovery; hosted
-subscriber creation still needs verification on the first full deployment.
+Local tests exercise actual SDK push delivery, retries, duplicates, and outage recovery. Hosted
+subscriber creation and delivery are verified. All 26 tests pass against PostgreSQL, and GitHub CI
+passes frontend build, migration, schema-drift, lint and test checks.
 
 References: https://vercel.com/docs/daemons/limits and https://vercel.com/docs/queues/python-sdk.
 
