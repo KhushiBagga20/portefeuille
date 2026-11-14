@@ -378,3 +378,79 @@ def test_diagram_requires_valid_nodes(client, content):
         }
     ]
     assert client.post(ROOT, json={"content": content, "base_version": 0}).status_code == 422
+
+
+def test_approval_queues_exactly_one_rebuild(client, content, monkeypatch):
+    from app.config import settings
+
+    monkeypatch.setenv("REBUILD_ON_PUBLISH", "true")
+    settings.cache_clear()
+    revision = create(client, content)
+    with Session(engine()) as db:
+        assert db.scalar(select(func.count()).select_from(Job)) == 0
+    assert publish(client, revision).status_code == 200
+    assert publish(client, revision).status_code == 200
+    with Session(engine()) as db:
+        jobs = list(db.scalars(select(Job)))
+        assert len(jobs) == 1
+        assert jobs[0].kind == "rebuild"
+        assert jobs[0].payload["version"] == 1
+        assert "hook" not in json.dumps(jobs[0].payload)
+
+
+def test_rebuild_failure_does_not_undo_publication(client, content, monkeypatch):
+    from app.config import settings
+
+    monkeypatch.setenv("REBUILD_ON_PUBLISH", "true")
+    monkeypatch.setenv("VERCEL_DEPLOY_HOOK", "")
+    settings.cache_clear()
+    revision = create(client, content)
+    assert publish(client, revision).status_code == 200
+    assert run_once()
+    with Session(engine()) as db:
+        assert db.scalar(select(Job)).status == "queued"
+        assert db.scalar(select(func.count()).select_from(Publication)) == 1
+
+
+def test_rebuild_calls_only_configured_hook(client, content, monkeypatch):
+    import httpx
+
+    from app.config import settings
+
+    monkeypatch.setenv("REBUILD_ON_PUBLISH", "true")
+    monkeypatch.setenv("VERCEL_DEPLOY_HOOK", "https://api.vercel.com/v1/integrations/deploy/test/test")
+    settings.cache_clear()
+    revision = create(client, content)
+    publish(client, revision)
+    calls = []
+
+    def fake_post(self, url, **kwargs):
+        calls.append(url)
+        return httpx.Response(200, request=httpx.Request("POST", url), json={"job": {"state": "PENDING"}})
+
+    monkeypatch.setattr(httpx.Client, "post", fake_post)
+    assert run_once()
+    assert calls == ["https://api.vercel.com/v1/integrations/deploy/test/test"]
+    with Session(engine()) as db:
+        assert db.scalar(select(Job)).status == "done"
+
+
+def test_cloud_database_configuration_and_hook_validation():
+    import pytest
+    from pydantic import ValidationError
+
+    from app.config import Settings
+
+    cfg = Settings(_env_file=None, database_url="postgres://example/test")
+    assert cfg.database_url == "postgresql+psycopg://example/test"
+    cfg = Settings(
+        _env_file=None,
+        environment="production",
+        process_role="worker",
+        worker_database_url="postgresql://worker@example/test",
+    )
+    assert cfg.worker_database_url.startswith("postgresql+psycopg://")
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, environment="production", process_role="worker")
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, vercel_deploy_hook="http://localhost/secret")

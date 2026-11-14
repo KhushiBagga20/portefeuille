@@ -3,8 +3,9 @@
 import argparse
 import copy
 import json
-import time
+import signal
 from datetime import timedelta
+from threading import Event
 
 import httpx
 from sqlalchemy import and_, or_, select, update
@@ -176,6 +177,19 @@ def generate_draft(db, payload):
         db.add(RevisionEvidence(revision_id=revision.id, evidence_id=evidence_id))
 
 
+def request_rebuild(db, payload):
+    project = db.get(Project, payload["project_id"])
+    if project is None or project.version > payload["version"]:
+        return  # A newer publication has its own rebuild job.
+    hook = settings().vercel_deploy_hook
+    if not hook:
+        raise ValueError("Deploy hook is not configured")
+    with httpx.Client(timeout=20, follow_redirects=False) as client:
+        response = client.post(hook)
+        response.raise_for_status()
+    # An accepted trigger is not proof that the build/deployment succeeded.
+
+
 def run_once():
     with Session(engine()) as db:
         claimed = claim(db)
@@ -185,7 +199,9 @@ def run_once():
     try:
         with Session(engine()) as db:
             job = db.get(Job, job_id)
-            {"ingest": ingest, "generate": generate_draft}[job.kind](db, job.payload)
+            {"ingest": ingest, "generate": generate_draft, "rebuild": request_rebuild}[job.kind](
+                db, job.payload
+            )
             # Fencing token: a worker whose lease was reclaimed may not commit output.
             changed = db.execute(
                 update(Job)
@@ -219,9 +235,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--once", action="store_true")
     args = parser.parse_args()
-    while True:
+    shutdown = Event()
+    signal.signal(signal.SIGTERM, lambda *_: shutdown.set())
+    signal.signal(signal.SIGINT, lambda *_: shutdown.set())
+    while not shutdown.is_set():
         worked = run_once()
         if args.once:
             break
         if not worked:
-            time.sleep(2)
+            shutdown.wait(settings().worker_poll_seconds)
+    engine().dispose()

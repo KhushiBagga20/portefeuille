@@ -2,7 +2,8 @@ from fastapi import HTTPException
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from app.models import Project, Publication, Revision
+from app.config import settings
+from app.models import Job, Project, Publication, Revision
 from app.schemas import Content, PublishInput, digest
 
 
@@ -71,6 +72,14 @@ def publish(db: Session, project: Project, body: PublishInput, owner: str):
         idempotency_key=body.idempotency_key,
     )
     db.add(publication)
+    if settings().rebuild_on_publish:
+        db.add(
+            Job(
+                kind="rebuild",
+                dedupe_key=f"rebuild:{project.id}:{publication.version}",
+                payload={"project_id": project.id, "version": publication.version},
+            )
+        )
     db.commit()
     db.refresh(publication)
     return publication

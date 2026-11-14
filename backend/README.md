@@ -118,7 +118,7 @@ Run `uv run alembic check` against an upgraded database to check model/schema dr
 
 - Configure real OAuth, webhook and AI credentials; verify live provider flows.
 - Configure the studio and opt-in Astro content adapter (see docs/FRONTEND_HANDOFF.md).
-- Configure a rebuild after publication: Astro currently renders project pages at BUILD time.
+- Configure VERCEL_DEPLOY_HOOK on the worker and REBUILD_ON_PUBLISH=true on the API; Astro renders project pages at BUILD time.
 - Use a separate restricted worker DB login (scripts/worker-role.sql); keep migrations admin-only.
 - Add GitHub App installation token enrichment, scheduled reconciliation and direct-commit support.
 - Add deployment-specific request rate limits, monitoring, backups, recovery drills and payload retention.
@@ -127,7 +127,7 @@ Run `uv run alembic check` against an upgraded database to check model/schema dr
   review are required today; filtering URLs alone does not guarantee confidentiality.
 - Add approved asset storage, pagination and fine-grained sentence citations as the portfolio grows.
 
-No production deployment, paid API usage, automated rebuild or scheduled digest is enabled. The frontend
+No production deployment, paid API usage or scheduled digest is enabled. Rebuild jobs are implemented but disabled until configured. The frontend
 adapter is opt-in; local content remains the default. Published snapshots are available immediately from the API, not automatically from Astro.
 
 ## Reference documentation

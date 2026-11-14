@@ -53,3 +53,46 @@ unmigrated database. GitHub CI verifies code and migrations; it does not deploy 
 
 Deployment status: configuration and instructions prepared; no Vercel account, database, OAuth app,
 webhook, deploy hook or paid resource has been created or configured.
+
+## Prepared configuration (not activated)
+
+`deployment/vercel.full.json` is the full application configuration to copy to the REPOSITORY ROOT as
+`vercel.json` after account/database/OAuth setup. Its paths are relative to the repository root, not to
+this file's directory. It routes the public site, studio login, webhooks and API under the same domain.
+It starts with zero worker instances; choose the database region and review the daemon quota before
+changing the instance count to one. The existing root vercel.json remains frontend-only until then.
+
+For this portfolio, the verified public settings are:
+
+```text
+FRONTEND_ORIGIN=https://portefeuille-psi.vercel.app
+BACKEND_ORIGIN=https://portefeuille-psi.vercel.app
+OWNER_GITHUB_ID=245793203
+```
+
+The GitHub OAuth callback will be:
+`https://portefeuille-psi.vercel.app/auth/github/callback`.
+
+The worker image is built from Dockerfile.worker and sets PROCESS_ROLE=worker. It requires its own
+WORKER_DATABASE_URL in production; API processes keep PROCESS_ROLE=api (the default) and DATABASE_URL.
+Standard `postgres://` and `postgresql://` connection strings are normalized to psycopg automatically.
+Connection strings and provider keys stay in the hosting secret store. Keep the migration administrator
+login out of the worker. Use scoped environment settings wherever available.
+
+### Rebuild after approval
+
+Create a Deploy Hook for the existing Vercel project's main branch and store its secret URL as
+VERCEL_DEPLOY_HOOK for the worker. Then set REBUILD_ON_PUBLISH=true for the API. Approval atomically
+creates a rebuild job alongside the publication; repeated approval requests do not create extra jobs.
+The worker POSTs only to the configured api.vercel.com deploy-hook URL, with retries on failure.
+No URL secret is saved in job payloads or shown in the studio. An interrupted request can trigger the
+same approved content more than once, because external delivery is at-least-once.
+
+In the studio, a rebuild job marked done means Vercel accepted the trigger, NOT that deployment finished.
+Use Vercel's deployment status to verify completion. If the hook fails, the approved API version remains
+available and the old static site stays live until a successful rebuild. Full deployment-status polling
+is not implemented yet.
+
+The worker drains its current job on SIGTERM and polls at most once every 15 seconds while idle by
+default (WORKER_POLL_SECONDS). Polling keeps a managed database active; review the database's free-tier
+compute limits before leaving a worker running continuously.

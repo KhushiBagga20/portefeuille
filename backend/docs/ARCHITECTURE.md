@@ -62,7 +62,7 @@ The default SQLite tests exercise most behavior, but PostgreSQL is required for 
 - Apply scripts/worker-role.sql and a separate worker login to enforce publish separation in PostgreSQL.
 
 Remaining limitations: no automatic secret scanner, no GitHub installation token retrieval, no external
-rate limiting, no alerting/backups provisioned, and no deploy/rebuild trigger. Human review remains the
+rate limiting, no alerting/backups provisioned, and no deploy/rebuild trigger configured (the optional rebuild job is implemented). Human review remains the
 accuracy and disclosure gate. Structured output and source IDs do not guarantee that prose is true.
 
 ## Extension order
