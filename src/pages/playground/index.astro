@@ -9,6 +9,7 @@ import { playground, rooms } from '../../data/playground';
 import { roomNotes } from '../../lib/content';
 
 const letters = [...playground.title.toUpperCase()];
+const open = rooms.filter((r) => r.open);
 const notes = await roomNotes();
 
 // ── the model cube on the lab's door: three faces of a 3×3, drawn in isometric ──
@@ -53,8 +54,8 @@ const shell = quad([[0, 0, 3], [3, 0, 3], [3, 0, 0], [3, 3, 0], [0, 3, 0], [0, 3
       <div class="hub__intro">
         <p class="hub__lede">{playground.intro}</p>
         <p class="hub__how mono">
-          {rooms.filter((r) => r.open).length} of {rooms.length} rooms open · pick a door<br />
-          <span class="hub__keys">or press an open room's number</span>
+          {open.length === rooms.length ? `${rooms.length} rooms` : `${open.length} of ${rooms.length} rooms open`} · pick a door<br />
+          <span class="hub__keys">or press its number, {open.map((r) => Number(r.no)).join(' ')}</span>
         </p>
       </div>
     </div>

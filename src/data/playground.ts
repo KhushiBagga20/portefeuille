@@ -81,7 +81,7 @@ export const rooms: Room[] = [
     line: 'A filmstrip of the films and shows I keep.',
     accent: 'var(--room-films)',
     onAccent: '#0c0d21',
-    open: false,
+    open: true,
   },
 ];
 
