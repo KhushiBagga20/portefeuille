@@ -84,10 +84,18 @@ def ingest(db, payload):
     )
 
 
-def ask_ai(evidence, model):
+def ask_ai(evidence, model, provider="openai"):
     cfg = settings()
-    if not cfg.openai_api_key or not model:
+    if provider != cfg.ai_provider:
+        raise ValueError("AI provider changed; request a new draft")
+    if not cfg.ai_ready or not model:
         raise ValueError("AI is not configured")
+    if provider == "azure":
+        url = f"{cfg.azure_openai_endpoint}/openai/v1/chat/completions"
+        headers = {"api-key": cfg.azure_openai_api_key}
+    else:
+        url = "https://api.openai.com/v1/chat/completions"
+        headers = {"Authorization": f"Bearer {cfg.openai_api_key}"}
     schema = AIProposal.model_json_schema()
     # OpenAI strict output requires all fields to be required; this proposal has no optional fields.
     prompt = (
@@ -99,10 +107,10 @@ def ask_ai(evidence, model):
         "Use neutral descriptions of observed work. Put missing context in questions. "
         "Return only evidence IDs from the input. This is a private proposal for human review."
     )
-    with httpx.Client(timeout=60) as client:
+    with httpx.Client(timeout=60, follow_redirects=False) as client:
         response = client.post(
-            "https://api.openai.com/v1/chat/completions",
-            headers={"Authorization": f"Bearer {cfg.openai_api_key}"},
+            url,
+            headers=headers,
             json={
                 "model": model,
                 "messages": [
@@ -150,7 +158,9 @@ def generate_draft(db, payload):
         raise ValueError("Evidence access changed")
     # No URLs or complete files are sent. Repository-specific consent is required at API and worker.
     proposal = ask_ai(
-        [{"id": e.id, "title": e.title, "description": e.excerpt[:4000]} for e in rows], payload["model"]
+        [{"id": e.id, "title": e.title, "description": e.excerpt[:4000]} for e in rows],
+        payload["model"],
+        provider=payload.get("provider", "openai"),
     )
     content = copy.deepcopy(base.snapshot)
     content["caseStudy"].setdefault("updates", []).append(
@@ -168,6 +178,7 @@ def generate_draft(db, payload):
             "questions": proposal.questions,
             "evidence_ids": proposal.evidence_ids,
             "model": payload["model"],
+            "provider": payload.get("provider", "openai"),
             "prompt_version": payload["prompt_version"],
             "warning": "Review for accuracy and private information before publishing.",
         },

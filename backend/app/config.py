@@ -24,8 +24,42 @@ class Settings(BaseSettings):
     backend_origin: str = "http://localhost:8000"
     frontend_origin: str = "http://localhost:4321"
     github_webhook_secret: str = ""
-    openai_api_key: str = ""
+    ai_provider: Literal["openai", "azure"] = "openai"
+    openai_api_key: str = Field(default="", repr=False)
     openai_model: str = ""
+    azure_openai_api_key: str = Field(default="", repr=False)
+    azure_openai_endpoint: str = ""
+    azure_openai_deployment: str = ""
+
+    @field_validator("azure_openai_endpoint")
+    @classmethod
+    def azure_endpoint(cls, value):
+        value = value.strip().rstrip("/")
+        if value:
+            url = urlsplit(value)
+            if (
+                url.scheme != "https"
+                or not (url.hostname or "").endswith((".openai.azure.com", ".services.ai.azure.com"))
+                or url.username
+                or url.password
+                or url.port
+                or url.query
+                or url.fragment
+                or url.path not in ("", "/openai/v1")
+            ):
+                raise ValueError("Use the Azure resource HTTPS endpoint or its /openai/v1 base URL")
+            value = f"https://{url.hostname}"
+        return value
+
+    @property
+    def ai_model(self):
+        return self.azure_openai_deployment if self.ai_provider == "azure" else self.openai_model
+
+    @property
+    def ai_ready(self):
+        if self.ai_provider == "azure":
+            return bool(self.azure_openai_api_key and self.azure_openai_endpoint and self.ai_model)
+        return bool(self.openai_api_key and self.ai_model)
 
     @field_validator("database_url", "worker_database_url", mode="before")
     @classmethod

@@ -4,6 +4,7 @@ import hmac
 import json
 from datetime import timedelta
 
+import pytest
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -154,13 +155,23 @@ def test_webhook_verification_dedup_and_worker(client, content):
     assert not run_once()
 
 
-def test_ai_draft_never_publishes(client, content, monkeypatch):
+@pytest.mark.parametrize("provider", ["openai", "azure"])
+def test_ai_draft_never_publishes(client, content, monkeypatch, provider):
+    from app.config import settings
+
+    monkeypatch.setenv("AI_PROVIDER", provider)
+    monkeypatch.setenv("AZURE_OPENAI_API_KEY", "azure-test-key")
+    monkeypatch.setenv("AZURE_OPENAI_ENDPOINT", "https://portfolio.openai.azure.com")
+    monkeypatch.setenv("AZURE_OPENAI_DEPLOYMENT", "portfolio-drafts")
+    settings.cache_clear()
     setup_repo(client, content)
     deliver(client)
     run_once()
     evidence = client.get(f"{ROOT}/{SLUG}/evidence").json()
 
-    def fake_ai(items, model):
+    def fake_ai(items, model, provider="openai"):
+        assert provider == settings().ai_provider
+        assert model == settings().ai_model
         return AIProposal(
             title="Reconnect handling",
             body="Added retry handling.",
@@ -178,6 +189,7 @@ def test_ai_draft_never_publishes(client, content, monkeypatch):
     revisions = client.get(f"{ROOT}/{SLUG}/revisions").json()
     draft = next(r for r in revisions if r["source"] == "ai")
     assert draft["review_notes"]["questions"]
+    assert draft["review_notes"]["provider"] == provider
     assert publish(client, draft, "idempotency-test-ai-2").status_code == 200
     assert len(client.get(f"/api/v1/projects/{SLUG}/case-study").json()["updates"]) == 1
 

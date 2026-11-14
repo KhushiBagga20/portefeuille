@@ -29,7 +29,8 @@ Before enabling this setup:
 4. Configure the API's ENVIRONMENT=production, DATABASE_URL, OWNER_GITHUB_ID, SESSION_SECRET,
    GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_WEBHOOK_SECRET, BACKEND_ORIGIN and FRONTEND_ORIGIN.
    Set both origins to the chosen public origin, without a trailing slash.
-5. Configure the worker's database credentials and optional OPENAI_API_KEY and OPENAI_MODEL separately.
+5. Configure the worker's database credentials and optional AI provider credentials separately.
+   For Azure OpenAI, see the setup below.
    Never expose secrets through PUBLIC_ environment variables or commit them to GitHub.
 6. Use the public domain's /auth/github/callback for the GitHub OAuth application, and /webhooks/github
    for selected repository activity. Keep preview deployments separate from production data/credentials.
@@ -106,6 +107,48 @@ passes frontend build, migration, schema-drift, lint and test checks.
 References: https://vercel.com/docs/daemons/limits and https://vercel.com/docs/queues/python-sdk.
 
 ## Full application configuration
+
+### Azure OpenAI setup
+
+The backend supports Azure's v1 Chat Completions API, including strict JSON Schema output.
+Use an existing Azure OpenAI deployment that supports both features. The deployment name is not
+necessarily the model name. No new Azure resource, model deployment, or paid plan is created by this setup.
+
+1. In the Azure resource's **Keys and Endpoint**, find the endpoint and one resource key.
+2. In Microsoft Foundry **Models + endpoints** (or **Deployments**), open the model deployment
+   and copy its deployment name. Its resource must match the key and endpoint.
+3. In Vercel → portefeuille → Settings → Environment Variables, add these for **Production**:
+
+   | Name | Value | Type |
+   | --- | --- | --- |
+   | `AI_PROVIDER` | `azure` | Plain |
+   | `AZURE_OPENAI_ENDPOINT` | `https://YOUR-RESOURCE.openai.azure.com` | Plain |
+   | `AZURE_OPENAI_DEPLOYMENT` | Your exact deployment name | Plain |
+   | `AZURE_OPENAI_API_KEY` | Your Azure resource key | Sensitive |
+
+4. Redeploy Production after all four values are saved. Do not put the key in chat, source code,
+   frontend variables, or an `OPENAI_API_KEY` variable. No API-version variable is required.
+5. In Studio, select approved repository evidence and generate a draft. Review the result before
+   publishing. Generation uses your Azure account and may incur token charges; this does not enable
+   automatic publication. Existing published snapshots remain unchanged.
+
+The endpoint also accepts a `services.ai.azure.com` resource hostname or a URL ending in
+`/openai/v1/`; it normalizes these before calling `/openai/v1/chat/completions`. It rejects
+non-HTTPS URLs, unrelated hosts, embedded credentials, query strings, and deployment-specific paths.
+HTTP redirects are disabled. Credentials never appear in job payloads or revision metadata.
+Jobs record their provider and deployment name; queued jobs from a different provider fail closed
+after a provider switch, so request a new draft. Existing jobs without a provider are treated as OpenAI.
+
+Missing values disable generation with 503. A 401/403 from Azure usually means mismatched credentials,
+permissions, or resource network restrictions; a 404 can indicate the wrong deployment name or endpoint.
+Check the deployment's API example if the model does not support Chat Completions or structured output.
+Automated tests use mocked provider responses; live credentials must be verified separately.
+
+References: [Azure v1 API](https://learn.microsoft.com/en-us/azure/foundry/openai/latest),
+[deployment names](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/chatgpt),
+[structured output support](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/structured-outputs).
+
+### Services configuration
 
 `deployment/vercel.full.json` is mirrored at the REPOSITORY ROOT as `vercel.json`. Its paths are relative to the repository root, not to
 this file's directory. It routes the public site, studio login, webhooks and API under the same domain.

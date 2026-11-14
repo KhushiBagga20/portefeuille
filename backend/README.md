@@ -71,7 +71,7 @@ Cross-site third-party cookie hosting is intentionally not supported by this con
 Use POST `/api/v1/studio/projects/{slug}/repositories` to register a numeric GitHub repository ID and
 its full name. Each repository maps to one project in this MVP; a project can have several repositories.
 `allow_ai` defaults to false. Set it true only if sending selected titles and description excerpts to
-OpenAI is acceptable. No code diffs or complete source files are sent.
+the configured AI provider (OpenAI or Azure OpenAI) is acceptable. No code diffs or complete source files are sent.
 
 Configure a GitHub App (selected repositories, read-only metadata/contents/pull requests) or a repository
 webhook to send `pull_request` and `release` events to `/webhooks/github`. Set the same strong webhook
@@ -85,14 +85,15 @@ Use GitHub's delivery redelivery UI to recover missed events in this version.
 
 1. Approve/publish the initial project baseline.
 2. Receive GitHub events and run the worker; list evidence via the private API.
-3. Configure OPENAI_API_KEY and an OPENAI_MODEL supporting JSON Schema structured output.
+3. Configure OPENAI_API_KEY and an OPENAI_MODEL supporting JSON Schema structured output, or
+   use Azure OpenAI with the [Azure setup instructions](docs/VERCEL.md#azure-openai-setup).
 4. POST selected evidence IDs and current base_version to the generations endpoint.
 5. Inspect the new AI revision, its evidence IDs, questions and full candidate content.
 6. Edit by POSTing a new revision with parent_id (revisions never change in place).
 7. Publish with the exact revision ID, content_hash, expected_version and a new idempotency key.
 
 Generation is manual in this release to keep cost and editorial control explicit. Requests with the
-same evidence/model/base version deduplicate. Up to 20 descriptions, 4,000 characters each, are sent;
+same evidence/provider/model/base version deduplicate. Up to 20 descriptions, 4,000 characters each, are sent;
 output is capped at 2,000 model tokens. Failures retry at most three times (possible repeated API charges).
 No live OpenAI call was made during implementation. Provider responses and OAuth were tested with fakes.
 AI evidence links support the update as a whole, not individual sentence-level claims.

@@ -19,6 +19,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("GITHUB_WEBHOOK_SECRET", "test-webhook-secret")
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     monkeypatch.setenv("OPENAI_MODEL", "test-model")
+    monkeypatch.setenv("AI_PROVIDER", "openai")
     settings.cache_clear()
     engine.cache_clear()
     Base.metadata.create_all(engine())

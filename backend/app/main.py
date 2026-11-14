@@ -215,7 +215,7 @@ def evidence(slug: str, db: Session = Depends(get_db)):
 )
 def generate(slug: str, body: GenerateInput, db: Session = Depends(get_db)):
     cfg = settings()
-    if not cfg.openai_api_key or not cfg.openai_model:
+    if not cfg.ai_ready:
         raise HTTPException(503, "AI provider is not configured")
     project = project_by_slug(db, slug)
     if project.version != body.base_version:
@@ -234,7 +234,8 @@ def generate(slug: str, body: GenerateInput, db: Session = Depends(get_db)):
         "project_id": project.id,
         "base_version": body.base_version,
         "evidence_ids": ids,
-        "model": cfg.openai_model,
+        "provider": cfg.ai_provider,
+        "model": cfg.ai_model,
         "prompt_version": "1",
     }
     key = "generate:" + digest(payload)
