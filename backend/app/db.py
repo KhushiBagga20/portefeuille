@@ -14,6 +14,18 @@ def engine():
         if cfg.process_role == "worker" and cfg.worker_database_url
         else cfg.database_url
     )
+    return create_db_engine(url)
+
+
+@lru_cache
+def worker_engine():
+    url = settings().worker_database_url
+    if not url:
+        raise ValueError("Queue processing requires WORKER_DATABASE_URL")
+    return create_db_engine(url)
+
+
+def create_db_engine(url):
     options = {"pool_pre_ping": True}
     if url.startswith("postgresql"):
         # Small pools per process; disable prepared statements for transaction poolers.

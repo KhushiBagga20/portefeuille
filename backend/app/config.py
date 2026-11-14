@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     rebuild_on_publish: bool = False
     vercel_deploy_hook: str = Field(default="", repr=False)
     worker_poll_seconds: float = Field(default=15, ge=2, le=300)
+    queue_enabled: bool = False
+    cron_secret: str = Field(default="", repr=False)
     environment: Literal["development", "production", "test"] = "development"
     session_secret: str = ""
     github_client_id: str = ""

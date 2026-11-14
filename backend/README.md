@@ -1,7 +1,8 @@
 # Living portfolio backend
 
 FastAPI + PostgreSQL. No Supabase. A separate backend for the existing **Astro** portfolio.
-The frontend now includes an owner studio and an opt-in API content adapter. This is a tested MVP, not a deployed service.
+The frontend includes an owner studio and an opt-in API content adapter. Neon production storage is
+provisioned; the hosted API is pending OAuth configuration. See docs/VERCEL.md for deployment status.
 
 ## What works
 
@@ -11,6 +12,7 @@ The frontend now includes an owner studio and an opt-in API content adapter. Thi
 - Atomic publication conflict protection and idempotent publication requests.
 - Signed GitHub webhooks for merged default-branch PRs and published non-prerelease releases.
 - Repository allowlist, durable jobs, evidence deduplication, retries and expired-lease recovery.
+- Vercel Queues push processing with a restricted database login and authenticated daily outbox recovery.
 - Explicit owner-triggered AI drafting from selected evidence, with repository-specific consent.
 - Existing content export/import as PRIVATE drafts. No content is published automatically.
 

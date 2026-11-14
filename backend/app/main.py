@@ -7,12 +7,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from starlette.concurrency import run_in_threadpool
 
 from app import auth
 from app.config import settings
 from app.db import get_db
 from app.models import Delivery, Evidence, Job, OwnerSession, Project, Publication, Repository, Revision
 from app.publishing import latest, project_by_slug, publish, revision_view
+from app.queue_delivery import dispatch_job, dispatch_pending
 from app.schemas import GenerateInput, PublishInput, RepositoryInput, RevisionInput, digest
 
 app = FastAPI(title="Portfolio editorial API", version="0.1.0")
@@ -150,6 +152,11 @@ def publish_revision(
     db: Session = Depends(get_db),
 ):
     publication = publish(db, project_by_slug(db, slug), body, owner.owner_id)
+    dispatch_job(
+        db.scalar(
+            select(Job).where(Job.dedupe_key == f"rebuild:{publication.project_id}:{publication.version}")
+        )
+    )
     return {"id": publication.id, "version": publication.version, "published_at": publication.created_at}
 
 
@@ -233,6 +240,7 @@ def generate(slug: str, body: GenerateInput, db: Session = Depends(get_db)):
     key = "generate:" + digest(payload)
     existing = db.scalar(select(Job).where(Job.dedupe_key == key))
     if existing:
+        dispatch_job(existing)
         return {"job_id": existing.id, "status": existing.status}
     job = Job(kind="generate", dedupe_key=key, payload=payload)
     db.add(job)
@@ -241,6 +249,7 @@ def generate(slug: str, body: GenerateInput, db: Session = Depends(get_db)):
     except IntegrityError:
         db.rollback()
         job = db.scalar(select(Job).where(Job.dedupe_key == key))
+    dispatch_job(job)
     return {"job_id": job.id, "status": job.status}
 
 
@@ -250,6 +259,22 @@ def jobs(db: Session = Depends(get_db)):
         {"id": j.id, "kind": j.kind, "status": j.status, "attempts": j.attempts, "error": j.error}
         for j in db.scalars(select(Job).order_by(Job.available_at.desc()).limit(100))
     ]
+
+
+@app.post("/api/v1/studio/jobs/dispatch", dependencies=[Depends(auth.require_owner)])
+def redispatch_jobs(db: Session = Depends(get_db)):
+    return dispatch_pending(db)
+
+
+@app.get("/api/internal/jobs/reconcile")
+def reconcile_jobs(request: Request, db: Session = Depends(get_db)):
+    secret = settings().cron_secret
+    if not secret or not hmac.compare_digest(request.headers.get("authorization", ""), f"Bearer {secret}"):
+        raise HTTPException(401, "Unauthorized")
+    result = dispatch_pending(db)
+    if result["dispatched"] != result["attempted"]:
+        raise HTTPException(503, "Queue delivery deferred")
+    return result
 
 
 @app.post("/webhooks/github", status_code=202)
@@ -292,5 +317,11 @@ async def webhook(request: Request, db: Session = Depends(get_db)):
         db.rollback()
         if not db.get(Delivery, delivery_id):
             raise
+        await run_in_threadpool(
+            dispatch_job, db.scalar(select(Job).where(Job.dedupe_key == "delivery:" + delivery_id))
+        )
         return {"status": "duplicate"}
+    await run_in_threadpool(
+        dispatch_job, db.scalar(select(Job).where(Job.dedupe_key == "delivery:" + delivery_id))
+    )
     return {"status": "queued"}

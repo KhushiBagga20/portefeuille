@@ -1,25 +1,66 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "services": {
-    "web": { "root": ".", "framework": "astro", "buildCommand": "npm run build", "outputDirectory": "dist" },
-    "api": { "root": "backend", "entrypoint": "app.main:app", "framework": "fastapi" }
+    "web": {
+      "root": ".",
+      "framework": "astro",
+      "buildCommand": "npm run build",
+      "outputDirectory": "dist"
+    },
+    "api": {
+      "root": "backend",
+      "entrypoint": "app.main:app",
+      "framework": "fastapi"
+    }
   },
   "rewrites": [
-    { "source": "/api/(.*)", "destination": { "service": "api" } },
-    { "source": "/auth/(.*)", "destination": { "service": "api" } },
-    { "source": "/webhooks/(.*)", "destination": { "service": "api" } },
-    { "source": "/health", "destination": { "service": "api" } },
-    { "source": "/docs", "destination": { "service": "api" } },
-    { "source": "/openapi.json", "destination": { "service": "api" } },
-    { "source": "/(.*)", "destination": { "service": "web" } }
-  ],
-  "daemons": {
-    "worker": {
-      "root": "backend",
-      "entrypoint": "Dockerfile.worker",
-      "instances": { "iad1": 0 },
-      "resources": { "requests": { "memory": "1Gi" } },
-      "terminationGracePeriodSeconds": 120
+    {
+      "source": "/api/(.*)",
+      "destination": {
+        "service": "api"
+      }
+    },
+    {
+      "source": "/auth/(.*)",
+      "destination": {
+        "service": "api"
+      }
+    },
+    {
+      "source": "/webhooks/(.*)",
+      "destination": {
+        "service": "api"
+      }
+    },
+    {
+      "source": "/health",
+      "destination": {
+        "service": "api"
+      }
+    },
+    {
+      "source": "/docs",
+      "destination": {
+        "service": "api"
+      }
+    },
+    {
+      "source": "/openapi.json",
+      "destination": {
+        "service": "api"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "web"
+      }
     }
-  }
+  ],
+  "crons": [
+    {
+      "path": "/api/internal/jobs/reconcile",
+      "schedule": "0 6 * * *"
+    }
+  ]
 }

@@ -28,15 +28,16 @@ from app.models import (
 from app.schemas import AIProposal, Content, digest
 
 
-def claim(db):
+def claim(db, job_id=None):
     instant = now()
     eligible = or_(
         and_(Job.status == "queued", Job.available_at <= instant),
         and_(Job.status == "running", Job.lease_until < instant),
     )
-    job = db.scalar(
-        select(Job).where(eligible).order_by(Job.available_at).with_for_update(skip_locked=True).limit(1)
-    )
+    query = select(Job).where(eligible)
+    if job_id is not None:
+        query = query.where(Job.id == job_id)
+    job = db.scalar(query.order_by(Job.available_at).with_for_update(skip_locked=True).limit(1))
     if not job:
         return None
     if job.attempts >= 3:
@@ -190,14 +191,15 @@ def request_rebuild(db, payload):
     # An accepted trigger is not proof that the build/deployment succeeded.
 
 
-def run_once():
-    with Session(engine()) as db:
-        claimed = claim(db)
+def run_once(job_id=None, db_engine=None):
+    connection = db_engine if db_engine is not None else engine()
+    with Session(connection) as db:
+        claimed = claim(db, job_id)
     if not claimed:
         return False
     job_id, token = claimed
     try:
-        with Session(engine()) as db:
+        with Session(connection) as db:
             job = db.get(Job, job_id)
             {"ingest": ingest, "generate": generate_draft, "rebuild": request_rebuild}[job.kind](
                 db, job.payload
@@ -219,7 +221,7 @@ def run_once():
                 return True
             db.commit()
     except Exception as exc:
-        with Session(engine()) as db:
+        with Session(connection) as db:
             job = db.get(Job, job_id)
             if job.lease_token == token:
                 job.status = "failed" if job.attempts >= 3 else "queued"
