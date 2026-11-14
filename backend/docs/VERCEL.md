@@ -80,7 +80,9 @@ unmigrated database. GitHub CI verifies code and migrations; it does not deploy 
 - A harmless hosted queue smoke job completed in one attempt without changing content or invoking
   a deploy hook. The queue consumer uses its restricted database login.
 - The owner saved a production Deploy Hook. API content builds and publication rebuilds are enabled;
-  the first end-to-end rebuild is being verified.
+  the end-to-end rebuild completed successfully. The restricted worker processed the approved
+  baseline rebuild job in one attempt, the hook started a new deployment, and Vercel reported READY.
+  All six project pages and /health return 200; the original homepage project order is preserved.
 - Still required: selected repository webhooks and AI provider credentials. No paid plan has been enabled.
 
 The root configuration enables frontend/API services and queue processing. Do not switch

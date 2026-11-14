@@ -279,8 +279,8 @@ Copy `.env.example` to `.env` only when configuring the connection.
 Do not enable it until your initial projects are published in the backend.
 
 Publishing changes the API. Astro still needs a new build/deployment to update the hosted website.
-A hosting-specific rebuild trigger is not configured yet.
+The production backend queues a Vercel rebuild after approval; the website updates once that build succeeds.
 
 [Frontend integration details](backend/docs/FRONTEND_HANDOFF.md) · [Architecture](backend/docs/ARCHITECTURE.md)
 
-[Vercel deployment guide](backend/docs/VERCEL.md) — the API, GitHub owner login, Neon database and queue consumer are live; initial publication and external content integrations remain to be configured.
+[Vercel deployment guide](backend/docs/VERCEL.md) — the API, GitHub owner login, Neon database and queue consumer are live. All six approved baselines are published and automatic rebuilds are verified; repository webhooks and AI credentials remain to be configured.

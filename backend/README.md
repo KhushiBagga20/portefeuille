@@ -2,8 +2,8 @@
 
 FastAPI + PostgreSQL. No Supabase. A separate backend for the existing **Astro** portfolio.
 The frontend includes an owner studio and an opt-in API content adapter. Neon production storage is
-provisioned, and the hosted API, owner login and queue consumer are verified. Initial publication,
-repository webhooks, AI credentials and the rebuild hook still need configuration. See docs/VERCEL.md.
+provisioned, and the hosted API, owner login and queue consumer are verified. The six owner-approved baselines are published, and approved publications trigger website rebuilds.
+Repository webhooks and AI credentials still need configuration. See docs/VERCEL.md.
 
 ## What works
 
@@ -120,8 +120,8 @@ Run `uv run alembic check` against an upgraded database to check model/schema dr
 ## Remaining integrations
 
 - Configure selected repository webhooks and AI credentials; verify the live drafting flow.
-- Configure the studio and opt-in Astro content adapter (see docs/FRONTEND_HANDOFF.md).
-- Configure VERCEL_DEPLOY_HOOK on the worker and REBUILD_ON_PUBLISH=true on the API; Astro renders project pages at BUILD time.
+- Keep the studio and production Astro content adapter configured (see docs/FRONTEND_HANDOFF.md).
+- Keep the configured VERCEL_DEPLOY_HOOK and REBUILD_ON_PUBLISH=true; Astro renders project pages at BUILD time.
 - Keep using the provisioned restricted worker DB login; keep migrations admin-only.
 - Add GitHub App installation token enrichment, scheduled reconciliation and direct-commit support.
 - Add deployment-specific request rate limits, monitoring, backups, recovery drills and payload retention.
@@ -130,8 +130,9 @@ Run `uv run alembic check` against an upgraded database to check model/schema dr
   review are required today; filtering URLs alone does not guarantee confidentiality.
 - Add approved asset storage, pagination and fine-grained sentence citations as the portfolio grows.
 
-The production API and queue consumer are deployed; paid AI usage and scheduled AI digests are not enabled. Rebuild jobs are implemented but disabled until configured. The frontend
-adapter is opt-in; local content remains the default. Published snapshots are available immediately from the API, not automatically from Astro.
+The production API and queue consumer are deployed; paid AI usage and scheduled AI digests are not enabled. Rebuild jobs and the production API content adapter are enabled. Local development still uses checked-in
+content unless PORTFOLIO_API_URL is set. Approved snapshots are available immediately from the API;
+the static website updates after the queued rebuild succeeds.
 
 ## Reference documentation
 
