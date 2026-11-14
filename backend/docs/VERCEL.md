@@ -13,7 +13,9 @@ is needed. PostgreSQL must be a managed external database, not a file inside a f
 
 The proposed full setup uses one public domain with routes `/api/*`, `/auth/*`, `/webhooks/*`, `/health`,
 `/docs` and `/openapi.json` directed to the FastAPI service. All other routes go to Astro. This keeps
-owner cookies on the same site. The API service root is backend/ and entrypoint is app.main:app.
+owner cookies on the same site. The API service root is backend/ and its service entrypoint is pyproject.toml;
+[tool.vercel].entrypoint declares app.main:app. This explicit manifest entrypoint is required
+to compile subscribers in Services mode.
 The private subscriber is app.queue_subscriber, registered in backend/pyproject.toml. It uses a
 restricted worker login. The CLI worker remains available for local development.
 

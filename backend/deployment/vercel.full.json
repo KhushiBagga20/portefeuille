@@ -9,7 +9,7 @@
     },
     "api": {
       "root": "backend",
-      "entrypoint": "app.main:app",
+      "entrypoint": "pyproject.toml",
       "framework": "fastapi"
     }
   },

@@ -1,6 +1,7 @@
 """Postgres is the durable outbox; Vercel Queues wakes a restricted job consumer."""
 
 import logging
+import os
 
 from sqlalchemy import and_, or_, select
 from vercel.queue import DuplicateIdempotencyKeyError
@@ -22,7 +23,9 @@ def dispatch_job(job):
             {"job_id": job.id},
             retention=7 * 24 * 3600,
             # Daily reconciliation can recover a lost/expired delivery. DB leases fence duplicates.
-            idempotency_key=f"job:{job.id}:{now().date().isoformat()}",
+            idempotency_key=(
+                f"job:{job.id}:{os.environ.get('VERCEL_DEPLOYMENT_ID', 'local')}:{now().date().isoformat()}"
+            ),
         )
     except DuplicateIdempotencyKeyError:
         return True
