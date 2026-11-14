@@ -7,12 +7,17 @@ import ComingSoon from './ComingSoon.astro';
 import FloppyDisk from './FloppyDisk.astro';
 import PosterHead from './PosterHead.astro';
 import { chapter } from '../data/chapters';
-import { archive, diskTones, projects } from '../data/projects';
+import { diskTones } from '../data/projects';
+import { getArchive, getProjects } from '../lib/content';
+import type { Project } from '../lib/types';
+
+// through the content layer, so this list and the case-study pages always agree
+const [projects, archive] = await Promise.all([getProjects(), getArchive()]);
 
 const c = chapter('projects');
 const [lead, ...rest] = projects;
 const no = (i: number) => String(i + 1).padStart(2, '0');
-const meta = (p: (typeof projects)[number]) => [p.type, p.event].filter(Boolean).join(' · ');
+const meta = (p: Project) => [p.type, p.event].filter(Boolean).join(' · ');
 ---
 
 <section id="projects" class="work poster s-paper-2" {...c.attrs} aria-labelledby="projects-title">
