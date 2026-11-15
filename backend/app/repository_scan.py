@@ -27,6 +27,7 @@ MAX_FILE = 160_000
 MAX_FILES = 320
 CHUNK_SIZE = 80_000
 PROMPT_VERSION = "repository-1"
+COMPOSITION_VERSION = "case-study-2"
 EXTENSIONS = {
     ".md",
     ".txt",
@@ -338,7 +339,7 @@ def enqueue_scan(db, repo):
     if active:
         return active
     sha = repository_head(repo)
-    key = "scan:" + digest([repo.id, sha, cfg.ai_provider, cfg.ai_model, PROMPT_VERSION])
+    key = "scan:" + digest([repo.id, sha, cfg.ai_provider, cfg.ai_model, PROMPT_VERSION, COMPOSITION_VERSION])
     existing = db.scalar(select(Job).where(Job.dedupe_key == key))
     if existing:
         return existing
@@ -353,6 +354,7 @@ def enqueue_scan(db, repo):
             "provider": cfg.ai_provider,
             "model": cfg.ai_model,
             "prompt_version": PROMPT_VERSION,
+            "composition_version": COMPOSITION_VERSION,
             "stage": "download",
             "progress": "Fetching repository snapshot",
         },
@@ -440,15 +442,25 @@ def scan_step(db, job):
         )
         draft = complete(
             RepositoryDraft,
-            "Compose a substantial technical portfolio case study from these "
-            "section analyses. Keep uncertain or personal context in questions. Use 4-10 features "
-            "and 2-5 deep dives where supported. Draw a small architecture diagram with valid "
-            "node IDs and edges, max 10 nodes, grid columns 0-3, rows 0-4. Avoid marketing claims.",
+            "Write a readable portfolio case study for a technically curious visitor. "
+            "Start with what the product does and how its major parts work together. "
+            "Use 2-3 concise built paragraphs, 4-10 features (1-2 sentences each), and 2-5 "
+            "deep dives (one focused paragraph each). Explain concrete engineering choices without "
+            "inventing the author's reasons. Keep the narrative readable, not a code audit: avoid "
+            "repeating 'the supplied implementation', 'the repository contains', or 'tests were not run'. "
+            "Never claim tests passed or performance was measured; those limitations are stated once "
+            "in private review metadata. Move suspected bugs and verification requests into questions. "
+            "Combine the analyses across ALL sections; a file may span several sections. "
+            "The inspected_files list is authoritative coverage. Do not ask the owner to supply "
+            "files already listed there. Keep at most 5 questions, focusing on motivation, intended "
+            "users, verified outcomes, and genuine unresolved decisions. Draw a small architecture "
+            "diagram with valid node IDs and edges, max 10 nodes, columns 0-3, rows 0-4. "
+            "Avoid marketing claims and unsupported certainty.",
             {
                 "analyses": [s["analysis"] for s in payload["sections"]],
                 "coverage": {
-                    "inspected_files": len(payload["coverage"]["inspected"]),
-                    "skipped_files": len(payload["coverage"]["skipped"]),
+                    "inspected_files": [f["path"] for f in payload["coverage"]["inspected"]],
+                    "skipped_files": payload["coverage"]["skipped"],
                 },
             },
             payload["provider"],
@@ -465,7 +477,6 @@ def scan_step(db, job):
         case["features"] = [
             {
                 "title": f.title,
-                "note": f"Repository evidence: {f.basis}; review required.",
                 "items": [f.statement],
             }
             for f in draft.features
@@ -523,6 +534,7 @@ def scan_step(db, job):
                 "citations": citations,
                 "model": payload["model"],
                 "provider": payload["provider"],
+                "composition_version": payload.get("composition_version", "case-study-1"),
                 "warning": "Static source review, not proof of runtime behavior. Review all claims. "
                 "Existing personal context was retained from your published baseline.",
             },

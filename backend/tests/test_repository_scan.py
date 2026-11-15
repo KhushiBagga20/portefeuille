@@ -78,6 +78,7 @@ def fake_complete(model_type, prompt, data, provider, model):
     }
     if model_type is SectionAnalysis:
         return SectionAnalysis(findings=[finding], questions=["Who tested it?"])
+    assert data["coverage"]["inspected_files"] == ["main.swift"]
     return RepositoryDraft(
         built=[finding],
         features=[dict(finding, title="Entry point")],
@@ -128,6 +129,12 @@ def test_scan_checkpoint_private_draft_and_incremental_reuse(client, content, mo
     for _ in range(3):
         run_once(next_job)
     assert calls == [SectionAnalysis, RepositoryDraft, RepositoryDraft]
+    monkeypatch.setattr("app.repository_scan.COMPOSITION_VERSION", "case-study-test")
+    refreshed = client.post(url, json={}).json()["job_id"]
+    assert refreshed != next_job
+    for _ in range(3):
+        run_once(refreshed)
+    assert calls == [SectionAnalysis, RepositoryDraft, RepositoryDraft, RepositoryDraft]
 
 
 def test_source_consent_revocation_and_scope(client, content, monkeypatch):
