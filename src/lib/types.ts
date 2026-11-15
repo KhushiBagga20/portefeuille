@@ -291,6 +291,7 @@ export interface Artwork {
 }
 
 export type WritingKind = 'poem' | 'essay' | 'fiction';
+export type WritingSide = 'personal' | 'professional';
 
 export interface WritingMeta {
   slug: string;
@@ -298,6 +299,9 @@ export interface WritingMeta {
   sample?: boolean;
   title: string;
   kind: WritingKind;
+  side: WritingSide;
+  /** where it was first published */
+  source?: string;
   /** ISO date */
   date?: string;
   /** a line under the title */

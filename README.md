@@ -223,6 +223,8 @@ screens and reduced motion get the same frames laid down the page.
 title unfolds its opening lines when reached for. The reading page sets a poem exactly as
 typed, an essay in spaced paragraphs, a story in indented ones; the reader can change the
 page colour, the typeface and the size, and **focus** clears everything but the text.
+The room has two halves, **Professional** and **Personal**; a piece picks one with `side:` (personal if left out).
+
 *To add a piece:* create `src/content/writing/your-title.md` — the sample essay in that
 folder is the instructions.
 

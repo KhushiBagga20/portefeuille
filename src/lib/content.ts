@@ -239,6 +239,8 @@ function metaOf(entry: WritingEntry): WritingMeta {
     sample: entry.data.sample || undefined,
     title: entry.data.title,
     kind: entry.data.kind,
+    side: entry.data.side,
+    source: entry.data.source,
     date: entry.data.date?.toISOString().slice(0, 10),
     dek: entry.data.dek,
     excerpt: entry.data.excerpt ?? openingOf(body, entry.data.kind),
