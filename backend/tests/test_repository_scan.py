@@ -264,3 +264,59 @@ def test_mind_map_citation_outside_sources_is_rejected(client, content, monkeypa
             == 0
         )
         assert db.scalar(select(func.count()).select_from(Publication)) == 1
+
+
+def test_final_schema_constrains_architecture_and_thinking_citations():
+    schema = strict_schema(RepositoryDraft, ["main.swift"])
+    assert schema["properties"]["architecture_files"]["items"]["enum"] == ["main.swift"]
+    assert schema["$defs"]["DraftSection"]["properties"]["files"]["items"]["enum"] == ["main.swift"]
+
+
+def test_source_tree_skips_media_secrets_links_and_enforces_budgets(monkeypatch):
+    from types import SimpleNamespace
+
+    from app.repository_scan import download_source_tree
+
+    def entry(path, size=20, mode="100644"):
+        return {"path": path, "size": size, "mode": mode, "type": "blob"}
+
+    entries = [
+        entry("src/a.ts"),
+        entry("src/b.ts"),
+        entry("public/large.png", 30000000),
+        entry(".env.local"),
+        entry("linked.ts", mode="120000"),
+        entry("node_modules/lib.ts"),
+    ]
+    monkeypatch.setattr("app.repository_scan.github_json", lambda _: {"tree": entries, "truncated": False})
+    monkeypatch.setattr("app.repository_scan.MAX_SOURCE", 25)
+    fetched = []
+
+    def fetch(repo, sha, item):
+        fetched.append(item["path"])
+        return {"path": item["path"], "content": "export const value=1", "hash": "hash"}, None
+
+    monkeypatch.setattr("app.repository_scan.read_source_blob", fetch)
+    files, skipped = download_source_tree(SimpleNamespace(full_name="owner/repo"), "a" * 40)
+    assert fetched == ["src/a.ts"]
+    assert len(files) == 1 and len(skipped) == 5
+    assert next(s for s in skipped if s["path"] == "src/b.ts")["reason"] == "scan budget limit"
+    monkeypatch.setattr("app.repository_scan.github_json", lambda _: {"tree": [], "truncated": True})
+    with pytest.raises(ScanError, match="tree exceeds"):
+        download_source_tree(SimpleNamespace(full_name="owner/repo"), "a" * 40)
+
+
+def test_source_blob_filters_secret_content(monkeypatch):
+    from types import SimpleNamespace
+
+    import httpx
+
+    from app.repository_scan import read_source_blob
+
+    raw = b'api_key = "' + b"a" * 40 + b'"'
+    client = httpx.Client(transport=httpx.MockTransport(lambda request: httpx.Response(200, content=raw)))
+    monkeypatch.setattr("app.repository_scan.httpx.Client", lambda **kwargs: client)
+    file, skipped = read_source_blob(
+        SimpleNamespace(full_name="owner/repo"), "a" * 40, {"path": "src/config.ts", "size": len(raw)}
+    )
+    assert file is None and "potential secret" in skipped["reason"]

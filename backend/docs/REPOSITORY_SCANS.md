@@ -23,6 +23,9 @@ extracting or executing them. Limits: 20 MB compressed, 40 MB expanded, 5,000 ar
 320 eligible files, 160 KB per file, and 1.6 MB total selected source. Files are split into sections
 of at most 80,000 characters, with at most 32 sections. Secret-looking files/content, binaries,
 generated files, dependencies and links are skipped and listed in private coverage metadata.
+If media makes the archive too large, a commit-pinned GitHub tree selects eligible source files
+before downloading them, with at most six parallel fetches and the same file/text budgets.
+Truncated or oversized trees are rejected; links and media are never fetched in this fallback.
 Detection reduces accidental disclosure but cannot guarantee finding every credential in code.
 Only repositories the owner is comfortable sending to the configured AI provider should be enabled.
 

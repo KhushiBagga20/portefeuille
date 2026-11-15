@@ -11,6 +11,7 @@ import logging
 import re
 import tarfile
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import PurePosixPath
 from urllib.parse import quote
 
@@ -154,6 +155,10 @@ class ScanError(ValueError):
     retry_delay = 0
 
 
+class ArchiveLimitError(ScanError):
+    """An oversized archive may still contain a small, bounded set of source files."""
+
+
 def complete(model_type, prompt, data, provider, model):
     cfg = settings()
     if provider != cfg.ai_provider or model != cfg.ai_model or not cfg.ai_ready:
@@ -265,7 +270,7 @@ def read_archive(raw):
         for index, entry in enumerate(archive):
             expanded += entry.size
             if expanded > 40_000_000:
-                raise ScanError("Expanded archive exceeds scan limit")
+                raise ArchiveLimitError("Expanded archive exceeds scan limit")
             if index > 5000:
                 raise ScanError("Archive entry limit exceeded")
             path = entry.name.split("/", 1)[-1]
@@ -304,15 +309,84 @@ def read_archive(raw):
 def download_sources(repo, sha):
     if not re.fullmatch(r"[a-f0-9]{40}", sha):
         raise ScanError("Invalid commit SHA")
+    try:
+        raw = bytearray()
+        with httpx.Client(timeout=45, follow_redirects=False) as client:
+            with client.stream(
+                "GET", f"https://codeload.github.com/{repo.full_name}/tar.gz/{sha}"
+            ) as response:
+                response.raise_for_status()
+                for block in response.iter_bytes():
+                    raw.extend(block)
+                    if len(raw) > MAX_ARCHIVE:
+                        raise ArchiveLimitError("Repository archive exceeds scan limit")
+        return read_archive(raw)
+    except ArchiveLimitError:
+        return download_source_tree(repo, sha)
+
+
+def read_source_blob(repo, sha, entry):
+    path = entry["path"]
     raw = bytearray()
-    with httpx.Client(timeout=45, follow_redirects=False) as client:
-        with client.stream("GET", f"https://codeload.github.com/{repo.full_name}/tar.gz/{sha}") as response:
-            response.raise_for_status()
+    url = f"https://raw.githubusercontent.com/{repo.full_name}/{sha}/{quote(path, safe='/')}"
+    with httpx.Client(timeout=25, follow_redirects=False) as client:
+        with client.stream("GET", url) as response:
+            if response.status_code != 200:
+                raise ScanError(f"Source file fetch failed (HTTP {response.status_code})")
             for block in response.iter_bytes():
                 raw.extend(block)
-                if len(raw) > MAX_ARCHIVE:
-                    raise ScanError("Repository archive exceeds scan limit")
-    return read_archive(raw)
+                if len(raw) > MAX_FILE or len(raw) > entry["size"]:
+                    raise ScanError("Source file exceeds declared size")
+    if len(raw) != entry["size"]:
+        raise ScanError("Source file is incomplete")
+    try:
+        source = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return None, {"path": path, "reason": "non-text content"}
+    if "\x00" in source or SECRET.search(source):
+        return None, {"path": path, "reason": "binary or potential secret detected"}
+    if not source.strip():
+        return None, {"path": path, "reason": "empty file"}
+    return {"path": path, "content": source, "hash": digest(source)}, None
+
+
+def download_source_tree(repo, sha):
+    # Commit-pinned source-only fallback avoids downloading a repository's media library.
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo.full_name) or not re.fullmatch(
+        r"[a-f0-9]{40}", sha
+    ):
+        raise ScanError("Invalid repository snapshot")
+    tree = github_json(f"/repos/{repo.full_name}/git/trees/{sha}?recursive=1")
+    if tree.get("truncated") or len(tree["tree"]) > 5000:
+        raise ScanError("Repository tree exceeds scan limit")
+    selected, skipped, total = [], [], 0
+    for entry in sorted(tree["tree"], key=lambda item: item["path"]):
+        if entry["type"] == "tree":
+            continue
+        path, size = entry["path"], entry.get("size", 0)
+        reason = excluded(path)
+        if entry["type"] != "blob" or entry.get("mode") not in ("100644", "100755"):
+            reason = "links and special files"
+        elif not isinstance(size, int) or size < 0 or size > MAX_FILE:
+            reason = "file size limit"
+        elif len(selected) >= MAX_FILES or total + size > MAX_SOURCE:
+            reason = "scan budget limit"
+        if reason:
+            skipped.append({"path": path, "reason": reason})
+            continue
+        selected.append(entry)
+        total += size
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        results = list(pool.map(lambda entry: read_source_blob(repo, sha, entry), selected))
+    files = []
+    for file, skip in results:
+        if file:
+            files.append(file)
+        if skip:
+            skipped.append(skip)
+    if not files:
+        raise ScanError("No eligible source files found")
+    return files, skipped
 
 
 def batches(files):
@@ -498,6 +572,7 @@ def scan_step(db, job):
             "describe the software without attributing all its original implementation to the owner. "
             "Avoid marketing claims and unsupported certainty.",
             {
+                "allowed_files": [f["path"] for f in payload["coverage"]["inspected"]],
                 "project_context": {
                     key: base.snapshot["project"][key]
                     for key in ("name", "type", "oneLiner")
