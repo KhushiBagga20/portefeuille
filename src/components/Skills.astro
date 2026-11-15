@@ -7,7 +7,9 @@
 import PosterHead from './PosterHead.astro';
 import { chapter } from '../data/chapters';
 import { skills } from '../data/profile';
-import { archive, projects } from '../data/projects';
+import { getArchive, getProjects } from '../lib/content';
+
+const [projects, archive] = await Promise.all([getProjects(), getArchive()]);
 
 const c = chapter('skills');
 

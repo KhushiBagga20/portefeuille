@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     azure_openai_deployment: str = ""
     # Explicit source-code consent, separate from consent to send PR descriptions.
     github_scan_repositories: str = ""
+    github_owner_login: str = ""
 
     @property
     def scan_repository_ids(self):

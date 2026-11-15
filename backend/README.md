@@ -54,6 +54,12 @@ it never overwrites ongoing editing or publishes anything.
 
 ## Configure owner login
 
+Set `GITHUB_OWNER_LOGIN` to the GitHub username matching `OWNER_GITHUB_ID` to enable
+Studio's repository picker. Select public repositories, prepare private project-card
+drafts, review them, then publish. Importing cards does not enable AI source analysis.
+The homepage project list and skill map read published backend content when
+`PORTFOLIO_API_URL` is configured; new publications appear after the website rebuild.
+
 1. Create a GitHub OAuth app with callback `http://localhost:8000/auth/github/callback` for local use.
 2. Set GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, and your numeric OWNER_GITHUB_ID in `.env`.
 3. Generate SESSION_SECRET using the command in `.env.example`.

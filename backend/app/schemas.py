@@ -242,6 +242,10 @@ class GenerateInput(Shape):
     base_version: int = Field(ge=1)
 
 
+class ImportRepositoriesInput(Shape):
+    repository_ids: list[Annotated[str, Field(pattern=r"^\d+$")]] = Field(min_length=1, max_length=20)
+
+
 class AIProposal(Shape):
     title: str = Field(min_length=1, max_length=200)
     body: str = Field(min_length=1, max_length=5000)

@@ -7,7 +7,10 @@ import ComingSoon from './ComingSoon.astro';
 import FloppyDisk from './FloppyDisk.astro';
 import PosterHead from './PosterHead.astro';
 import { chapter } from '../data/chapters';
-import { archive, diskTones, projects } from '../data/projects';
+import { diskTones } from '../data/projects';
+import { getArchive, getProjects } from '../lib/content';
+
+const [projects, archive] = await Promise.all([getProjects(), getArchive()]);
 
 const c = chapter('projects');
 const [lead, ...rest] = projects;
@@ -25,7 +28,7 @@ const meta = (p: (typeof projects)[number]) => [p.type, p.event].filter(Boolean)
     </header>
 
     <!-- ── 01, at full size ─────────────── -->
-    <article class="feature" style={`--tone:${diskTones[lead.disk.tone].body}`}>
+    {lead && <article class="feature" style={`--tone:${diskTones[lead.disk.tone].body}`}>
       <div class="feature__text">
         <p class="feature__no label">
           <span>{no(0)}</span>
@@ -65,7 +68,7 @@ const meta = (p: (typeof projects)[number]) => [p.type, p.event].filter(Boolean)
           <Arrow />
         </a>
       </div>
-    </article>
+    </article>}
 
     <!-- ── 02 onward, as an index ────────── -->
     <ol class="index" start="2" data-index>

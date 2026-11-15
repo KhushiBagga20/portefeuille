@@ -12,11 +12,19 @@ from starlette.concurrency import run_in_threadpool
 from app import auth
 from app.config import settings
 from app.db import get_db
+from app.github_projects import catalog, prepare_projects
 from app.models import Delivery, Evidence, Job, OwnerSession, Project, Publication, Repository, Revision
 from app.publishing import latest, project_by_slug, publish, revision_view
 from app.queue_delivery import dispatch_job, dispatch_pending
 from app.repository_scan import ScanError, enqueue_scan, scan_allowed, schedule_scans
-from app.schemas import GenerateInput, PublishInput, RepositoryInput, RevisionInput, digest
+from app.schemas import (
+    GenerateInput,
+    ImportRepositoriesInput,
+    PublishInput,
+    RepositoryInput,
+    RevisionInput,
+    digest,
+)
 
 app = FastAPI(title="Portfolio editorial API", version="0.1.0")
 app.add_middleware(
@@ -104,6 +112,28 @@ def create_project(body: RevisionInput, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(409, "Project slug already exists") from None
     return revision_view(revision)
+
+
+@app.get("/api/v1/studio/github/repositories", dependencies=[Depends(auth.require_owner)])
+def github_catalog(db: Session = Depends(get_db)):
+    try:
+        return catalog(db)
+    except ScanError as exc:
+        raise HTTPException(503, str(exc)) from None
+
+
+@app.post("/api/v1/studio/github/project-drafts", dependencies=[Depends(auth.require_owner)])
+def import_github_projects(body: ImportRepositoriesInput, db: Session = Depends(get_db)):
+    try:
+        result = prepare_projects(db, body.repository_ids)
+        db.commit()
+        return result
+    except ScanError as exc:
+        db.rollback()
+        raise HTTPException(422, str(exc)) from None
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(409, "A project already exists; refresh the repository list") from None
 
 
 @app.post(

@@ -8,6 +8,8 @@ type ProjectState = { id: string; slug: string; version: number };
 type Evidence = { id: string; title: string; excerpt: string; source_url: string };
 type Publication = { version: number; revision_id: string; content_hash: string; snapshot: Content };
 type Job = { kind: string; status: string; error?: string; progress?: string; project_id?: string; version?: number };
+type CatalogRepository = { github_id: string; name: string; full_name: string; description: string; fork: boolean; archived: boolean; project_slug?: string; published: boolean };
+type ImportedProject = { slug: string; published: boolean; revision: Revision | null };
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const root = el<HTMLElement>('studio');
 const apiOrigin = (root.dataset.api ?? '').replace(/\/$/, '');
@@ -27,6 +29,7 @@ let publishKey = crypto.randomUUID();
 let publications: Publication[] = [];
 let statusBusy = false;
 let currentJobs: Job[] = [];
+let importedProjects: ImportedProject[] = [];
 
 function notice(message: string) { el('notice').textContent = message; }
 function currentProject() { return projects.find(p => p.slug === projectSelect.value); }
@@ -35,9 +38,9 @@ function livePublication() { return publications.find(p => p.version === current
 function isPublished(revision: Revision) { return !revision.id || publications.some(p => p.revision_id === revision.id || p.content_hash === revision.content_hash); }
 function readyDrafts() { return revisions.filter(r => r.base_version === currentProject()?.version && !isPublished(r)); }
 function dateLabel(value: string) { return new Date(value).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); }
-function sourceLabel(source: string) { return source === 'ai-repository' ? 'Full case study' : source === 'ai' ? 'Short AI update' : 'Edited draft'; }
+function sourceLabel(source: string) { return source === 'github-import' ? 'GitHub project card' : source === 'ai-repository' ? 'Full case study' : source === 'ai' ? 'Short AI update' : 'Edited draft'; }
 function controls() {
-  root.querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement | HTMLTextAreaElement>('input,button,select,textarea').forEach(node => { node.disabled = busy; });
+  root.querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement | HTMLTextAreaElement>('input,button,select,textarea').forEach(node => { node.disabled = busy || node.dataset.locked === 'true'; });
   const pending = Boolean(titleInput.value.trim() || bodyInput.value.trim());
   const published = selected ? isPublished(selected) : false;
   const stale = selected?.base_version !== currentProject()?.version;
@@ -45,6 +48,7 @@ function controls() {
   el<HTMLButtonElement>('publish').textContent = `Publish this draft as version ${(currentProject()?.version ?? 0) + 1}`;
   el<HTMLButtonElement>('save').disabled = busy || pending || !selected || !dirty || stale;
   el<HTMLButtonElement>('generate').disabled = busy || !currentProject()?.version;
+  el<HTMLButtonElement>('publish-projects').disabled = busy || !importedProjects.some(p => p.revision && !p.published);
   el<HTMLButtonElement>('latest-draft').disabled = busy || !readyDrafts().length || readyDrafts()[0]?.id === selected?.id;
   el('latest-draft').textContent = readyDrafts()[0]?.id === selected?.id ? 'Latest ready draft selected' : readyDrafts().length ? 'Review latest ready draft' : 'No newer draft available';
   el('version').textContent = currentProject()?.version ? `Version ${currentProject()!.version}` : 'Not published yet';
@@ -282,6 +286,48 @@ el<HTMLFormElement>('repo-form').onsubmit = event => {
   });
 };
 window.addEventListener('beforeunload', event => { if (hasUnsaved()) event.preventDefault(); });
+el('load-repositories').onclick = () => void perform(async () => {
+  const repositories = await request<CatalogRepository[]>('/api/v1/studio/github/repositories');
+  el('github-catalog').replaceChildren();
+  for (const repo of repositories) {
+    const label = document.createElement('label'); label.className = 'check';
+    const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.value = repo.github_id;
+    const text = document.createElement('span'); text.textContent = `${repo.name}${repo.fork ? ' · fork' : ''}${repo.archived ? ' · archived' : ''}${repo.project_slug ? ` · ${repo.published ? 'published' : 'draft exists'} as ${repo.project_slug}` : ''}${repo.description ? ` — ${repo.description}` : ''}`;
+    if (repo.published) { checkbox.disabled = true; checkbox.dataset.locked = 'true'; }
+    label.append(checkbox, text); el('github-catalog').append(label);
+  }
+  el('project-picker-status').textContent = 'Select the repositories you want to add. Existing published projects stay as they are.';
+});
+function renderImportedProjects() {
+  el('project-card-previews').replaceChildren();
+  for (const item of importedProjects.filter(p => p.revision && !p.published)) {
+    const project = item.revision!.content.project;
+    const section = document.createElement('section'); const title = document.createElement('h3'); title.textContent = project.name;
+    const description = document.createElement('p'); description.textContent = project.oneLiner || 'No repository description yet. You can edit this project in Studio.';
+    const link = document.createElement('p'); link.textContent = `${project.type} · ${project.links.github ?? ''}`;
+    section.append(title, description, link); el('project-card-previews').append(section);
+  }
+}
+el('prepare-projects').onclick = () => void perform(async () => {
+  if (hasUnsaved()) throw new Error('Save your current edits before adding projects.');
+  const repository_ids = [...el('github-catalog').querySelectorAll<HTMLInputElement>('input:checked')].map(n => n.value);
+  if (!repository_ids.length) throw new Error('Select at least one repository first.');
+  importedProjects = await request<ImportedProject[]>('/api/v1/studio/github/project-drafts', { repository_ids });
+  renderImportedProjects(); await refreshProjects();
+  el('project-picker-status').textContent = 'Cards saved as private drafts. Review the names and descriptions below, then publish these cards. Full case studies can be added later.';
+});
+el('publish-projects').onclick = () => void perform(async () => {
+  if (hasUnsaved()) throw new Error('Save your current edits before publishing project cards.');
+  let count = 0;
+  for (const item of importedProjects.filter(p => p.revision && !p.published)) {
+    const r = item.revision!;
+    await request(`/api/v1/studio/projects/${encodeURIComponent(item.slug)}/publications`, { revision_id: r.id, content_hash: r.content_hash, expected_version: r.base_version, idempotency_key: `github-card-${r.id}` });
+    item.published = true; count++;
+    el('project-picker-status').textContent = `${count} project cards published. Website rebuilds are being requested.`;
+  }
+  renderImportedProjects(); await refreshProjects();
+  notice(`${count} selected project cards published. They will appear after the website rebuild finishes.`);
+});
 window.setInterval(() => void refreshStatus(), 20000);
 void perform(async () => {
   try {
