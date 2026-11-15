@@ -268,24 +268,33 @@ const posterFiles = import.meta.glob<ImageMetadata>('../assets/films/*.{png,jpg,
 export type ShownScreening = Omit<Screening, 'file'> & {
   no: string;
   shelfNames: string[];
-  poster?: { src: string; width: number; height: number; alt: string };
+  poster?: { src: string; width?: number; height?: number; alt: string; kind: 'poster' | 'titlecard' };
+  /** the tied set (a shelf with `tied: true`) this title belongs to, and its place in it */
+  set?: { id: string; name: string; at: number; of: number };
 };
 
 export async function getScreenings(): Promise<ShownScreening[]> {
   const list = realOrSamples(screenings);
   return Promise.all(
-    list.map(async ({ file, ...f }, i) => {
+    list.map(async ({ file, image, art, ...f }, i) => {
       let poster: ShownScreening['poster'];
+      const kind = art ?? 'poster';
+      const alt = f.alt ?? (kind === 'poster' ? `Poster for ${f.title}` : `Title card for ${f.title}`);
       if (file) {
         const meta = findImage(posterFiles, 'films', file, f.title);
         const sized = await getImage({ src: meta, width: Math.min(meta.width, 900) });
-        poster = { src: sized.src, width: meta.width, height: meta.height, alt: f.alt ?? `Poster for ${f.title}` };
+        poster = { src: sized.src, width: meta.width, height: meta.height, alt, kind };
+      } else if (image) {
+        poster = { src: image, alt, kind };
       }
+      const tied = shelves.find((s) => s.tied && f.shelves.includes(s.id));
+      const members = tied ? list.filter((x) => x.shelves.includes(tied.id)) : [];
       return {
         ...f,
         no: two(i + 1),
         shelfNames: f.shelves.map((id) => shelves.find((s) => s.id === id)?.name ?? id),
         poster,
+        set: tied ? { id: tied.id, name: tied.name, at: members.findIndex((x) => x.id === f.id) + 1, of: members.length } : undefined,
       };
     }),
   );
