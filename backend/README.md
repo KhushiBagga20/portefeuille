@@ -3,7 +3,7 @@
 FastAPI + PostgreSQL. No Supabase. A separate backend for the existing **Astro** portfolio.
 The frontend includes an owner studio and an opt-in API content adapter. Neon production storage is
 provisioned, and the hosted API, owner login and queue consumer are verified. The six owner-approved baselines are published, and approved publications trigger website rebuilds.
-Repository webhooks and AI credentials still need configuration. See docs/VERCEL.md.
+Azure AI repository drafting is configured for explicitly selected public repositories. See docs/VERCEL.md.
 
 ## What works
 
@@ -137,7 +137,7 @@ Run `uv run alembic check` against an upgraded database to check model/schema dr
   review are required today; filtering URLs alone does not guarantee confidentiality.
 - Add approved asset storage, pagination and fine-grained sentence citations as the portfolio grows.
 
-The production API and queue consumer are deployed; paid AI usage and scheduled AI digests are not enabled. Rebuild jobs and the production API content adapter are enabled. Local development still uses checked-in
+The production API and queue consumer are deployed; selected repository scans use the owner's Azure AI deployment and run on new commits found by daily checks. Rebuild jobs and the production API content adapter are enabled. Local development still uses checked-in
 content unless PORTFOLIO_API_URL is set. Approved snapshots are available immediately from the API;
 the static website updates after the queued rebuild succeeds.
 

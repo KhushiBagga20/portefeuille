@@ -7,6 +7,7 @@ Only explicitly configured numeric GitHub repository IDs may send source to AI.
 import copy
 import io
 import json
+import logging
 import re
 import tarfile
 import time
@@ -27,7 +28,8 @@ MAX_FILE = 160_000
 MAX_FILES = 320
 CHUNK_SIZE = 80_000
 PROMPT_VERSION = "repository-1"
-COMPOSITION_VERSION = "case-study-2"
+COMPOSITION_VERSION = "case-study-3"
+logger = logging.getLogger(__name__)
 EXTENSIONS = {
     ".md",
     ".txt",
@@ -104,12 +106,21 @@ class DraftSection(Finding):
     title: str = Field(min_length=1, max_length=160)
 
 
+class ThinkingMap(Shape):
+    idea: list[DraftSection] = Field(max_length=4)
+    research: list[DraftSection] = Field(max_length=4)
+    challenges: list[DraftSection] = Field(max_length=4)
+    decisions: list[DraftSection] = Field(max_length=5)
+    future: list[DraftSection] = Field(max_length=4)
+
+
 class RepositoryDraft(Shape):
     built: list[Finding] = Field(min_length=1, max_length=6)
     features: list[DraftSection] = Field(min_length=1, max_length=12)
     deep_dives: list[DraftSection] = Field(max_length=6)
     architecture: Diagram
     architecture_files: list[str] = Field(min_length=1, max_length=20)
+    thinking: ThinkingMap
     questions: list[str] = Field(max_length=15)
 
 
@@ -203,13 +214,18 @@ def github_json(path):
         return response.json()
 
 
-def repository_head(repo):
+def repository_metadata(repo):
     # A database name or webhook body cannot choose an arbitrary network destination.
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo.full_name):
         raise ScanError("Invalid repository name")
     meta = github_json(f"/repos/{repo.full_name}")
     if str(meta["id"]) != repo.github_id or meta.get("private", True):
         raise ScanError("Repository must match its connected ID and be public")
+    return meta
+
+
+def repository_head(repo):
+    meta = repository_metadata(repo)
     commit = github_json(f"/repos/{repo.full_name}/commits/{quote(meta['default_branch'], safe='')}")
     sha = commit["sha"]
     if not re.fullmatch(r"[a-f0-9]{40}", sha):
@@ -366,15 +382,21 @@ def enqueue_scan(db, repo):
 
 def schedule_scans(db):
     if not settings().ai_ready:
-        return 0
-    count = 0
+        return {"checked": 0, "failed": 0}
+    count = failed = 0
     for repo in db.scalars(
         select(Repository).where(Repository.github_id.in_(settings().scan_repository_ids))
     ):
         if scan_allowed(repo):
-            enqueue_scan(db, repo)
-            count += 1
-    return count
+            try:
+                with db.begin_nested():
+                    enqueue_scan(db, repo)
+                count += 1
+            except Exception as exc:
+                # One inaccessible/rate-limited repo must not roll back other projects.
+                logger.warning("Repository check deferred (%s)", type(exc).__name__)
+                failed += 1
+    return {"checked": count, "failed": failed}
 
 
 def scan_step(db, job):
@@ -387,7 +409,7 @@ def scan_step(db, job):
         raise ScanError("AI configuration changed; start a new scan")
     if payload["stage"] == "download":
         # Recheck public visibility and identity before transferring source to the provider.
-        repository_head(repo)
+        repository_metadata(repo)
         files, skipped = download_sources(repo, payload["sha"])
         payload["coverage"] = {
             "inspected": [{"path": f["path"], "hash": f["hash"]} for f in files],
@@ -434,7 +456,7 @@ def scan_step(db, job):
             if section["analysis"] is not None:
                 section.pop("files", None)
     elif payload["stage"] == "compose":
-        repository_head(repo)  # fail closed if the repository became private
+        repository_metadata(repo)  # fail closed if the repository became private
         base = db.scalar(
             select(Publication).where(
                 Publication.project_id == repo.project_id, Publication.version == payload["base_version"]
@@ -455,8 +477,21 @@ def scan_step(db, job):
             "files already listed there. Keep at most 5 questions, focusing on motivation, intended "
             "users, verified outcomes, and genuine unresolved decisions. Draw a small architecture "
             "diagram with valid node IDs and edges, max 10 nodes, columns 0-3, rows 0-4. "
+            "Also create a thinking mind map: concise titled nodes for the documented product idea, "
+            "documented research, concrete implementation challenges, observed technical decisions, "
+            "and explicitly documented future plans. Every node needs inspected-file citations. "
+            "Leave unsupported branches empty; never invent user research, personal motives, "
+            "past struggles or future commitments. Decisions can describe choices visible in code "
+            "without inventing why the author made them. Put unknown context in private questions. "
+            "Use the owner-approved project_context to identify the project correctly. For a fork, "
+            "describe the software without attributing all its original implementation to the owner. "
             "Avoid marketing claims and unsupported certainty.",
             {
+                "project_context": {
+                    key: base.snapshot["project"][key]
+                    for key in ("name", "type", "oneLiner")
+                    if key in base.snapshot["project"]
+                },
                 "analyses": [s["analysis"] for s in payload["sections"]],
                 "coverage": {
                     "inspected_files": [f["path"] for f in payload["coverage"]["inspected"]],
@@ -467,7 +502,9 @@ def scan_step(db, job):
             payload["model"],
         )
         paths = {f["path"] for f in payload["coverage"]["inspected"]}
+        thinking = {key: getattr(draft.thinking, key) for key in ThinkingMap.model_fields}
         findings = [*draft.built, *draft.features, *draft.deep_dives]
+        findings.extend(node for nodes in thinking.values() for node in nodes)
         validate_citations(findings, paths)
         if not set(draft.architecture_files).issubset(paths) or len(draft.architecture.nodes) > 10:
             raise ScanError("Architecture citation or size is invalid")
@@ -488,6 +525,17 @@ def scan_step(db, job):
         case.setdefault("mindmap", {})["implementation"] = [
             {"label": f.title, "note": f.statement} for f in draft.features
         ]
+        for branch, nodes in thinking.items():
+            # Preserve the owner's published context; add grounded branches only where empty.
+            if nodes and not case["mindmap"].get(branch):
+                case["mindmap"][branch] = [
+                    {
+                        "label": f.title,
+                        "note": f.statement,
+                        **({"stage": "planned"} if branch == "future" else {}),
+                    }
+                    for f in nodes
+                ]
         case["updated"] = now().date().isoformat()
         content = Content.model_validate(content).public()
         url = f"https://github.com/{repo.full_name}/tree/{payload['sha']}"

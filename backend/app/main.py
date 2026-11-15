@@ -356,7 +356,8 @@ def reconcile_jobs(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(401, "Unauthorized")
     scan_failed = False
     try:
-        schedule_scans(db)
+        scan_result = schedule_scans(db)
+        scan_failed = bool(scan_result["failed"])
         db.commit()
     except Exception:
         db.rollback()

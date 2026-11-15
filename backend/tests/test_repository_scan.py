@@ -63,6 +63,7 @@ def configure(client, content, monkeypatch):
     monkeypatch.setenv("GITHUB_SCAN_REPOSITORIES", github_id)
     settings.cache_clear()
     monkeypatch.setattr("app.repository_scan.repository_head", lambda repo: "a" * 40)
+    monkeypatch.setattr("app.repository_scan.repository_metadata", lambda repo: {"private": False})
     monkeypatch.setattr(
         "app.repository_scan.download_sources",
         lambda repo, sha: ([{"path": "main.swift", "content": "struct App {}", "hash": "source-hash"}], []),
@@ -91,6 +92,13 @@ def fake_complete(model_type, prompt, data, provider, model):
             "edges": [],
         },
         architecture_files=["main.swift"],
+        thinking={
+            "idea": [],
+            "research": [],
+            "challenges": [],
+            "future": [],
+            "decisions": [dict(finding, title="Application boundary")],
+        },
         questions=["What motivated this project?"],
     )
 
@@ -122,6 +130,9 @@ def test_scan_checkpoint_private_draft_and_incremental_reuse(client, content, mo
         assert draft.review_notes["coverage"]["commit"] == "a" * 40
         assert "/blob/" + "a" * 40 in draft.review_notes["citations"][0]["sources"][0]
         assert "files" not in db.get(Job, job_id).payload["sections"][0]
+        assert draft.content["caseStudy"]["mindmap"]["decisions"][0]["label"] == "Application boundary"
+        assert draft.content["caseStudy"]["mindmap"]["implementation"]
+        assert not draft.content["caseStudy"]["mindmap"].get("research")
     assert client.get(f"/api/v1/projects/{SLUG}/case-study").json()["intro"] == {}
     monkeypatch.setattr("app.repository_scan.repository_head", lambda repo: "b" * 40)
     next_job = client.post(url, json={}).json()["job_id"]
@@ -199,3 +210,51 @@ def test_private_or_mismatched_repository_rejected(monkeypatch):
         monkeypatch.setattr("app.repository_scan.github_json", lambda *args: meta)
         with pytest.raises(ScanError, match="public"):
             repository_head(repo)
+
+
+def test_one_failed_repository_does_not_block_other_scans(client, content, monkeypatch):
+    from app.repository_scan import schedule_scans
+
+    configure(client, content, monkeypatch)
+    with Session(engine()) as db:
+        first = db.scalar(select(Repository))
+        second = Repository(
+            project_id=first.project_id, github_id="999", full_name="owner/second", allow_ai=True
+        )
+        db.add(second)
+        db.commit()
+        monkeypatch.setenv("GITHUB_SCAN_REPOSITORIES", f"{first.github_id},999")
+        settings.cache_clear()
+
+        def head(repo):
+            if repo.github_id == first.github_id:
+                raise ScanError("Repository is unavailable")
+            return "b" * 40
+
+        monkeypatch.setattr("app.repository_scan.repository_head", head)
+        assert schedule_scans(db) == {"checked": 1, "failed": 1}
+        db.commit()
+        assert db.scalar(select(func.count()).select_from(Job)) == 1
+
+
+def test_mind_map_citation_outside_sources_is_rejected(client, content, monkeypatch):
+    repo_id = configure(client, content, monkeypatch)
+    monkeypatch.setattr("app.repository_scan.complete", fake_complete)
+    job_id = client.post(f"{ROOT}/{SLUG}/repositories/{repo_id}/scan", json={}).json()["job_id"]
+    run_once(job_id)
+    run_once(job_id)
+
+    def invalid(*args):
+        draft = fake_complete(*args)
+        draft.thinking.decisions[0].files = ["not-inspected.md"]
+        return draft
+
+    monkeypatch.setattr("app.repository_scan.complete", invalid)
+    run_once(job_id)
+    with Session(engine()) as db:
+        assert "outside" in db.get(Job, job_id).error
+        assert (
+            db.scalar(select(func.count()).select_from(Revision).where(Revision.source == "ai-repository"))
+            == 0
+        )
+        assert db.scalar(select(func.count()).select_from(Publication)) == 1

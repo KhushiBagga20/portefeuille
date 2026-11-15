@@ -6,12 +6,15 @@ whose source code the owner explicitly permits the configured AI provider to ana
 must also be connected to the project with `allow_ai=true`. Permission for PR descriptions alone
 does not enable full source scans. Emptying the allowlist stops future scans and queued analysis.
 
-For Conduit, the owner selected `KhushiBagga20/Conduit`, numeric ID `1370914882`, for the `conduit`
-project. Azure is configured as the provider. Set the allowlist only in Production and redeploy.
+Azure is configured as the provider. Set the allowlist only in Production and redeploy.
+The owner has enabled the 12 connected public repositories: Conduit, Sahaas-frontend, Kinetic,
+Kinetic-City, EvolveAI-Website, Bad-Influence, LifeAs, commongroundv2, Whered-It-Go, Bhojan,
+GSSS-school-site and The-unsaid-page. Mind Pop and VerifAI need repository links first.
 
 The existing authenticated daily Vercel cron checks the default branch. A new commit queues one
 scan, deduplicated by repository, commit, provider, deployment and prompt version. Studio also has
-**Check GitHub & draft case study**. It reuses existing completed scans; an explicit owner click
+**Check all enabled projects now** and a per-project **Check GitHub for new work** button.
+These reuse existing completed scans; an explicit owner click
 can retry a failed scan. A stale draft must be rebased/reviewed before publishing. There is no
 automatic publication and the worker retains no publication-write privileges.
 
@@ -34,7 +37,11 @@ its section completes, then discarded; failed jobs may retain unfinished section
 jobs API exposes progress/status, never these payloads. Coverage, citations and summaries persist.
 
 The result updates the technical introduction, features, implementation mindmap, deep dives and
-architecture diagram in a private revision. Personal context, media, updates, timeline and reflection
+architecture diagram in a private revision. Empty mind-map branches can gain cited product ideas,
+documented research, implementation challenges, observed decisions and documented future plans.
+Unsupported branches stay empty; future nodes are marked planned. Existing published thinking
+branches are preserved. The owner-approved project name, type and description guide composition,
+including college-club context and fork attribution. Personal context, media, updates, timeline and reflection
 are retained from the owner's published baseline. Source citations are pinned to the inspected
 commit and validated against inspected file paths. This validates provenance, not the truth of every
 claim. The model must distinguish documentation, implementation, test definitions and inference;
@@ -46,6 +53,7 @@ source snapshots; it does not import commit/PR history or private repos. Existin
 webhooks remain a separate evidence stream. GitHub App installation and push-triggered scans can
 be added later if private access or immediate updates are needed. Daily polling is active instead.
 
+Each repository check is isolated so a failure cannot roll back checks for other projects.
 Unauthenticated GitHub requests have an IP-based rate limit. GitHub throttling respects its reset
 or Retry-After header. Failed scheduled checks return 503 after dispatching existing jobs; the next
 daily check or owner action can recover. There is no paid hosting upgrade or new hosted service.

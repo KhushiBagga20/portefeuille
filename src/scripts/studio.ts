@@ -108,6 +108,14 @@ function preview() {
     if (content.caseStudy.deepDives?.length) heading('Technical decisions');
     for (const dive of content.caseStudy.deepDives ?? []) { heading(dive.title, 'h4'); if (dive.summary) paragraph(dive.summary); (dive.body ?? []).forEach(paragraph); }
     if (content.caseStudy.diagrams?.length) { heading('Architecture'); for (const diagram of content.caseStudy.diagrams) { heading(diagram.title, 'h4'); if (diagram.caption) paragraph(diagram.caption); paragraph(`Components: ${diagram.nodes.map(n => n.label).join(' · ')}`); } }
+    if (content.caseStudy.mindmap && Object.values(content.caseStudy.mindmap).some(nodes => nodes?.length)) {
+      heading('Mind map');
+      for (const [branch, nodes] of Object.entries(content.caseStudy.mindmap)) {
+        if (!nodes?.length) continue;
+        heading(branch.charAt(0).toUpperCase() + branch.slice(1), 'h4');
+        target.append(contentTree(nodes));
+      }
+    }
     if (content.caseStudy.updates?.length) { heading('Project updates'); for (const update of content.caseStudy.updates) { heading(`${update.date} · ${update.title}`, 'h4'); if (update.body) paragraph(update.body); } }
     const details = document.createElement('details'); const summary = document.createElement('summary'); summary.textContent = 'Review every field, including diagrams, timeline and reflection'; details.append(summary, contentTree(content)); target.append(details);
     const base = livePublication()?.snapshot;
@@ -286,6 +294,25 @@ el<HTMLFormElement>('repo-form').onsubmit = event => {
   });
 };
 window.addEventListener('beforeunload', event => { if (hasUnsaved()) event.preventDefault(); });
+el('scan-all').onclick = () => void perform(async () => {
+  let queued = 0, ready = 0, failed = 0;
+  const status = el('scan-all-status');
+  for (const project of projects) {
+    status.textContent = `Checking ${project.slug}… ${queued} queued · ${ready} already prepared · ${failed} need retry`;
+    try {
+      const path = `/api/v1/studio/projects/${encodeURIComponent(project.slug)}`;
+      const repos = await request<Repository[]>(`${path}/repositories`);
+      for (const repo of repos.filter(r => r.scan_enabled)) {
+        try {
+          const result = await request<{ status: string }>(`${path}/repositories/${repo.id}/scan`, {});
+          if (result.status === 'done') ready++; else queued++;
+        } catch { failed++; }
+      }
+    } catch { failed++; }
+    if (!csrf) break;
+  }
+  status.textContent = `${queued} drafts queued · ${ready} already prepared · ${failed} checks need retry. Queued work continues in the background; nothing is published automatically.`;
+});
 el('load-repositories').onclick = () => void perform(async () => {
   const repositories = await request<CatalogRepository[]>('/api/v1/studio/github/repositories');
   el('github-catalog').replaceChildren();
