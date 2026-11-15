@@ -81,7 +81,8 @@ def public_case(slug: str, db: Session = Depends(get_db)):
 @app.get("/api/v1/studio/projects", dependencies=[Depends(auth.require_owner)])
 def studio_projects(db: Session = Depends(get_db)):
     return [
-        {"slug": p.slug, "version": p.version} for p in db.scalars(select(Project).order_by(Project.slug))
+        {"id": p.id, "slug": p.slug, "version": p.version}
+        for p in db.scalars(select(Project).order_by(Project.slug))
     ]
 
 
@@ -165,7 +166,14 @@ def publish_revision(
 def publications(slug: str, db: Session = Depends(get_db)):
     project = project_by_slug(db, slug)
     return [
-        {"id": p.id, "version": p.version, "snapshot": p.snapshot, "published_at": p.created_at}
+        {
+            "id": p.id,
+            "revision_id": p.revision_id,
+            "content_hash": p.content_hash,
+            "version": p.version,
+            "snapshot": p.snapshot,
+            "published_at": p.created_at,
+        }
         for p in db.scalars(
             select(Publication)
             .where(Publication.project_id == project.id)
@@ -299,6 +307,7 @@ def jobs(db: Session = Depends(get_db)):
             "attempts": j.attempts,
             "error": j.error,
             "project_id": j.payload.get("project_id"),
+            "version": j.payload.get("version"),
             "progress": j.payload.get("progress", ""),
         }
         for j in db.scalars(select(Job).order_by(Job.available_at.desc()).limit(100))

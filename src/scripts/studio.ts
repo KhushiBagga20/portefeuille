@@ -1,11 +1,13 @@
 import type { CaseStudy, Project } from '../lib/types';
+import { contentFingerprint } from '../lib/content-fingerprint';
 
 type Content = { project: Project; caseStudy: CaseStudy };
 type Revision = { id: string; base_version: number; content: Content; content_hash: string; source: string; review_notes: { questions?: string[]; warning?: string; coverage?: { commit: string; inspected: { path: string }[]; skipped: { path: string; reason: string }[] }; citations?: { claim: string; basis: string; sources: string[] }[] }; created_at: string };
 type Repository = { id: string; full_name: string; scan_enabled: boolean };
-type ProjectState = { slug: string; version: number };
+type ProjectState = { id: string; slug: string; version: number };
 type Evidence = { id: string; title: string; excerpt: string; source_url: string };
-type Publication = { version: number; snapshot: Content };
+type Publication = { version: number; revision_id: string; content_hash: string; snapshot: Content };
+type Job = { kind: string; status: string; error?: string; progress?: string; project_id?: string; version?: number };
 const el = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const root = el<HTMLElement>('studio');
 const apiOrigin = (root.dataset.api ?? '').replace(/\/$/, '');
@@ -22,16 +24,33 @@ let baseline: Revision | undefined;
 let dirty = false;
 let busy = false;
 let publishKey = crypto.randomUUID();
+let publications: Publication[] = [];
+let statusBusy = false;
+let currentJobs: Job[] = [];
 
 function notice(message: string) { el('notice').textContent = message; }
 function currentProject() { return projects.find(p => p.slug === projectSelect.value); }
 function route(suffix = '') { return `/api/v1/studio/projects/${encodeURIComponent(projectSelect.value)}${suffix}`; }
+function livePublication() { return publications.find(p => p.version === currentProject()?.version); }
+function isPublished(revision: Revision) { return !revision.id || publications.some(p => p.revision_id === revision.id || p.content_hash === revision.content_hash); }
+function readyDrafts() { return revisions.filter(r => r.base_version === currentProject()?.version && !isPublished(r)); }
+function dateLabel(value: string) { return new Date(value).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); }
+function sourceLabel(source: string) { return source === 'ai-repository' ? 'Full case study' : source === 'ai' ? 'Short AI update' : 'Edited draft'; }
 function controls() {
   root.querySelectorAll<HTMLInputElement | HTMLButtonElement | HTMLSelectElement | HTMLTextAreaElement>('input,button,select,textarea').forEach(node => { node.disabled = busy; });
   const pending = Boolean(titleInput.value.trim() || bodyInput.value.trim());
-  el<HTMLButtonElement>('publish').disabled = busy || dirty || pending || !selected?.id || selected.base_version !== currentProject()?.version;
-  el<HTMLButtonElement>('save').disabled = busy || pending || !selected;
+  const published = selected ? isPublished(selected) : false;
+  const stale = selected?.base_version !== currentProject()?.version;
+  el<HTMLButtonElement>('publish').disabled = busy || dirty || pending || !selected?.id || stale || published;
+  el<HTMLButtonElement>('publish').textContent = `Publish this draft as version ${(currentProject()?.version ?? 0) + 1}`;
+  el<HTMLButtonElement>('save').disabled = busy || pending || !selected || !dirty || stale;
   el<HTMLButtonElement>('generate').disabled = busy || !currentProject()?.version;
+  el<HTMLButtonElement>('latest-draft').disabled = busy || !readyDrafts().length || readyDrafts()[0]?.id === selected?.id;
+  el('latest-draft').textContent = readyDrafts()[0]?.id === selected?.id ? 'Latest ready draft selected' : readyDrafts().length ? 'Review latest ready draft' : 'No newer draft available';
+  el('version').textContent = currentProject()?.version ? `Version ${currentProject()!.version}` : 'Not published yet';
+  el('draft-state').textContent = !selected ? 'No draft selected' : dirty || pending ? 'Unsaved changes' : published ? 'Published content' : stale ? 'Older draft' : 'Private draft · ready';
+  el('draft-detail').textContent = !selected ? '' : published ? 'You are viewing already-approved content.' : `${sourceLabel(selected.source)} · ${dateLabel(selected.created_at)}`;
+  el('action-help').textContent = !selected ? 'Choose a draft to review first.' : pending ? 'Add your short update to the draft, then save changes.' : dirty ? 'Your edits are not saved. Click Save changes before publishing.' : published ? 'This content is already published. Use Review latest ready draft to see newer work.' : stale ? 'A newer version has been published since this draft was created. Choose the latest ready draft before publishing.' : 'This draft is saved and private. Review it above, then publish directly—there is no need to save it again.';
 }
 async function request<T>(path: string, body?: unknown): Promise<T> {
   const response = await fetch(`${apiOrigin}${path}`, {
@@ -71,14 +90,38 @@ function contentTree(value: unknown): HTMLElement {
   return wrapper;
 }
 function preview() {
-  try { el('preview').replaceChildren(contentTree(JSON.parse(editor.value))); }
+  try {
+    const content = JSON.parse(editor.value) as Content;
+    const target = el('preview'); target.replaceChildren();
+    const heading = (text: string, level = 'h3') => { const node = document.createElement(level); node.textContent = text; target.append(node); };
+    const paragraph = (text: string) => { const node = document.createElement('p'); node.textContent = text; target.append(node); };
+    el('preview-title').textContent = content.project.name;
+    if (content.project.oneLiner) paragraph(content.project.oneLiner);
+    if (content.caseStudy.intro.problem?.length) { heading('The problem'); content.caseStudy.intro.problem.forEach(paragraph); }
+    heading('What was built'); (content.caseStudy.intro.built ?? []).forEach(paragraph);
+    if (content.caseStudy.features?.length) heading('Features');
+    for (const feature of content.caseStudy.features ?? []) { heading(feature.title, 'h4'); if (feature.note) paragraph(feature.note); feature.items.forEach(paragraph); }
+    if (content.caseStudy.deepDives?.length) heading('Technical decisions');
+    for (const dive of content.caseStudy.deepDives ?? []) { heading(dive.title, 'h4'); if (dive.summary) paragraph(dive.summary); (dive.body ?? []).forEach(paragraph); }
+    if (content.caseStudy.diagrams?.length) { heading('Architecture'); for (const diagram of content.caseStudy.diagrams) { heading(diagram.title, 'h4'); if (diagram.caption) paragraph(diagram.caption); paragraph(`Components: ${diagram.nodes.map(n => n.label).join(' · ')}`); } }
+    if (content.caseStudy.updates?.length) { heading('Project updates'); for (const update of content.caseStudy.updates) { heading(`${update.date} · ${update.title}`, 'h4'); if (update.body) paragraph(update.body); } }
+    const details = document.createElement('details'); const summary = document.createElement('summary'); summary.textContent = 'Review every field, including diagrams, timeline and reflection'; details.append(summary, contentTree(content)); target.append(details);
+    const base = livePublication()?.snapshot;
+    const changed = base ? Object.keys(content.caseStudy).filter(key => JSON.stringify((content.caseStudy as unknown as Record<string, unknown>)[key]) !== JSON.stringify((base.caseStudy as unknown as Record<string, unknown>)[key])).filter(key => key !== 'updated') : [];
+    const labels: Record<string, string> = { intro: 'introduction', deepDives: 'technical decisions', mindmap: 'mind map' };
+    el('change-summary').textContent = `${content.caseStudy.features?.length ?? 0} feature sections · ${content.caseStudy.deepDives?.length ?? 0} deep dives · ${content.caseStudy.diagrams?.length ?? 0} diagrams${changed.length ? ` · Changes: ${changed.map(k => labels[k] ?? k).join(', ')}` : ''}`;
+  }
   catch { el('preview').textContent = 'The content is not valid JSON yet. Fix it before saving.'; }
 }
 function selectRevision(revision: Revision) {
   selected = revision; dirty = false; publishKey = crypto.randomUUID();
+  revisionSelect.value = revision.id;
   editor.value = JSON.stringify(revision.content, null, 2);
   titleInput.value = ''; bodyInput.value = '';
-  el('review-notes').textContent = (revision.review_notes.questions ?? []).join(' • ');
+  const questions = document.createElement('ul');
+  for (const question of revision.review_notes.questions ?? []) { const li = document.createElement('li'); li.textContent = question; questions.append(li); }
+  el('review-notes').replaceChildren(questions);
+  if (!questions.children.length) el('review-notes').textContent = 'No additional questions for this draft.';
   const notes = revision.review_notes;
   const sources = el('source-review'); sources.replaceChildren();
   if (notes.warning) { const p = document.createElement('p'); p.textContent = notes.warning; sources.append(p); }
@@ -104,18 +147,18 @@ async function loadProject() {
   const [drafts, evidence, history, jobs, repositories] = await Promise.all([
     request<Revision[]>(route('/revisions')), request<Evidence[]>(route('/evidence')),
     request<Publication[]>(route('/publications')),
-    request<{ kind: string; status: string; error?: string; progress?: string }[]>('/api/v1/studio/jobs'),
+    request<Job[]>('/api/v1/studio/jobs'),
     request<Repository[]>(route('/repositories')),
   ]);
-  revisions = drafts; revisionSelect.replaceChildren();
-  drafts.forEach(r => revisionSelect.add(new Option(`${r.source} · ${new Date(r.created_at).toLocaleString()}`, r.id)));
+  revisions = drafts; publications = history; revisionSelect.replaceChildren();
+  drafts.forEach(r => revisionSelect.add(new Option(`${sourceLabel(r.source)} · ${dateLabel(r.created_at)} · ${isPublished(r) ? 'already published' : r.base_version === currentProject()?.version ? 'ready to publish' : 'older draft'}`, r.id)));
   const live = history.find(p => p.version === currentProject()!.version);
   baseline = live ? { id: '', base_version: live.version, content: live.snapshot, content_hash: '', source: 'published', review_notes: {}, created_at: '' } : undefined;
-  if (baseline) revisionSelect.add(new Option('Current publication · start a new draft', ''));
-  if (drafts[0]?.base_version === currentProject()!.version) selectRevision(drafts[0]);
+  if (baseline) revisionSelect.add(new Option(`Published version ${live!.version}`, ''));
+  if (readyDrafts()[0]) selectRevision(readyDrafts()[0]);
   else if (baseline) { revisionSelect.value = ''; selectRevision(baseline); }
   else if (drafts[0]) selectRevision(drafts[0]);
-  el('version').textContent = `Published API version: ${currentProject()!.version} · Website deployment tracked separately`;
+  el<HTMLAnchorElement>('live-link').href = `/projects/${encodeURIComponent(projectSelect.value)}/`;
   el('evidence').replaceChildren();
   for (const item of evidence) {
     const label = document.createElement('label'); const checkbox = document.createElement('input');
@@ -126,14 +169,14 @@ async function loadProject() {
     details.append(summary, excerpt); label.append(checkbox, text, details); el('evidence').append(label);
   }
   if (!evidence.length) el('evidence').textContent = 'No GitHub activity received yet.';
-  el('jobs').replaceChildren(...jobs.map(j => { const p = document.createElement('p'); p.textContent = `${j.kind}: ${j.status} ${j.progress ?? ''}${j.error ? ` (${j.error})` : ''}`; return p; }));
+  renderJobs(jobs);
   el('repository-scans').replaceChildren();
   for (const repo of repositories.filter(r => r.scan_enabled)) {
     const p = document.createElement('p'); p.textContent = `${repo.full_name} · Checked daily for new commits.`;
-    const button = document.createElement('button'); button.textContent = 'Check GitHub & draft case study';
+    const button = document.createElement('button'); button.textContent = 'Check GitHub for new work';
     button.onclick = () => void perform(async () => {
       const result = await request<{ status: string }>(route(`/repositories/${encodeURIComponent(repo.id)}/scan`), {});
-      notice(result.status === 'done' ? 'This commit is already analyzed. Refresh to review its saved draft.' : 'Repository analysis queued. Refresh to follow section progress and review the finished draft.');
+      notice(result.status === 'done' ? 'GitHub is up to date. Your saved draft is available under Review latest ready draft.' : 'Preparing a private case-study draft. Follow Recent activity for progress; this will not publish anything.');
     });
     el('repository-scans').append(p, button);
   }
@@ -147,8 +190,48 @@ async function loadProject() {
     }); };
     el('history').append(button);
   }
-  notice('Your drafts are private. Choose a revision or add an update.');
+  notice(readyDrafts().length ? 'Your latest ready draft is selected. Review it, then use the green publish button below.' : 'Your approved content is selected. No newer draft is ready to publish.');
+  void checkWebsite();
 }
+
+function renderJobs(jobs: Job[]) {
+  currentJobs = jobs;
+  const relevant = jobs.filter(j => j.project_id === currentProject()?.id).slice(0, 4);
+  el('jobs').replaceChildren(...relevant.map(j => {
+    const p = document.createElement('p');
+    const name = j.kind === 'repository_scan' ? 'Case study' : j.kind === 'generate' ? 'Short update' : 'Website rebuild';
+    const state = j.status === 'done' ? (j.kind === 'rebuild' ? 'requested—website status is checked separately' : 'draft ready') : j.status === 'failed' ? 'needs attention' : j.status === 'running' ? 'working' : 'waiting';
+    p.textContent = `${name}: ${state}${j.progress && j.status !== 'done' ? ` · ${j.progress}` : ''}${j.error ? ` · ${j.error}` : ''}`; return p;
+  }));
+  if (!relevant.length) el('jobs').textContent = 'No background work for this project.';
+}
+async function checkWebsite() {
+  const slug = projectSelect.value, publication = livePublication();
+  if (!publication) { el('website-state').textContent = 'Not published yet'; el('website-detail').textContent = 'Publish a reviewed draft to create the first version.'; return; }
+  try {
+    const response = await fetch(`/projects/${encodeURIComponent(slug)}/?studio-check=${Date.now()}`, { cache: 'no-store', signal: AbortSignal.timeout(10000) });
+    if (!response.ok) throw new Error('Unavailable');
+    const doc = new DOMParser().parseFromString(await response.text(), 'text/html');
+    const actual = doc.getElementById('portfolio-publication')?.dataset.fingerprint;
+    const expected = await contentFingerprint(publication.snapshot);
+    if (projectSelect.value !== slug || livePublication()?.version !== publication.version) return;
+    const failed = currentJobs.find(j => j.project_id === currentProject()?.id && j.kind === 'rebuild' && j.version === publication.version && j.status === 'failed');
+    el('website-state').textContent = actual === expected ? `Version ${publication.version} is live` : failed ? 'Website rebuild needs attention' : 'Website updating';
+    el('website-detail').textContent = actual === expected ? 'The public page matches your approved content.' : failed ? 'Your approved content is saved, but the rebuild could not start. See Recent activity; do not publish the same draft again.' : `Version ${publication.version} is approved. Waiting for the website rebuild to display it.`;
+  } catch { if (projectSelect.value === slug) { el('website-state').textContent = 'Could not check website'; el('website-detail').textContent = 'Your approved content is saved. Use Open website or try Refresh status.'; } }
+}
+async function refreshStatus() {
+  if (busy || statusBusy || !csrf || document.hidden || el('workspace').hidden) return;
+  statusBusy = true; const slug = projectSelect.value;
+  try {
+    const [states, history, jobs, drafts] = await Promise.all([request<ProjectState[]>('/api/v1/studio/projects'), request<Publication[]>(route('/publications')), request<Job[]>('/api/v1/studio/jobs'), request<Revision[]>(route('/revisions'))]);
+    if (projectSelect.value !== slug) return;
+    projects = states; publications = history; revisions = drafts;
+    renderJobs(jobs); controls(); await checkWebsite();
+  } catch { /* Keep the editor and unsaved work intact during a temporary network failure. */ }
+  finally { statusBusy = false; }
+}
+el('latest-draft').onclick = () => { if (mayDiscard() && readyDrafts()[0]) { const draft = readyDrafts()[0]; if (![...revisionSelect.options].some(o => o.value === draft.id)) revisionSelect.add(new Option(`${sourceLabel(draft.source)} · ${dateLabel(draft.created_at)} · ready to publish`, draft.id)); selectRevision(draft); notice('Latest ready draft selected. Review it, then publish using the green button below.'); } };
 async function refreshProjects() {
   const slug = projectSelect.value;
   projects = await request<ProjectState[]>('/api/v1/studio/projects');
@@ -180,13 +263,13 @@ el('save').onclick = () => void perform(async () => {
 el('publish').onclick = () => void perform(async () => {
   if (!selected || dirty || titleInput.value.trim() || bodyInput.value.trim()) throw new Error('Save and review your changes first.');
   const result = await request<{ version: number }>(route('/publications'), { revision_id: selected.id, content_hash: selected.content_hash, expected_version: selected.base_version, idempotency_key: publishKey });
-  await refreshProjects(); notice(`Version ${result.version} published to the API. Rebuild the website to display it there.`);
+  await refreshProjects(); notice(`Version ${result.version} approved. Your website is rebuilding automatically; watch the Public website status above. You do not need to click Publish again.`);
 });
 el('generate').onclick = () => void perform(async () => {
   const evidence_ids = [...el('evidence').querySelectorAll<HTMLInputElement>('input:checked')].map(input => input.value);
   if (!evidence_ids.length) throw new Error('Select at least one source first.');
   await request(route('/generations'), { evidence_ids, base_version: currentProject()!.version });
-  notice('Draft generation queued. Keep the backend worker running, then refresh to see the result.');
+  notice('A private short update is being prepared. Follow Recent activity for progress. Nothing has been published.');
 });
 el('refresh').onclick = () => { if (mayDiscard()) void perform(refreshProjects); };
 el('logout').onclick = () => { if (!mayDiscard()) return; void perform(async () => {
@@ -199,6 +282,7 @@ el<HTMLFormElement>('repo-form').onsubmit = event => {
   });
 };
 window.addEventListener('beforeunload', event => { if (hasUnsaved()) event.preventDefault(); });
+window.setInterval(() => void refreshStatus(), 20000);
 void perform(async () => {
   try {
     const session = await request<{ csrf_token: string }>('/auth/session'); csrf = session.csrf_token;

@@ -45,6 +45,9 @@ def test_private_until_approval_and_exact_public_shape(client, content):
     assert "review_notes" not in public.text
     assert public.headers["cache-control"] == "no-store"
     assert publish(client, revision).json()["version"] == 1
+    history = client.get(f"{ROOT}/{SLUG}/publications").json()
+    assert history[0]["revision_id"] == revision["id"]
+    assert history[0]["content_hash"] == revision["content_hash"]
     with Session(engine()) as db:
         assert db.scalar(select(func.count()).select_from(Publication)) == 1
 

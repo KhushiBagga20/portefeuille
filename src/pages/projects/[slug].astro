@@ -23,6 +23,7 @@ import Timeline from '../../components/case/Timeline.astro';
 import { diskTones } from '../../data/projects';
 import { site } from '../../data/site';
 import { caseOutline, getCaseStudy, getProjects } from '../../lib/content';
+import { contentFingerprint } from '../../lib/content-fingerprint';
 import type { CaseSectionId, CaseStudy, Project } from '../../lib/types';
 
 export async function getStaticPaths() {
@@ -52,6 +53,7 @@ interface Props {
 }
 
 const { project: p, study, index, count, prev, next } = Astro.props;
+const publicationFingerprint = await contentFingerprint({ project: p, caseStudy: study });
 const tone = diskTones[p.disk.tone];
 // the ticker's dots sit on ink: a dark disk colour would vanish there
 const toneOnInk = p.disk.tone === 'mint' ? 'var(--marigold)' : tone.body;
@@ -85,6 +87,7 @@ const lede = [...(study.intro.problem ?? []), ...(study.intro.built ?? [])];
 ---
 
 <Base title={`${p.name} · ${site.fullName}`} description={p.oneLiner ?? `${p.name}: ${p.type}.`}>
+  <span id="portfolio-publication" hidden data-fingerprint={publicationFingerprint}></span>
   <Nav here={`projects / ${p.name}`} />
   <main class="case" data-case style={`--tone:${tone.body};--on-tone:${tone.on};--tone-on-ink:${toneOnInk};--glow:${tone.glow}`}>
     <!-- ── the cover ─────────────────────────── -->
