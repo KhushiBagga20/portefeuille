@@ -230,8 +230,15 @@ folder is the instructions.
 screen with its poster and what I think of it, and a strip of film underneath with a frame
 per title. Click a frame, use the arrow keys or the stepper and the screen cuts to it.
 Shelves re-cut the reel by mood, genre, significance or kind.
-*To add a title:* add an entry to `src/data/films.ts`; a poster in `src/assets/films/` is
-optional (without one, a poster is drawn from the title).
+Clicking the poster on the screen (or the frame that is already showing) opens a detail
+view with the artwork larger, the title and its format; arrows move through the reel and
+Escape closes it. A shelf marked `tied` (The Maximoff Trilogy) keeps its titles side by side
+under one bar on the strip.
+*To add a title:* add an entry to `src/data/films.ts`. Artwork is either `file:` (an image in
+`src/assets/films/`) or `image:` (an address elsewhere); `art: 'titlecard'` shows a wide title
+card whole on a 2:3 card. Every title also has a poster drawn from type underneath, which is
+what shows with no artwork or if an image fails to load. `note` is for why a title matters to
+you and stays hidden while empty.
 
 **Samples.** Each of those three rooms ships with clearly labelled stand-ins so it isn't
 empty. They name nothing real and claim no opinion, and they disappear by themselves as soon

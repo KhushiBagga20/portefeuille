@@ -28,9 +28,12 @@ const cuts = [
     { id: 'type:series', name: 'series', by: 'type', count: series },
   ] : []),
 ];
-const byWord = { mood: 'mood', genre: 'genre', significance: 'why it matters', type: 'kind' } as Record<string, string>;
+const byWord = { mood: 'mood', genre: 'genre', significance: 'why it matters', collection: 'my set', type: 'kind' } as Record<string, string>;
+const sources = [...new Set(shows.map((s) => s.artSource).filter(Boolean))];
+const sets = new Map(shows.filter((s) => s.set).map((s) => [s.set!.id, shows.filter((x) => x.set?.id === s.set!.id)]));
 
-// a poster drawn from type, for a title with no artwork: each gets one of a few grounds
+// A poster drawn from type. Every title has one: it is what shows if there is no artwork,
+// and what is left if an image fails to load. Each gets one of a few grounds.
 const grounds = [
   { bg: 'var(--signal)', fg: '#0c0d21' },
   { bg: 'var(--cobalt)', fg: '#ffffff' },
@@ -39,7 +42,9 @@ const grounds = [
   { bg: 'var(--magenta)', fg: '#0c0d21' },
   { bg: '#1c1e3d', fg: '#f3f3ef' },
 ];
-const ground = (i: number) => `--pbg:${grounds[i % grounds.length].bg};--pfg:${grounds[i % grounds.length].fg}`;
+// a title card is shown whole on black, the ground those cards are made for
+const ground = (i: number, titlecard = false) =>
+  titlecard ? '--pbg:#000000;--pfg:#f3f3ef' : `--pbg:${grounds[i % grounds.length].bg};--pfg:${grounds[i % grounds.length].fg}`;
 ---
 
 <Play here="films" title="Films & television" description="A filmstrip of the films and shows I keep: click a frame and the screen cuts to it.">
@@ -54,20 +59,27 @@ const ground = (i: number) => `--pbg:${grounds[i % grounds.length].bg};--pfg:${g
       {
         shows.map((s, i) => (
           <article class="show" id={`film-${s.id}`} data-show={s.id} role="tabpanel" aria-labelledby={`frame-${s.id}`} hidden={i > 0}>
-            <div class="show__poster" style={ground(i)}>
-              {s.poster ? (
-                <img src={s.poster.src} alt={s.poster.alt} width={s.poster.width} height={s.poster.height} loading={i === 0 ? 'eager' : 'lazy'} decoding="async" />
-              ) : (
-                <div class="card" role="img" aria-label={`A stand-in poster for ${s.title}`}>
-                  <span class="card__k">{s.sample ? 'sample' : s.type}</span>
-                  <span class="card__title">{s.title}</span>
-                  <span class="card__foot">
-                    <span>{s.year ?? 'no poster yet'}</span>
-                    <span>{s.no}</span>
+            <button class="show__poster" type="button" data-open={s.id} aria-haspopup="dialog" aria-label={`${s.title}: look closer`} style={ground(i, s.poster?.kind === 'titlecard')}>
+              <span class:list={['card', s.poster && `card--${s.poster.kind}`]} data-card>
+                <span class="card__k">
+                  <span>{s.sample ? 'sample' : s.type}</span>
+                  {s.set && <span>{s.set.at} / {s.set.of}</span>}
+                </span>
+                {s.poster?.kind === 'titlecard' && (
+                  <span class="card__logo">
+                    <img src={s.poster.src} alt={s.poster.alt} loading={i === 0 ? 'eager' : 'lazy'} decoding="async" referrerpolicy="no-referrer" onerror="this.parentElement.remove()" />
                   </span>
-                </div>
-              )}
-            </div>
+                )}
+                <span class="card__title">{s.title}</span>
+                <span class="card__foot">
+                  <span>{s.year ?? (s.poster ? '' : 'no poster yet')}</span>
+                  <span>{s.no}</span>
+                </span>
+                {s.poster?.kind === 'poster' && (
+                  <img class="card__poster" src={s.poster.src} alt={s.poster.alt} width={s.poster.width} height={s.poster.height} loading={i === 0 ? 'eager' : 'lazy'} decoding="async" referrerpolicy="no-referrer" onerror="this.remove()" />
+                )}
+              </span>
+            </button>
 
             <div class="show__text">
               <p class="show__k mono">
@@ -78,8 +90,33 @@ const ground = (i: number) => `--pbg:${grounds[i % grounds.length].bg};--pfg:${g
                 {s.year && <span>{s.year}</span>}
                 {s.by && <span>by {s.by}</span>}
               </p>
-              <h2 class="show__title">{s.title}</h2>
+              <h2 class="show__title" data-show-title>{s.title}</h2>
               {s.line && <p class="show__line voice">{s.line}</p>}
+              {
+                s.note && (
+                  <div class="show__thoughts" data-show-note>
+                    <p class="show__label mono">why it matters to me</p>
+                    <p>{s.note}</p>
+                  </div>
+                )
+              }
+              {
+                s.set && (
+                  <div class="trio">
+                    <p class="show__label mono">
+                      {s.set.name} · {s.set.at} of {s.set.of}
+                    </p>
+                    <div class="trio__row">
+                      {sets.get(s.set.id)!.map((m) => (
+                        <button type="button" data-goto={m.id} aria-current={m.id === s.id ? 'true' : undefined}>
+                          <i>{m.set!.at}</i>
+                          {m.title}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )
+              }
               {
                 s.thoughts && (
                   <div class="show__thoughts">
@@ -90,12 +127,11 @@ const ground = (i: number) => `--pbg:${grounds[i % grounds.length].bg};--pfg:${g
                   </div>
                 )
               }
-              <p class="show__shelves">
-                {s.shelfNames.map((name) => (
-                  <span>{name}</span>
-                ))}
-                {s.sample && <span class="show__sample">sample entry — not a real title</span>}
-              </p>
+              {s.sample && (
+                <p class="show__shelves">
+                  <span class="show__sample">sample entry — not a real title</span>
+                </p>
+              )}
             </div>
           </article>
         ))
@@ -139,10 +175,16 @@ const ground = (i: number) => `--pbg:${grounds[i % grounds.length].bg};--pfg:${g
               data-frame={s.id}
               data-shelves={s.shelves.join(' ')}
               data-type={s.type}
-              style={ground(i)}
+              data-format={s.type}
+              data-year={s.year}
+              data-set={s.set?.id}
+              data-set-name={s.set?.at === 1 ? s.set.name : undefined}
+              data-set-line={s.set ? `${s.set.name} · ${s.set.at} of ${s.set.of}` : undefined}
+              style={ground(i, s.poster?.kind === 'titlecard')}
             >
               <span class="frame__cell">
-                {s.poster ? <img src={s.poster.src} alt="" loading="lazy" decoding="async" /> : <span class="frame__name">{s.title}</span>}
+                <span class="frame__name">{s.title}</span>
+                {s.poster && <img src={s.poster.src} alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()" />}
                 <span class="frame__no">{s.no}</span>
               </span>
               <span class="sr-only">
@@ -154,8 +196,30 @@ const ground = (i: number) => `--pbg:${grounds[i % grounds.length].bg};--pfg:${g
         }
       </div>
       {samples && <p class="reel__sample mono">a sample reel for now — it names no real film or show, and steps aside when the first real title is added</p>}
+      {sources.length > 0 && <p class="reel__sample mono">artwork: official posters and title cards, via {sources.join(', ')} · click a poster to look closer</p>}
     </div>
   </section>
+
+  <!-- the detail view: one title, its artwork as large as it goes -->
+  <dialog class="lb" data-lightbox aria-labelledby="lb-title">
+    <div class="lb__in">
+      <div class="lb__art" data-lb-art></div>
+      <div class="lb__info">
+        <p class="lb__k mono"><span data-lb-count></span><span data-lb-format></span><span data-lb-year></span></p>
+        <h2 id="lb-title" class="lb__title" data-lb-title></h2>
+        <p class="lb__set mono" data-lb-set hidden></p>
+        <div class="lb__note" data-lb-note hidden>
+          <p class="mono">why it matters to me</p>
+          <p data-lb-note-text></p>
+        </div>
+        <div class="lb__nav">
+          <button type="button" data-lb-step="-1" aria-label="Previous title">←</button>
+          <button type="button" data-lb-step="1" aria-label="Next title">→</button>
+          <button type="button" class="lb__close" data-lb-close>close <kbd>esc</kbd></button>
+        </div>
+      </div>
+    </div>
+  </dialog>
 </Play>
 
 <script>
@@ -196,7 +260,7 @@ const ground = (i: number) => `--pbg:${grounds[i % grounds.length].bg};--pfg:${g
         history.replaceState(history.state, '', `#${id}`);
       } catch {}
       clearTimeout(cutting);
-      if (quick || reduce.matches) return show(id);
+      if (quick || reduce.matches || document.querySelector<HTMLDialogElement>('[data-lightbox]')?.open) return show(id);
       screen.classList.remove('is-cutting');
       void screen.offsetWidth;
       screen.classList.add('is-cutting');
@@ -213,7 +277,9 @@ const ground = (i: number) => `--pbg:${grounds[i % grounds.length].bg};--pfg:${g
       return next;
     };
 
-    frames.forEach((f) => f.addEventListener('click', () => cutTo(f.dataset.frame!)));
+    // a frame cuts to its title; the frame already showing opens it up close
+    frames.forEach((f) => f.addEventListener('click', () => (f.dataset.frame === current ? openBox(current, f) : cutTo(f.dataset.frame!))));
+    cinema.querySelectorAll<HTMLButtonElement>('[data-goto]').forEach((b) => b.addEventListener('click', () => cutTo(b.dataset.goto!)));
     cinema.querySelectorAll<HTMLButtonElement>('[data-step]').forEach((b) => b.addEventListener('click', () => step(Number(b.dataset.step))));
 
     // the strip is one tab stop; the arrows walk it
@@ -259,6 +325,71 @@ const ground = (i: number) => `--pbg:${grounds[i % grounds.length].bg};--pfg:${g
         else show(current);
       }),
     );
+
+    // ── the detail view ──
+    const box = document.querySelector<HTMLDialogElement>('[data-lightbox]');
+    const part = (name: string) => box?.querySelector<HTMLElement>(`[data-lb-${name}]`) ?? null;
+    let opener: HTMLElement | null = null;
+
+    const fillBox = (id: string) => {
+      const el = shows.get(id);
+      const frame = frames.find((f) => f.dataset.frame === id);
+      if (!box || !el || !frame) return;
+      const reel = onReel();
+      const text = (name: string, value?: string | null) => {
+        const node = part(name);
+        if (node) node.textContent = value ?? '';
+      };
+      text('count', `${two(reel.indexOf(frame) + 1)} / ${two(reel.length)}`);
+      text('format', frame.dataset.format);
+      text('year', frame.dataset.year);
+      text('title', el.querySelector('[data-show-title]')?.textContent);
+      const set = part('set');
+      if (set) {
+        set.textContent = frame.dataset.setLine ?? '';
+        set.hidden = !frame.dataset.setLine;
+      }
+      // the note shows only when one has been written
+      const note = el.querySelector('[data-show-note] p:last-child')?.textContent?.trim();
+      const noteBox = part('note');
+      if (noteBox) noteBox.hidden = !note;
+      text('note-text', note);
+      // the artwork: a copy of the card on the screen, with whatever loaded (or failed) there
+      const art = part('art');
+      const card = el.querySelector<HTMLElement>('[data-card]');
+      const poster = el.querySelector<HTMLElement>('[data-open]');
+      if (art && card && poster) {
+        art.style.cssText = poster.style.cssText;
+        const copy = card.cloneNode(true) as HTMLElement;
+        copy.querySelectorAll('img').forEach((img) => img.setAttribute('loading', 'eager'));
+        art.replaceChildren(copy);
+      }
+    };
+
+    function openBox(id: string, from: HTMLElement) {
+      if (!box) return;
+      opener = from;
+      fillBox(id);
+      box.showModal();
+    }
+
+    cinema.querySelectorAll<HTMLButtonElement>('[data-open]').forEach((b) => b.addEventListener('click', () => openBox(b.dataset.open!, b)));
+    box?.querySelector('[data-lb-close]')?.addEventListener('click', () => box.close());
+    box?.addEventListener('click', (e) => e.target === box && box.close());
+    // Escape closes it (the dialog does that itself); either way focus goes back to where it came from
+    box?.addEventListener('close', () => {
+      const back = opener?.offsetParent ? opener : cinema.querySelector<HTMLElement>(`[data-open="${current}"]`);
+      back?.focus({ preventScroll: true });
+    });
+    const boxStep = (by: number) => {
+      const next = step(by);
+      if (next) fillBox(next.dataset.frame!);
+    };
+    box?.querySelectorAll<HTMLButtonElement>('[data-lb-step]').forEach((b) => b.addEventListener('click', () => boxStep(Number(b.dataset.lbStep))));
+    box?.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') boxStep(1);
+      else if (e.key === 'ArrowLeft') boxStep(-1);
+    });
 
     // a link straight to one title starts on it
     const wanted = decodeURIComponent(location.hash.slice(1));
@@ -329,12 +460,21 @@ const ground = (i: number) => `--pbg:${grounds[i % grounds.length].bg};--pfg:${g
 
   .show__poster {
     position: relative;
+    display: block;
     justify-self: end;
-    width: min(100%, calc((100svh - var(--bar) - 372px) * 0.6667), 440px);
-    min-width: 180px;
+    width: min(100%, calc((100svh - var(--bar) - 424px) * 0.6667), 380px);
+    min-width: 170px;
     aspect-ratio: 2 / 3;
+    padding: 0;
+    border: 0;
     background: var(--pbg);
     color: var(--pfg);
+    font: inherit;
+    text-align: left;
+    cursor: zoom-in;
+    transition:
+      rotate 0.5s var(--spring),
+      scale 0.4s var(--ease-out);
     box-shadow:
       0 0 0 1px rgb(243 243 239 / 0.16),
       0 40px 80px -30px rgb(0 0 0 / 0.9),
@@ -343,19 +483,62 @@ const ground = (i: number) => `--pbg:${grounds[i % grounds.length].bg};--pfg:${g
     container-type: size;
   }
 
-  .show__poster img {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  .show__poster:hover {
+    rotate: 0deg;
+    scale: 1.02;
   }
 
-  /* a poster made of type, for a title with no artwork */
+  .show__poster:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 5px;
+    box-shadow: none;
+  }
+
+  /* A poster made of type. It is under every piece of artwork, so a title is never a
+     blank box: with no image, or if one fails to load, this is what shows. */
   .card {
+    position: relative;
     display: grid;
     grid-template-rows: auto 1fr auto;
     height: 100%;
     padding: 7cqw;
+  }
+
+  /* a real poster lies over the card, whole: never stretched, never cropped */
+  .card__poster {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: #05060f;
+    object-fit: contain;
+  }
+
+  /* a title card (wide) is set into the card, whole, above the title in type */
+  .card--titlecard {
+    grid-template-rows: auto 1fr auto auto;
+  }
+
+  .card__logo {
+    display: grid;
+    place-items: center;
+    min-height: 0;
+    padding: 5cqw 0;
+  }
+
+  .card__logo img {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    min-height: 0;
+    object-fit: contain;
+  }
+
+  .card--titlecard .card__title {
+    font-size: clamp(15px, 10cqw, 44px);
   }
 
   .card__k,
@@ -608,7 +791,7 @@ const ground = (i: number) => `--pbg:${grounds[i % grounds.length].bg};--pfg:${g
     --hole: radial-gradient(circle at center, var(--bg) 0 3.4px, transparent 4px);
     display: flex;
     gap: 10px;
-    padding: 22px max(var(--gutter), calc((100% - var(--wrap)) / 2)) 22px;
+    padding: 34px max(var(--gutter), calc((100% - var(--wrap)) / 2)) 22px;
     background:
       var(--hole) 9px 6px / 20px 12px repeat-x,
       var(--hole) 9px calc(100% - 6px) / 20px 12px repeat-x,
@@ -625,7 +808,7 @@ const ground = (i: number) => `--pbg:${grounds[i % grounds.length].bg};--pfg:${g
   .frame {
     position: relative;
     flex: none;
-    width: clamp(92px, min(9.4vw, 15svh), 138px);
+    width: clamp(66px, min(6.6vw, 11.5svh), 96px);
     padding: 0;
     border: 0;
     background: none;
@@ -641,9 +824,9 @@ const ground = (i: number) => `--pbg:${grounds[i % grounds.length].bg};--pfg:${g
   .frame__cell {
     position: relative;
     display: grid;
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 2 / 3;
     align-content: end;
-    padding: 8px;
+    padding: 7px;
     border-radius: 3px;
     background: var(--pbg);
     color: var(--pfg);
@@ -656,17 +839,19 @@ const ground = (i: number) => `--pbg:${grounds[i % grounds.length].bg};--pfg:${g
     outline-offset: 2px;
   }
 
+  /* the artwork lies over the title in type, whole; if it fails to load the type is there */
   .frame__cell img {
-    grid-area: 1 / 1;
-    width: calc(100% + 16px);
-    height: calc(100% + 16px);
-    margin: -8px;
-    max-width: none;
-    object-fit: cover;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: #05060f;
+    object-fit: contain;
   }
 
   .frame__name {
-    font: 400 clamp(12px, 1.25vw, 17px) / 0.96 var(--font-display);
+    overflow-wrap: anywhere;
+    font: 400 clamp(11px, 1.05vw, 15px) / 0.96 var(--font-display);
     text-align: left;
     text-transform: uppercase;
   }
@@ -676,8 +861,8 @@ const ground = (i: number) => `--pbg:${grounds[i % grounds.length].bg};--pfg:${g
     top: 6px;
     right: 8px;
     padding: 2px 4px;
-    background: var(--pbg);
-    color: var(--pfg);
+    background: #05060f;
+    color: #f3f3ef;
     font: 500 10.5px/1 var(--font-mono);
   }
 
@@ -701,6 +886,254 @@ const ground = (i: number) => `--pbg:${grounds[i % grounds.length].bg};--pfg:${g
 
   .frame:focus-visible .frame__cell {
     outline-color: #ffffff;
+  }
+
+  /* a set kept together: its frames close up and share one bar, named at its start */
+  .frame[data-set] {
+    margin-left: -6px;
+  }
+
+  .frame[data-set-name] {
+    margin-left: 14px;
+  }
+
+  .frame[data-set]::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    right: -2px;
+    left: -2px;
+    height: 3px;
+    background: var(--accent);
+  }
+
+  .frame[data-set-name]::after {
+    content: attr(data-set-name);
+    position: absolute;
+    top: -23px;
+    left: -2px;
+    padding: 0;
+    background: none;
+    color: var(--accent);
+    font: 500 10.5px/1 var(--font-mono);
+    white-space: nowrap;
+    translate: none;
+  }
+
+  /* the same set, named beside the title that is showing */
+  .trio {
+    margin-top: clamp(12px, 1.8svh, 26px);
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+  }
+
+  .trio__row {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .trio button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    margin: 0 -1px -1px 0;
+    padding: 0 14px 0 10px;
+    border: 1px solid var(--accent);
+    background: none;
+    color: var(--fg);
+    font: 650 13.5px/1.1 var(--font-body);
+    cursor: pointer;
+    transition:
+      background-color 0.2s var(--ease-out),
+      color 0.2s var(--ease-out);
+  }
+
+  .trio i {
+    color: var(--accent);
+    font: 500 11px/1 var(--font-mono);
+  }
+
+  .trio button:hover,
+  .trio button[aria-current] {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+
+  .trio button:hover i,
+  .trio button[aria-current] i {
+    color: inherit;
+  }
+
+  /* ── the detail view ────────────────── */
+  .lb {
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: rgb(3 4 10 / 0.97);
+    color: #f3f3ef;
+    overflow-y: auto;
+  }
+
+  .lb::backdrop {
+    background: rgb(3 4 10 / 0.6);
+  }
+
+  .lb :global([hidden]) {
+    display: none !important;
+  }
+
+  .lb__in {
+    display: grid;
+    grid-template-columns: auto minmax(260px, 420px);
+    align-items: center;
+    justify-content: center;
+    gap: clamp(24px, 5vw, 80px);
+    min-height: 100%;
+    padding: clamp(20px, 4vw, 60px) var(--gutter);
+  }
+
+  /* the artwork at the largest size its own resolution carries well */
+  .lb__art {
+    width: min(78vw, calc((100svh - 2 * clamp(20px, 4vw, 60px)) * 0.6667), 460px);
+    aspect-ratio: 2 / 3;
+    background: var(--pbg);
+    color: var(--pfg);
+    box-shadow:
+      0 0 0 1px rgb(243 243 239 / 0.18),
+      0 50px 90px -30px rgb(0 0 0 / 0.9);
+    container-type: size;
+  }
+
+  .lb__k {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+    margin: 0;
+    color: #a9abc6;
+  }
+
+  .lb__k span:first-child {
+    color: var(--room-films);
+  }
+
+  .lb__k span:empty {
+    display: none;
+  }
+
+  .lb__title {
+    margin: clamp(10px, 1.4vw, 18px) 0 0;
+    font: 400 clamp(40px, 5.4vw, 88px) / 0.94 var(--font-display);
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+
+  .lb__set {
+    width: fit-content;
+    margin: clamp(14px, 1.8vw, 22px) 0 0;
+    padding: 6px 10px 5px;
+    border: 1px solid var(--room-films);
+    color: var(--room-films);
+  }
+
+  .lb__note {
+    margin-top: clamp(16px, 2vw, 26px);
+    padding-top: 12px;
+    border-top: 1px solid rgb(243 243 239 / 0.2);
+  }
+
+  .lb__note p {
+    margin: 0 0 8px;
+    font-size: var(--fs-read);
+    line-height: 1.6;
+  }
+
+  .lb__note .mono {
+    color: var(--room-films);
+    font-size: 12px;
+  }
+
+  .lb__nav {
+    display: flex;
+    gap: 8px;
+    margin-top: clamp(22px, 3vw, 44px);
+  }
+
+  .lb__nav button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-width: 46px;
+    height: 46px;
+    padding: 0 16px;
+    border: 1.5px solid #f3f3ef;
+    border-radius: 999px;
+    background: none;
+    color: #f3f3ef;
+    font: 650 14px/1 var(--font-body);
+    cursor: pointer;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .lb__nav button:hover {
+    background: #f3f3ef;
+    color: #0c0d21;
+  }
+
+  .lb__nav button:focus-visible {
+    outline: 2px solid var(--room-films);
+    outline-offset: 3px;
+    box-shadow: none;
+  }
+
+  .lb__close {
+    margin-left: auto;
+  }
+
+  .lb__close kbd {
+    font: 500 11px/1 var(--font-mono);
+    opacity: 0.7;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .lb[open] .lb__art {
+      animation: lb-in 0.5s var(--ease-out);
+    }
+
+    @keyframes lb-in {
+      from {
+        opacity: 0;
+        scale: 0.92;
+      }
+    }
+  }
+
+  @media (max-width: 799px) {
+    .lb__in {
+      grid-template-columns: minmax(0, 1fr);
+      justify-items: center;
+      align-content: start;
+      gap: 22px;
+    }
+
+    .lb__info {
+      width: 100%;
+    }
+
+    .lb__art {
+      width: min(74vw, calc(58svh * 0.6667));
+    }
+
+    .lb__close kbd {
+      display: none;
+    }
   }
 
   .reel__sample {

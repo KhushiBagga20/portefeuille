@@ -317,7 +317,16 @@ export interface Screening {
   type: 'film' | 'series';
   /** a poster in src/assets/films/. Leave out and a typographic stand-in is drawn. */
   file?: string;
+  /** or artwork hosted elsewhere: a full https address. If it ever fails to load, the
+   *  typographic stand-in shows instead. */
+  image?: string;
+  /** what `image` is: a portrait poster, or a wide title card (shown whole, never cropped) */
+  art?: 'poster' | 'titlecard';
+  /** where the artwork came from, for the credit line */
+  artSource?: string;
   alt?: string;
+  /** a personal note: why this one matters. Hidden while empty. */
+  note?: string;
   /** who made it — director or creator — if you want it shown */
   by?: string;
   /** personal commentary, as paragraphs */
@@ -330,5 +339,7 @@ export interface Screening {
 
 export interface Shelf extends Collection {
   /** what kind of grouping it is */
-  by: 'mood' | 'genre' | 'significance';
+  by: 'mood' | 'genre' | 'significance' | 'collection';
+  /** true for a set whose titles belong side by side (they are tied together on the strip) */
+  tied?: boolean;
 }
