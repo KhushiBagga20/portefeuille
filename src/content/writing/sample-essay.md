@@ -14,6 +14,8 @@ At the top of the file, between two lines of three dashes, say what it is:
 
 - `title` is the title.
 - `kind` is `poem`, `essay` or `fiction`. It decides which shelf the piece sits on and how the text is set.
+- `side` is `personal` or `professional`: which half of the room it sits in. Leave it out and it is personal.
+- `source` is optional: the address where the piece was first published.
 - `date` is optional, written like `2026-03-14`.
 - `dek` is an optional line that appears under the title.
 - `status: draft` keeps a piece off the published site while you work on it.

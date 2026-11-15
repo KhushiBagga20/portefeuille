@@ -25,6 +25,7 @@ const isPoem = meta.kind === 'poem';
 const lines = isPoem ? (entry.body ?? '').replace(/^\s*\n/, '').trimEnd() : '';
 const Prose = isPoem ? undefined : (await render(entry)).Content;
 
+const sourceName = meta.source ? (new URL(meta.source).hostname.replace(/^www\./, '') === 'medium.com' ? 'Medium' : new URL(meta.source).hostname.replace(/^www\./, '')) : undefined;
 const kindWord = { poem: 'poem', essay: 'essay', fiction: 'fiction' }[meta.kind];
 const when = meta.date
   ? new Date(`${meta.date}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
@@ -87,6 +88,17 @@ const when = meta.date
       <div class:list={['text', `text--${meta.kind}`]} data-text>
         {isPoem ? <div class="poem">{lines}</div> : Prose && <Prose />}
       </div>
+
+      {
+        meta.source && (
+          <p class="first mono">
+            first published on{' '}
+            <a href={meta.source} target="_blank" rel="noopener">
+              {sourceName} ↗
+            </a>
+          </p>
+        )
+      }
 
       <footer class="end">
         <p class="end__mark" aria-hidden="true"><i></i><i></i><i></i></p>
@@ -469,6 +481,17 @@ const when = meta.date
   .text--fiction :global(hr + p),
   .text--fiction :global(h2 + p) {
     text-indent: 0;
+  }
+
+  .first {
+    margin: clamp(30px, 4vw, 56px) 0 0;
+    color: var(--fg-2);
+    font-size: var(--fs-meta);
+  }
+
+  .first a {
+    color: var(--fg);
+    text-underline-offset: 3px;
   }
 
   /* ── the end ────────────────────────── */

@@ -15,6 +15,10 @@ const writing = defineCollection({
     title: z.string(),
     /** which shelf of the archive it sits on, and how it is set on the page */
     kind: z.enum(['poem', 'essay', 'fiction']),
+    /** which half of the room it belongs to: personal (poems and the like) or professional */
+    side: z.enum(['personal', 'professional']).default('personal'),
+    /** where it was first published, if anywhere: a full address */
+    source: z.url().optional(),
     /** when it was written or finished. Leave out if you'd rather not say. */
     date: z.coerce.date().optional(),
     /** one line under the title */

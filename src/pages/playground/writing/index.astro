@@ -23,13 +23,18 @@ const kinds: { id: WritingKind; one: string; many: string }[] = [
   { id: 'fiction', one: 'story', many: 'fiction' },
 ];
 const shelves = kinds.map((k) => ({ ...k, count: pieces.filter((p) => p.kind === k.id).length })).filter((k) => k.count > 0);
+// the room has two halves; a piece says which it belongs to with `side`
+const parts = [
+  { id: 'professional', name: 'Professional', note: 'essays', empty: 'Nothing here yet.' },
+  { id: 'personal', name: 'Personal', note: 'poems and the rest', empty: 'Nothing here yet. The poems are on their way.' },
+].map((part) => ({ ...part, pieces: pieces.filter((p) => p.side === part.id) }));
 const word = (kind: WritingKind) => kinds.find((k) => k.id === kind)!.one;
 const two = (n: number) => String(n).padStart(2, '0');
 const year = (date?: string) => date?.slice(0, 4);
 const totalWords = pieces.reduce((n, p) => n + p.words, 0);
 ---
 
-<Play here="writing" title="Writing" description="Poems, essays and fiction, set to be read slowly.">
+<Play here="writing" title="Writing" description="Professional and personal writing, set to be read slowly.">
   <section class="room" data-writing aria-labelledby="writing-title">
     <div class="room__in">
       <PosterHead index={r.no} name={r.name} note={`${plural(pieces.length, 'piece')} · ${totalWords.toLocaleString('en')} words`} />
@@ -40,7 +45,7 @@ const totalWords = pieces.reduce((n, p) => n + p.words, 0);
           <span class="mast__b voice">room.</span>
         </h1>
         <div class="mast__side">
-          <p class="mast__lede">Poems, essays and fiction. Nothing here is in a hurry: pick a title and read it slowly.</p>
+          <p class="mast__lede">Two shelves, professional and personal. Nothing here is in a hurry: pick a title and read it slowly.</p>
           {
             samples && (
               <p class="mast__sample mono">
@@ -66,35 +71,48 @@ const totalWords = pieces.reduce((n, p) => n + p.words, 0);
         )
       }
 
-      <ol class="contents">
-        {
-          pieces.map((p, i) => (
-            <li class="entry" data-entry={p.kind}>
-              <a class="entry__link" href={`/playground/writing/${p.slug}/`}>
-                <span class="entry__no mono">{two(i + 1)}</span>
-                <span class="entry__main">
-                  <span class="entry__title" style={`view-transition-name: writing-${p.slug}`}>
-                    {p.title}
-                  </span>
-                  <!-- the opening lines, folded away until the title is reached for -->
-                  <span class="entry__fold">
-                    <span class:list={['entry__open', `entry__open--${p.kind}`]}>{p.excerpt}</span>
-                  </span>
-                </span>
-                <span class="entry__meta mono">
-                  <span class="entry__kind">{word(p.kind)}</span>
-                  {year(p.date) && <span>{year(p.date)}</span>}
-                  <span>{p.minutes} min</span>
-                  {p.sample && <span class="entry__sample">sample</span>}
-                </span>
-                <span class="entry__go" aria-hidden="true">
-                  <Arrow />
-                </span>
-              </a>
-            </li>
-          ))
-        }
-      </ol>
+      {
+        parts.map((part) => (
+          <section class="part" data-part aria-labelledby={`part-${part.id}`}>
+            <header class="part__head">
+              <h2 id={`part-${part.id}`} class="part__name">
+                {part.name}
+              </h2>
+              <p class="part__note mono">
+                {part.note} · {part.pieces.length ? plural(part.pieces.length, 'piece') : 'nothing yet'}
+              </p>
+            </header>
+            {part.pieces.length === 0 && <p class="part__empty">{part.empty}</p>}
+            <ol class="contents">
+              {part.pieces.map((p, i) => (
+                <li class="entry" data-entry={p.kind}>
+                  <a class="entry__link" href={`/playground/writing/${p.slug}/`}>
+                    <span class="entry__no mono">{two(i + 1)}</span>
+                    <span class="entry__main">
+                      <span class="entry__title" style={`view-transition-name: writing-${p.slug}`}>
+                        {p.title}
+                      </span>
+                      <!-- the opening lines, folded away until the title is reached for -->
+                      <span class="entry__fold">
+                        <span class:list={['entry__open', `entry__open--${p.kind}`]}>{p.excerpt}</span>
+                      </span>
+                    </span>
+                    <span class="entry__meta mono">
+                      <span class="entry__kind">{word(p.kind)}</span>
+                      {year(p.date) && <span>{year(p.date)}</span>}
+                      <span>{p.minutes} min</span>
+                      {p.sample && <span class="entry__sample">sample</span>}
+                    </span>
+                    <span class="entry__go" aria-hidden="true">
+                      <Arrow />
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </section>
+        ))
+      }
 
       <p class="none" data-none hidden>Nothing of that kind yet.</p>
     </div>
@@ -236,9 +254,42 @@ const totalWords = pieces.reduce((n, p) => n + p.words, 0);
     color: inherit;
   }
 
+  /* ── the two halves ─────────────────── */
+  .part {
+    margin-top: clamp(40px, 6vw, 88px);
+  }
+
+  .part__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 6px 24px;
+    padding-bottom: clamp(10px, 1.2vw, 16px);
+    border-bottom: 2px solid var(--fg);
+  }
+
+  .part__name {
+    margin: 0;
+    font: 400 var(--fs-head) / 1 var(--font-head);
+    letter-spacing: -0.04em;
+  }
+
+  .part__note {
+    margin: 0;
+    color: var(--fg-2);
+    font-size: var(--fs-meta);
+  }
+
+  .part__empty {
+    margin: clamp(18px, 2.4vw, 30px) 0 0;
+    color: var(--fg-2);
+    font-size: var(--fs-lede);
+  }
+
   /* ── the contents ───────────────────── */
   .contents {
-    margin: clamp(18px, 2.4vw, 34px) 0 0;
+    margin: 0;
     padding: 0;
     list-style: none;
   }
