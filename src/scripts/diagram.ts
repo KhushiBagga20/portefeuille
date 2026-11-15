@@ -33,7 +33,7 @@ export function initDiagram(root: HTMLElement) {
       n.setAttribute('aria-pressed', String(n.dataset.node === id));
       n.classList.toggle('is-near', near.has(n.dataset.node!));
     }
-    if (root.dataset.mode === 'list') return;
+    if (root.dataset.layout === 'list') return;
     for (const d of details) d.hidden = d.dataset.detail !== id;
     if (empty) empty.hidden = Boolean(id);
   };
@@ -220,7 +220,7 @@ export function initDiagram(root: HTMLElement) {
 
   // ── map / list ──────────────────────────────
   const setMode = (mode: 'map' | 'list') => {
-    root.dataset.mode = mode;
+    root.dataset.layout = mode;
     root.querySelectorAll<HTMLButtonElement>('[data-mode-to]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.modeTo === mode)));
     if (mode === 'list') {
       for (const d of details) d.hidden = false;

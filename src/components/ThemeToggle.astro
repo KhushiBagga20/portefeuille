@@ -14,7 +14,8 @@
 <script>
   const KEY = 'khushi:mode';
   const root = document.documentElement;
-  const buttons = document.querySelectorAll<HTMLButtonElement>('[data-mode]');
+  // the class as well as the attribute: other components may use a `data-mode` of their own
+  const buttons = document.querySelectorAll<HTMLButtonElement>('button.mode[data-mode]');
 
   const paint = (night: boolean) => {
     root.dataset.theme = night ? 'night' : 'day';

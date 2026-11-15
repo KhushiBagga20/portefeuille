@@ -115,7 +115,7 @@ const talk = (id: string) => {
 const uid = `dg-${d.id}`;
 ---
 
-<figure class="dg" data-diagram data-mode="map">
+<figure class="dg" data-diagram data-layout="map">
   <header class="dg__head">
     <div>
       <h3 class="dg__title">{d.title}</h3>
@@ -537,6 +537,10 @@ const uid = `dg-${d.id}`;
     line-height: 1.5;
   }
 
+  .dg__empty[hidden] {
+    display: none;
+  }
+
   .dg__empty-k {
     color: var(--accent);
   }
@@ -643,17 +647,17 @@ const uid = `dg-${d.id}`;
   }
 
   /* ── list view: the same content, read top to bottom ── */
-  .dg[data-mode='list'] .dg__stage,
-  .dg[data-mode='list'] .dg__zoom,
-  .dg[data-mode='list'] .dg__empty {
+  .dg[data-layout='list'] .dg__stage,
+  .dg[data-layout='list'] .dg__zoom,
+  .dg[data-layout='list'] .dg__empty {
     display: none;
   }
 
-  .dg[data-mode='list'] .dg__body {
+  .dg[data-layout='list'] .dg__body {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .dg[data-mode='list'] .dg__panel {
+  .dg[data-layout='list'] .dg__panel {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
     gap: 1px;
@@ -662,7 +666,7 @@ const uid = `dg-${d.id}`;
     background: var(--line);
   }
 
-  .dg[data-mode='list'] .dd {
+  .dg[data-layout='list'] .dd {
     display: block;
     padding: clamp(16px, 1.8vw, 24px);
     background: var(--bg);
