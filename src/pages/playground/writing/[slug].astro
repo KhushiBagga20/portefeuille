@@ -124,6 +124,8 @@ const when = meta.date
     --fg-2: #55576f;
     --line: rgb(12 13 33 / 0.18);
     --accent: var(--signal);
+    /* the same red, deep enough to be read as small text on this page colour */
+    --accent-text: #c2350d;
     --scale: 1;
     --measure: 34em;
     position: relative;
@@ -141,6 +143,7 @@ const when = meta.date
     --fg-2: #6a583a;
     --line: rgb(43 29 5 / 0.22);
     --accent: #b8430f;
+    --accent-text: #9c350a;
   }
 
   .page[data-theme='night'] {
@@ -149,6 +152,7 @@ const when = meta.date
     --fg-2: #a4a6c2;
     --line: rgb(243 243 239 / 0.2);
     --accent: var(--marigold);
+    --accent-text: var(--marigold);
   }
 
   /* how far through: a hairline under the bar */
@@ -299,7 +303,7 @@ const when = meta.date
   }
 
   .top__kind {
-    color: var(--accent);
+    color: var(--accent-text);
     font-weight: 600;
   }
 
@@ -514,7 +518,7 @@ const when = meta.date
   }
 
   .end__way:hover .end__name {
-    color: var(--accent);
+    color: var(--accent-text);
   }
 
   /* ── focus: only the piece ──────────── */
@@ -566,8 +570,15 @@ const when = meta.date
   }
 
   @media (max-width: 599px) {
+    /* two rows of controls are too much to carry down a small screen: they stay at the
+       top of the piece. (In focus mode the way out still follows you.) */
     .tools {
+      position: static;
       flex-wrap: wrap;
+    }
+
+    :global(html.is-reading) .tools {
+      position: sticky;
     }
 
     .tools__back span {

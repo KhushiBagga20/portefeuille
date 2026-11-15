@@ -274,9 +274,9 @@ const lede = [...(study.intro.problem ?? []), ...(study.intro.built ?? [])];
               </p>
             </header>
 
-            <div class:list={['tiles', { 'tiles--one': study.features!.length === 1 }]}>
+            <div class:list={['tiles', { 'tiles--one': study.features!.length === 1 }]} data-reveal>
               {study.features!.map((g) => (
-                <div class="tile" data-reveal>
+                <div class="tile">
                   <header class="tile__head">
                     <h3>{g.title}</h3>
                     {g.stage && <StageMark stage={g.stage} word={g.stage === 'done' ? 'working' : g.stage === 'ongoing' ? 'being built' : undefined} />}

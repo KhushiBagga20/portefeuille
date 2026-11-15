@@ -619,9 +619,10 @@ const shell = quad([[0, 0, 3], [3, 0, 3], [3, 0, 0], [3, 3, 0], [0, 3, 0], [0, 3
       animation-delay: calc(var(--i) * 45ms);
     }
 
-    :global(.js) .door {
-      animation: hub-door 0.7s var(--ease-out) backwards;
-      animation-delay: calc(0.35s + var(--i, 5) * 70ms);
+    /* the plan arrives as one drawing: its rules are its own background, so the rooms
+       can't fade in one by one without the paper showing through */
+    :global(.js) .plan {
+      animation: hub-door 0.8s var(--ease-out) 0.3s backwards;
     }
 
     @keyframes hub-rise {
@@ -676,8 +677,28 @@ const shell = quad([[0, 0, 3], [3, 0, 3], [3, 0, 0], [3, 3, 0], [0, 3, 0], [0, 3
       min-height: 300px;
     }
 
+    /* on a narrow door the model keeps to the right-hand half, clear of the words */
     .door__line {
-      max-width: 22ch;
+      max-width: 17ch;
+    }
+
+    .o-lab {
+      right: 4cqw;
+      bottom: 6cqh;
+      width: min(44cqw, 64cqh);
+    }
+
+    .o-write {
+      right: 5cqw;
+      width: 36cqw;
+    }
+
+    .o-film {
+      right: -12%;
+      bottom: 22cqh;
+      left: 56%;
+      height: 36cqh;
+      rotate: -7deg;
     }
   }
 </style>

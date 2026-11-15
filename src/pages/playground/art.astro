@@ -416,9 +416,19 @@ const payload = works.map((w) => ({
     font: 500 clamp(9px, 5cqmin, 13px) / 1.2 var(--font-mono);
   }
 
+  /* the tint is carried by a mark, so the words themselves stay ink on paper */
   .blank__no {
-    color: var(--tint);
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
     font-weight: 600;
+  }
+
+  .blank__no::before {
+    content: '';
+    width: 0.8em;
+    height: 0.8em;
+    background: var(--tint);
   }
 
   .blank__say {

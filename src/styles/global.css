@@ -99,6 +99,7 @@
   --ink-2: #4b4d68;
   --rule: rgb(12 13 33 / 0.18);
   --paper-accent: var(--cobalt);
+  --paper-on-accent: #ffffff;
   --ink-room: #0c0d21;
 }
 
@@ -110,6 +111,8 @@
   --ink-2: #b4b6d2;
   --rule: rgb(243 243 239 / 0.2);
   --paper-accent: #8f9bff;
+  /* the night accent is light, so what is printed on it has to be dark */
+  --paper-on-accent: #0c0d21;
   --ink-room: #07081a;
 }
 
@@ -121,7 +124,7 @@
   --fg-2: var(--ink-2);
   --line: var(--rule);
   --accent: var(--paper-accent);
-  --on-accent: #ffffff;
+  --on-accent: var(--paper-on-accent);
 }
 
 .s-paper-2 {
@@ -130,7 +133,7 @@
   --fg-2: var(--ink-2);
   --line: var(--rule);
   --accent: var(--paper-accent);
-  --on-accent: #ffffff;
+  --on-accent: var(--paper-on-accent);
 }
 
 .s-ink {

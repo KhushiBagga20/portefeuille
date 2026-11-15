@@ -143,8 +143,8 @@ const ground = (i: number) => `--pbg:${grounds[i % grounds.length].bg};--pfg:${g
             >
               <span class="frame__cell">
                 {s.poster ? <img src={s.poster.src} alt="" loading="lazy" decoding="async" /> : <span class="frame__name">{s.title}</span>}
+                <span class="frame__no">{s.no}</span>
               </span>
-              <span class="frame__no">{s.no}</span>
               <span class="sr-only">
                 {s.title}
                 {s.year ? `, ${s.year}` : ''}
@@ -639,6 +639,7 @@ const ground = (i: number) => `--pbg:${grounds[i % grounds.length].bg};--pfg:${g
   }
 
   .frame__cell {
+    position: relative;
     display: grid;
     aspect-ratio: 4 / 3;
     align-content: end;
@@ -674,9 +675,10 @@ const ground = (i: number) => `--pbg:${grounds[i % grounds.length].bg};--pfg:${g
     position: absolute;
     top: 6px;
     right: 8px;
+    padding: 2px 4px;
+    background: var(--pbg);
     color: var(--pfg);
     font: 500 10.5px/1 var(--font-mono);
-    opacity: 0.8;
   }
 
   .frame:hover .frame__cell {
