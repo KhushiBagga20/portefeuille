@@ -16,7 +16,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const PLAYLIST = process.env.PLAYLIST_ID ?? '1kMBWjQXu5W8u77h36J8jH';
+const PLAYLIST = process.env.PLAYLIST_ID ?? '1ntU7ilYGgQ2pOqxi7PSCw';
 const out = fileURLToPath(new URL('../src/data/playlist.json', import.meta.url));
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125 Safari/537.36';
 
