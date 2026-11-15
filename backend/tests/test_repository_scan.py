@@ -16,6 +16,7 @@ from app.repository_scan import (
     batches,
     read_archive,
     scan_step,
+    strict_schema,
 )
 from app.worker import run_once
 
@@ -53,6 +54,11 @@ def test_archive_exclusions_and_full_large_file_chunks():
     chunks = batches(files)
     assert len(chunks) == 2
     assert "".join(f["content"] for c in chunks for f in c) == "a" * 100000
+
+
+def test_section_schema_only_allows_inspected_file_paths():
+    schema = strict_schema(SectionAnalysis, ["src/main.ts", "README.md"])
+    assert schema["$defs"]["Finding"]["properties"]["files"]["items"]["enum"] == ["README.md", "src/main.ts"]
 
 
 def configure(client, content, monkeypatch):

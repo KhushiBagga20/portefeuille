@@ -124,7 +124,7 @@ class RepositoryDraft(Shape):
     questions: list[str] = Field(max_length=15)
 
 
-def strict_schema(model):
+def strict_schema(model, allowed_paths=None):
     schema = model.model_json_schema(by_alias=True)
 
     def visit(value):
@@ -133,6 +133,11 @@ def strict_schema(model):
             if value.get("type") == "object":
                 value["required"] = list(value.get("properties", {}))
                 value["additionalProperties"] = False
+                if allowed_paths:
+                    for name in ("files", "architecture_files"):
+                        field = value.get("properties", {}).get(name)
+                        if field and field.get("type") == "array":
+                            field["items"] = {"type": "string", "enum": sorted(allowed_paths)}
             for child in value.values():
                 visit(child)
         elif isinstance(value, list):
@@ -175,7 +180,7 @@ def complete(model_type, prompt, data, provider, model):
                     "json_schema": {
                         "name": model_type.__name__,
                         "strict": True,
-                        "schema": strict_schema(model_type),
+                        "schema": strict_schema(model_type, data.get("allowed_files")),
                     },
                 },
             },
@@ -442,8 +447,14 @@ def scan_step(db, job):
             analysis = complete(
                 SectionAnalysis,
                 "Analyze this section of the repository. Identify concrete "
-                "features, protocols, design boundaries, limitations and tests.",
-                section["files"],
+                "features, protocols, design boundaries, limitations and tests. "
+                "Cite exact paths from allowed_files only, never filenames merely mentioned "
+                "inside source text. For imports whose target implementation is not included, "
+                "cite the importing file and label conclusions about the target as inference.",
+                {
+                    "allowed_files": sorted({f["path"] for f in section["files"]}),
+                    "files": section["files"],
+                },
                 payload["provider"],
                 payload["model"],
             )
