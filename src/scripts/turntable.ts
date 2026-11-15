@@ -309,7 +309,19 @@ export function initMusicRoom(room: HTMLElement) {
     artist: $<HTMLElement>('[data-now-artist]')!,
     link: $<HTMLAnchorElement>('[data-now-link]')!,
     cue: $<HTMLElement>('[data-cue]')!,
+    no: $<HTMLElement>('[data-now-no]'),
+    time: $<HTMLElement>('[data-now-time]'),
+    cover: $<HTMLElement>('[data-now-cover]'),
+    text: $<HTMLElement>('[data-now-text]'),
   };
+
+  const clock = (ms: number | null) => {
+    if (!ms) return '';
+    const s = Math.round(ms / 1000);
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  };
+  // Spotify serves each cover in three sizes; a thumbnail doesn't need the largest
+  const smallCover = (cover: string) => cover.replace('ab67616d0000b273', 'ab67616d00001e02');
 
   // Browsers can refuse to start audio inside a cross-origin frame. Rather than spin a
   // silent platter, say so and point at Spotify's own play button.
@@ -321,13 +333,25 @@ export function initMusicRoom(room: HTMLElement) {
   };
 
   function paintInfo(t: Track) {
+    const first = info.card.hidden;
     info.empty.hidden = true;
     info.card.hidden = false;
     info.title.textContent = t.title;
     info.artist.textContent = t.artist;
     info.link.href = `https://open.spotify.com/track/${t.id}`;
+    const at = tracks.indexOf(t);
+    if (info.no) info.no.textContent = at < 0 ? '' : `· ${String(at + 1).padStart(3, '0')} / ${String(tracks.length).padStart(3, '0')}`;
+    if (info.time) info.time.textContent = clock(t.duration);
+    if (info.cover) info.cover.style.backgroundImage = t.cover ? `url("${smallCover(t.cover)}")` : '';
     // the big record on the wall wears the same sleeve
     if (plateLabel) plateLabel.style.backgroundImage = t.cover ? `url("${t.cover}")` : '';
+
+    // one record gives way to the next: the words slide up into place, the sleeves turn over
+    if (reduceMotion.matches || first) return;
+    const ease = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+    info.text?.animate([{ opacity: 0, translate: '0 14px' }, { opacity: 1, translate: '0 0' }], { duration: 520, easing: ease });
+    info.cover?.animate([{ opacity: 0, rotate: 'y 90deg' }, { opacity: 1, rotate: 'y 0deg' }], { duration: 520, easing: ease });
+    plateLabel?.animate([{ opacity: 0.2, scale: 0.86 }, { opacity: 1, scale: 1 }], { duration: 700, easing: ease });
   }
 
   /** Light the playing row in the index, and bring it into view inside its own scroller. */

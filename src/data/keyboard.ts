@@ -27,11 +27,10 @@ export const sections: { key: string; label: string; href: string; tone: Tone }[
   // ── the Playground ──
   { key: 'Y', label: 'playground', href: '/playground/', tone: 'acid' },
   { key: 'L', label: 'lab', href: '/playground/lab/', tone: 'ink' },
+  { key: 'I', label: 'art', href: '/playground/art/', tone: 'ink' },
+  { key: 'W', label: 'writing', href: '/playground/writing/', tone: 'ink' },
   { key: 'V', label: 'records', href: '/playground/music/', tone: 'ink' },
-  // When the art, writing and film rooms open, give them keys here:
-  //   { key: 'I', label: 'art', href: '/playground/art/', tone: 'ink' },
-  //   { key: 'W', label: 'writing', href: '/playground/writing/', tone: 'ink' },
-  //   { key: 'F', label: 'films', href: '/playground/films/', tone: 'ink' },
+  { key: 'F', label: 'films', href: '/playground/films/', tone: 'ink' },
 ];
 
 /** the letters, split the way the hint under the board reads them out */

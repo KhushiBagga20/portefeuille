@@ -41,6 +41,23 @@ const hours = Math.floor(total / 3_600_000);
 const mins = Math.round((total % 3_600_000) / 60_000);
 const no = (i: number) => String(i + 1).padStart(3, '0');
 
+// "Sleeves": the collection grouped by cover art. The playlist data has no album names,
+// so this is the honest version of browsing by album — one tile per distinct sleeve.
+// Spotify serves each cover in three sizes; the tiles and the thumbnail use the 300px one.
+const small = (cover: string) => cover.replace('ab67616d0000b273', 'ab67616d00001e02');
+const sleeveOf = new Map<string, number>();
+const sleeves: { key: number; cover: string; count: number; title: string; artist: string }[] = [];
+for (const t of tracks) {
+  if (!t.cover) continue;
+  let key = sleeveOf.get(t.cover);
+  if (key === undefined) {
+    key = sleeves.length;
+    sleeveOf.set(t.cover, key);
+    sleeves.push({ key, cover: small(t.cover), count: 0, title: t.title, artist: t.artist });
+  }
+  sleeves[key].count++;
+}
+
 // The browser needs the whole playlist to dig through and to shuffle.
 const payload = {
   url: playlist.url,
@@ -134,11 +151,18 @@ const payload = {
         <div class="now" data-now>
           <p class="now__empty voice" data-now-empty>nothing on the platter yet — pick a record.</p>
           <div class="now__card" data-now-card hidden>
-            <p class="label now__tag"><i aria-hidden="true"></i>now playing</p>
-            <p class="now__line">
-              <strong data-now-title></strong>
-              <span data-now-artist></span>
-            </p>
+            <span class="now__cover" data-now-cover aria-hidden="true"></span>
+            <div class="now__text" data-now-text>
+              <p class="now__tag mono">
+                <i aria-hidden="true"></i>now playing
+                <span data-now-no></span>
+              </p>
+              <p class="now__line">
+                <strong data-now-title></strong>
+                <span data-now-artist></span>
+              </p>
+              <p class="now__time mono" data-now-time></p>
+            </div>
             <p class="now__cue" data-cue hidden>
               your browser is holding playback — press play in the Spotify bar below.
             </p>
@@ -178,6 +202,9 @@ const payload = {
             <button class="index__tab" type="button" data-index-view="artists" aria-pressed="false">
               artists <sup>{artists.length}</sup>
             </button>
+            <button class="index__tab" type="button" data-index-view="sleeves" aria-pressed="false">
+              sleeves <sup>{sleeves.length}</sup>
+            </button>
           </div>
           <a class="index__playlist label link" href={playlist.url} target="_blank" rel="noopener">
             the playlist<span class="sr-only"> on Spotify (opens in a new tab)</span>
@@ -197,7 +224,7 @@ const payload = {
           <ol class="tracks" data-tracks>
             {
               tracks.map((t, i) => (
-                <li data-names={namesOf(t.artist).join('|')}>
+                <li data-names={namesOf(t.artist).join('|')} data-sleeve={t.cover ? sleeveOf.get(t.cover) : undefined}>
                   <button class="track" type="button" data-track={i}>
                     <span class="track__no">{no(i)}</span>
                     <span class="track__title">{t.title}</span>
@@ -210,6 +237,25 @@ const payload = {
           </ol>
           <p class="index__none voice" data-index-none hidden>nothing by that name in here.</p>
         </div>
+
+        <!-- every distinct cover in the collection: pick one to see what's inside it -->
+        <ul class="sleeves" data-sleeves>
+          {
+            sleeves.map((sl) => (
+              <li>
+                <button
+                  class="tile"
+                  type="button"
+                  data-sleeve-pick={sl.key}
+                  aria-label={`${sl.count} ${sl.count === 1 ? 'track' : 'tracks'} in this sleeve: ${sl.title}, ${sl.artist}${sl.count > 1 ? ' and more' : ''}`}
+                >
+                  <img src={sl.cover} alt="" width="300" height="300" loading="lazy" decoding="async" />
+                  {sl.count > 1 && <i>{sl.count}</i>}
+                </button>
+              </li>
+            ))
+          }
+        </ul>
 
         <ul class="names" data-names-list>
           {
@@ -246,6 +292,7 @@ const payload = {
     const none = index.querySelector<HTMLElement>('[data-index-none]')!;
     const views = [...index.querySelectorAll<HTMLButtonElement>('[data-index-view]')];
     let artist = '';
+    let sleeve = '';
 
     const haystack = rows.map((row) => (row.textContent ?? '').toLowerCase());
 
@@ -253,12 +300,13 @@ const payload = {
       const q = find.value.trim().toLowerCase();
       let shown = 0;
       rows.forEach((row, i) => {
-        const hit = (!artist || (row.dataset.names ?? '').split('|').includes(artist)) && (!q || haystack[i].includes(q));
+        const hit =
+          (!artist || (row.dataset.names ?? '').split('|').includes(artist)) && (!sleeve || row.dataset.sleeve === sleeve) && (!q || haystack[i].includes(q));
         row.hidden = !hit;
         if (hit) shown++;
       });
-      count.textContent = artist ? `${shown} by ${artist}` : `${shown} of ${rows.length}`;
-      clear.hidden = !artist && !q;
+      count.textContent = artist ? `${shown} by ${artist}` : sleeve ? `${shown} in this sleeve` : `${shown} of ${rows.length}`;
+      clear.hidden = !(artist || sleeve || q);
       none.hidden = shown > 0;
     };
 
@@ -271,12 +319,24 @@ const payload = {
     find.addEventListener('input', apply);
     clear.addEventListener('click', () => {
       artist = '';
+      sleeve = '';
       find.value = '';
       apply();
     });
+    index.querySelectorAll<HTMLButtonElement>('[data-sleeve-pick]').forEach((b) =>
+      b.addEventListener('click', () => {
+        sleeve = b.dataset.sleevePick!;
+        artist = '';
+        find.value = '';
+        apply();
+        view('songs');
+        index.querySelector<HTMLElement>('[data-tracks]')!.scrollTop = 0;
+      }),
+    );
     index.querySelectorAll<HTMLButtonElement>('[data-artist]').forEach((b) =>
       b.addEventListener('click', () => {
         artist = b.dataset.artist!;
+        sleeve = '';
         find.value = '';
         apply();
         view('songs');
@@ -296,9 +356,9 @@ const payload = {
   /* ── the oversized record ───────────── */
   .plate {
     position: absolute;
-    top: clamp(16px, 2vw, 40px);
-    right: calc(-1 * clamp(110px, 14vw, 260px));
-    width: clamp(340px, 40vw, 720px);
+    top: calc(-1 * clamp(50px, 7vw, 130px));
+    right: calc(-1 * clamp(70px, 8vw, 150px));
+    width: clamp(260px, 30vw, 540px);
     pointer-events: none;
   }
 
@@ -344,16 +404,16 @@ const payload = {
 
   /* ── head ───────────────────────────── */
   .room__head {
-    margin-top: clamp(28px, 4.4vw, 64px);
+    margin-top: clamp(20px, 3vw, 44px);
   }
 
   .room__title {
     margin: 0;
     font-family: var(--font-display);
-    font-size: clamp(72px, 15.5vw, 290px);
+    font-size: clamp(64px, 12.4vw, 232px);
     font-weight: 400;
     line-height: 0.94;
-    letter-spacing: -0.015em;
+    letter-spacing: 0;
     text-transform: uppercase;
   }
 
@@ -361,8 +421,8 @@ const payload = {
     max-width: 22ch;
     margin: clamp(14px, 2vw, 26px) 0 0;
     color: var(--accent);
-    font-size: clamp(23px, 2.2vw, 36px);
-    line-height: 1.05;
+    font-size: clamp(21px, 2vw, 32px);
+    line-height: 1.12;
   }
 
   .room__body {
@@ -370,7 +430,7 @@ const payload = {
     grid-template-columns: minmax(170px, 0.46fr) minmax(0, 1.3fr) minmax(0, 0.92fr);
     align-items: start;
     gap: clamp(24px, 3.4vw, 56px);
-    margin-top: clamp(36px, 5vw, 76px);
+    margin-top: clamp(30px, 4.2vw, 64px);
   }
 
   /* ── crate ───────────────────────────── */
@@ -548,6 +608,9 @@ const payload = {
     font-size: 10px;
     line-height: 1.6;
     text-align: center;
+    font: 500 12.5px/1.45 var(--font-body);
+    letter-spacing: 0;
+    text-transform: none;
   }
 
   .panel__btn {
@@ -653,9 +716,11 @@ const payload = {
   .now__card {
     display: grid;
     justify-items: start;
-    gap: 12px;
+    gap: 12px 16px;
     padding: 16px 0 0;
     border-top: 1px solid var(--line);
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
   }
 
   .now__card[hidden] {
@@ -667,6 +732,7 @@ const payload = {
     align-items: center;
     gap: 8px;
     color: var(--accent);
+    margin: 0;
   }
 
   .now__tag i {
@@ -693,11 +759,12 @@ const payload = {
   }
 
   .now__line strong {
-    font-family: var(--font-display);
-    font-size: clamp(30px, 3.4vw, 54px);
+    font-family: var(--font-head);
+    font-size: clamp(22px, 2.2vw, 34px);
     font-weight: 400;
-    line-height: 0.94;
-    text-transform: uppercase;
+    line-height: 1.02;
+    text-transform: none;
+    letter-spacing: -0.04em;
   }
 
   .now__line span {
@@ -766,6 +833,9 @@ const payload = {
     color: #a9abc6;
     font-size: 10px;
     text-align: center;
+    font: 500 12px/1.4 var(--font-mono);
+    letter-spacing: 0;
+    text-transform: none;
   }
 
   .amp.is-live .amp__idle {
@@ -805,18 +875,19 @@ const payload = {
     border: 0;
     background: none;
     color: var(--fg-2);
-    font-family: var(--font-display);
-    font-size: clamp(26px, 2.5vw, 40px);
+    font-family: var(--font-head);
+    font-size: clamp(19px, 1.7vw, 25px);
     font-weight: 400;
-    line-height: 0.94;
-    text-transform: uppercase;
+    line-height: 1;
+    text-transform: none;
     cursor: pointer;
     transition: color 0.2s ease;
+    letter-spacing: -0.035em;
   }
 
   .index__tab sup {
-    font: 700 10px/1 var(--font-label);
-    letter-spacing: 0.06em;
+    font: 500 10.5px/1 var(--font-mono);
+    letter-spacing: 0;
     vertical-align: top;
   }
 
@@ -835,8 +906,9 @@ const payload = {
     white-space: nowrap;
   }
 
-  .index[data-view='songs'] .names,
-  .index[data-view='artists'] .index__songs {
+  .index[data-view='songs'] :is(.names, .sleeves),
+  .index[data-view='artists'] :is(.index__songs, .sleeves),
+  .index[data-view='sleeves'] :is(.index__songs, .names) {
     display: none;
   }
 
@@ -853,8 +925,8 @@ const payload = {
     border-radius: 0;
     background: rgb(255 255 255 / 0.04);
     color: var(--fg);
-    font: 700 12px/1 var(--font-label);
-    letter-spacing: 0.04em;
+    font: 500 14px/1 var(--font-body);
+    letter-spacing: 0;
     appearance: none;
   }
 
@@ -932,8 +1004,8 @@ const payload = {
   .track__no {
     grid-area: no;
     color: var(--fg-2);
-    font: 700 10px/1 var(--font-label);
-    letter-spacing: 0.06em;
+    font: 500 11.5px/1 var(--font-mono);
+    letter-spacing: 0;
   }
 
   .track__title {
@@ -960,9 +1032,9 @@ const payload = {
     grid-area: time;
     align-self: center;
     color: var(--fg-2);
-    font: 700 10px/1 var(--font-label);
+    font: 500 11.5px/1 var(--font-mono);
     font-variant-numeric: tabular-nums;
-    letter-spacing: 0.06em;
+    letter-spacing: 0;
   }
 
   .track:hover,
@@ -1034,12 +1106,98 @@ const payload = {
   .name sup {
     margin-left: 2px;
     color: var(--fg-2);
-    font: 700 9px/1 var(--font-label);
+    font: 500 10px/1 var(--font-mono);
     vertical-align: top;
   }
 
   .name:hover {
     color: var(--accent);
+  }
+
+  /* sleeves: every cover in the collection, as a wall of tiles */
+  .sleeves {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    gap: 6px;
+    max-height: min(74svh, 660px);
+    margin: 14px 0 0;
+    padding: 2px 6px 2px 2px;
+    list-style: none;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-color: var(--fg-2) transparent;
+    scrollbar-width: thin;
+  }
+
+  .tile {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    padding: 0;
+    border: 0;
+    background: #1d1f44;
+    cursor: pointer;
+    transition:
+      scale 0.3s var(--ease-out),
+      rotate 0.4s var(--spring);
+  }
+
+  .tile img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* how many tracks are inside */
+  .tile i {
+    position: absolute;
+    right: 3px;
+    bottom: 3px;
+    display: grid;
+    place-items: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--on-accent);
+    font: 600 10.5px/1 var(--font-mono);
+  }
+
+  .tile:hover,
+  .tile:focus-visible {
+    z-index: 1;
+    scale: 1.32;
+    rotate: -3deg;
+    outline: 2px solid var(--fg);
+    outline-offset: 0;
+    box-shadow: 0 14px 24px rgb(0 0 0 / 0.5);
+  }
+
+  /* what's on: the sleeve, then everything known about the track */
+  .now__cover {
+    grid-row: span 2;
+    width: clamp(64px, 6vw, 88px);
+    aspect-ratio: 1;
+    background: #1d1f44 center / cover no-repeat;
+    box-shadow: 0 10px 18px -8px rgb(0 0 0 / 0.7);
+  }
+
+  .now__text {
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .now__time {
+    margin: 0;
+    color: var(--fg-2);
+  }
+
+  .now__card > :is(.now__cue, .key) {
+    grid-column: 2;
   }
 
   /* ── the record in transit ───────────── */

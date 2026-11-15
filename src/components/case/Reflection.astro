@@ -16,10 +16,10 @@ const parts = [
 ].filter((p) => p.items?.length);
 ---
 
-<div class="rf">
+<div class="rf" data-reveal>
   {
     parts.map((p) => (
-      <section class={`rf__part rf__part--${p.key}`} data-reveal>
+      <section class={`rf__part rf__part--${p.key}`}>
         <h3 class="rf__title">
           <i aria-hidden="true">{p.mark}</i>
           {p.title}

@@ -51,7 +51,7 @@ export const rooms: Room[] = [
     line: 'A wall you can rearrange. Drag the frames, open one up close.',
     accent: 'var(--room-art)',
     onAccent: '#0c0d21',
-    open: false,
+    open: true,
   },
   {
     id: 'writing',
@@ -61,7 +61,7 @@ export const rooms: Room[] = [
     line: 'Poems, essays and fiction, set to be read slowly.',
     accent: 'var(--room-writing)',
     onAccent: '#0c0d21',
-    open: false,
+    open: true,
   },
   {
     id: 'records',
@@ -81,7 +81,7 @@ export const rooms: Room[] = [
     line: 'A filmstrip of the films and shows I keep.',
     accent: 'var(--room-films)',
     onAccent: '#0c0d21',
-    open: false,
+    open: true,
   },
 ];
 

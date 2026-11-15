@@ -1,0 +1,749 @@
+---
+// Room 05. The film & television archive, as a screening room.
+//
+// One title is on the screen at a time: its poster, its name the size of a title card, and
+// what I think of it. Underneath runs a strip of film — every frame is a title; click one,
+// or walk the strip with the arrow keys, and the screen cuts to it. The shelves above the
+// strip re-cut the reel by mood, by genre, or by what a title means to me.
+//
+// What is in the archive is listed in src/data/films.ts.
+import Play from '../../layouts/Play.astro';
+import PosterHead from '../../components/PosterHead.astro';
+import { room } from '../../data/playground';
+import { getScreenings, getShelves, plural } from '../../lib/content';
+
+const r = room('films');
+const shows = await getScreenings();
+const shelves = await getShelves();
+const two = (n: number) => String(n).padStart(2, '0');
+const samples = shows.some((s) => s.sample);
+
+const films = shows.filter((s) => s.type === 'film').length;
+const series = shows.length - films;
+const cuts = [
+  { id: 'all', name: 'the whole reel', by: '', count: shows.length },
+  ...shelves.map((s) => ({ id: `shelf:${s.id}`, name: s.name, by: s.by, count: s.count })),
+  ...(films && series ? [
+    { id: 'type:film', name: 'films', by: 'type', count: films },
+    { id: 'type:series', name: 'series', by: 'type', count: series },
+  ] : []),
+];
+const byWord = { mood: 'mood', genre: 'genre', significance: 'why it matters', type: 'kind' } as Record<string, string>;
+
+// a poster drawn from type, for a title with no artwork: each gets one of a few grounds
+const grounds = [
+  { bg: 'var(--signal)', fg: '#0c0d21' },
+  { bg: 'var(--cobalt)', fg: '#ffffff' },
+  { bg: '#f3f3ef', fg: '#0c0d21' },
+  { bg: 'var(--marigold)', fg: '#0c0d21' },
+  { bg: 'var(--magenta)', fg: '#0c0d21' },
+  { bg: '#1c1e3d', fg: '#f3f3ef' },
+];
+const ground = (i: number) => `--pbg:${grounds[i % grounds.length].bg};--pfg:${grounds[i % grounds.length].fg}`;
+---
+
+<Play here="films" title="Films & television" description="A filmstrip of the films and shows I keep: click a frame and the screen cuts to it.">
+  <section class="cinema" data-cinema aria-labelledby="cinema-title">
+    <div class="cinema__top">
+      <PosterHead index={r.no} name={r.name} note={`${plural(shows.length, 'title')} · ${plural(shelves.length, 'shelf', 'shelves')}`} />
+      <h1 id="cinema-title" class="sr-only">Films and television</h1>
+    </div>
+
+    <!-- ── the screen ─────────────────────── -->
+    <div class="screen" data-screen>
+      {
+        shows.map((s, i) => (
+          <article class="show" id={`film-${s.id}`} data-show={s.id} role="tabpanel" aria-labelledby={`frame-${s.id}`} hidden={i > 0}>
+            <div class="show__poster" style={ground(i)}>
+              {s.poster ? (
+                <img src={s.poster.src} alt={s.poster.alt} width={s.poster.width} height={s.poster.height} loading={i === 0 ? 'eager' : 'lazy'} decoding="async" />
+              ) : (
+                <div class="card" role="img" aria-label={`A stand-in poster for ${s.title}`}>
+                  <span class="card__k">{s.sample ? 'sample' : s.type}</span>
+                  <span class="card__title">{s.title}</span>
+                  <span class="card__foot">
+                    <span>{s.year ?? 'no poster yet'}</span>
+                    <span>{s.no}</span>
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div class="show__text">
+              <p class="show__k mono">
+                <span class="show__frame">
+                  frame {s.no} / {two(shows.length)}
+                </span>
+                <span>{s.type}</span>
+                {s.year && <span>{s.year}</span>}
+                {s.by && <span>by {s.by}</span>}
+              </p>
+              <h2 class="show__title">{s.title}</h2>
+              {s.line && <p class="show__line voice">{s.line}</p>}
+              {
+                s.thoughts && (
+                  <div class="show__thoughts">
+                    <p class="show__label mono">what I think</p>
+                    {s.thoughts.map((para) => (
+                      <p>{para}</p>
+                    ))}
+                  </div>
+                )
+              }
+              <p class="show__shelves">
+                {s.shelfNames.map((name) => (
+                  <span>{name}</span>
+                ))}
+                {s.sample && <span class="show__sample">sample entry — not a real title</span>}
+              </p>
+            </div>
+          </article>
+        ))
+      }
+      <!-- the cut: two black bars that close and open between titles -->
+      <span class="screen__bars" aria-hidden="true"></span>
+    </div>
+
+    <!-- ── the reel ───────────────────────── -->
+    <div class="reel">
+      <div class="reel__bar">
+        <div class="cuts" role="group" aria-label="Re-cut the reel">
+          {
+            cuts.map((c, i) => (
+              <button type="button" data-cut={c.id} aria-pressed={i === 0 ? 'true' : 'false'}>
+                {c.by && <span class="cuts__by">{byWord[c.by]}</span>}
+                {c.name}
+                <i>{two(c.count)}</i>
+              </button>
+            ))
+          }
+        </div>
+        <div class="reel__step">
+          <button type="button" data-step="-1" aria-label="Previous title">←</button>
+          <span class="mono" data-counter aria-live="polite">01 / {two(shows.length)}</span>
+          <button type="button" data-step="1" aria-label="Next title">→</button>
+        </div>
+      </div>
+
+      <div class="strip" data-strip role="tablist" aria-label="Titles, as frames on a strip of film" aria-orientation="horizontal">
+        {
+          shows.map((s, i) => (
+            <button
+              class="frame"
+              id={`frame-${s.id}`}
+              type="button"
+              role="tab"
+              aria-selected={i === 0 ? 'true' : 'false'}
+              aria-controls={`film-${s.id}`}
+              tabindex={i === 0 ? 0 : -1}
+              data-frame={s.id}
+              data-shelves={s.shelves.join(' ')}
+              data-type={s.type}
+              style={ground(i)}
+            >
+              <span class="frame__cell">
+                {s.poster ? <img src={s.poster.src} alt="" loading="lazy" decoding="async" /> : <span class="frame__name">{s.title}</span>}
+                <span class="frame__no">{s.no}</span>
+              </span>
+              <span class="sr-only">
+                {s.title}
+                {s.year ? `, ${s.year}` : ''}
+              </span>
+            </button>
+          ))
+        }
+      </div>
+      {samples && <p class="reel__sample mono">a sample reel for now — it names no real film or show, and steps aside when the first real title is added</p>}
+    </div>
+  </section>
+</Play>
+
+<script>
+  const cinema = document.querySelector<HTMLElement>('[data-cinema]');
+  if (cinema) {
+    const screen = cinema.querySelector<HTMLElement>('[data-screen]')!;
+    const strip = cinema.querySelector<HTMLElement>('[data-strip]')!;
+    const frames = [...cinema.querySelectorAll<HTMLButtonElement>('[data-frame]')];
+    const shows = new Map([...cinema.querySelectorAll<HTMLElement>('[data-show]')].map((el) => [el.dataset.show!, el]));
+    const counter = cinema.querySelector<HTMLElement>('[data-counter]');
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+    const two = (n: number) => String(n).padStart(2, '0');
+
+    let current = frames[0]?.dataset.frame ?? '';
+    let cutting = 0;
+    const onReel = () => frames.filter((f) => !f.hidden);
+
+    const show = (id: string) => {
+      for (const [key, el] of shows) el.hidden = key !== id;
+      for (const f of frames) {
+        const on = f.dataset.frame === id;
+        f.setAttribute('aria-selected', String(on));
+        f.tabIndex = on ? 0 : -1;
+      }
+      const reel = onReel();
+      const at = reel.findIndex((f) => f.dataset.frame === id);
+      if (counter) counter.textContent = `${two(at + 1)} / ${two(reel.length)}`;
+      const frame = frames.find((f) => f.dataset.frame === id);
+      // bring the frame to the middle of the strip without moving the page
+      if (frame) strip.scrollTo({ left: frame.offsetLeft - (strip.clientWidth - frame.offsetWidth) / 2, behavior: reduce.matches ? 'auto' : 'smooth' });
+    };
+
+    /** cut to another title: the bars close, the screen changes behind them, they open */
+    const cutTo = (id: string, quick = false) => {
+      if (!shows.has(id) || id === current) return;
+      current = id;
+      try {
+        history.replaceState(history.state, '', `#${id}`);
+      } catch {}
+      clearTimeout(cutting);
+      if (quick || reduce.matches) return show(id);
+      screen.classList.remove('is-cutting');
+      void screen.offsetWidth;
+      screen.classList.add('is-cutting');
+      cutting = window.setTimeout(() => show(id), 170);
+      window.setTimeout(() => screen.classList.remove('is-cutting'), 620);
+    };
+
+    const step = (by: number) => {
+      const reel = onReel();
+      if (!reel.length) return;
+      const at = reel.findIndex((f) => f.dataset.frame === current);
+      const next = reel[(at + by + reel.length) % reel.length];
+      cutTo(next.dataset.frame!);
+      return next;
+    };
+
+    frames.forEach((f) => f.addEventListener('click', () => cutTo(f.dataset.frame!)));
+    cinema.querySelectorAll<HTMLButtonElement>('[data-step]').forEach((b) => b.addEventListener('click', () => step(Number(b.dataset.step))));
+
+    // the strip is one tab stop; the arrows walk it
+    strip.addEventListener('keydown', (e) => {
+      const reel = onReel();
+      let next: HTMLButtonElement | undefined;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = step(1);
+      else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = step(-1);
+      else if (e.key === 'Home') next = reel[0];
+      else if (e.key === 'End') next = reel[reel.length - 1];
+      else return;
+      e.preventDefault();
+      if (next) {
+        cutTo(next.dataset.frame!);
+        next.focus({ preventScroll: true });
+      }
+    });
+
+    // a mouse wheel over the strip runs the film sideways
+    strip.addEventListener(
+      'wheel',
+      (e) => {
+        if (Math.abs(e.deltaY) <= Math.abs(e.deltaX) || strip.scrollWidth <= strip.clientWidth) return;
+        const end = e.deltaY > 0 ? strip.scrollLeft + strip.clientWidth >= strip.scrollWidth - 1 : strip.scrollLeft <= 0;
+        if (end) return; // at either end the page scrolls on as usual
+        e.preventDefault();
+        strip.scrollLeft += e.deltaY;
+      },
+      { passive: false },
+    );
+
+    // ── re-cutting the reel ──
+    const cuts = [...cinema.querySelectorAll<HTMLButtonElement>('[data-cut]')];
+    cuts.forEach((b) =>
+      b.addEventListener('click', () => {
+        const [kind, value] = b.dataset.cut!.split(':');
+        cuts.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+        for (const f of frames) {
+          f.hidden = kind === 'shelf' ? !f.dataset.shelves!.split(' ').includes(value) : kind === 'type' ? f.dataset.type !== value : false;
+        }
+        const reel = onReel();
+        if (!reel.some((f) => f.dataset.frame === current) && reel[0]) cutTo(reel[0].dataset.frame!);
+        else show(current);
+      }),
+    );
+
+    // a link straight to one title starts on it
+    const wanted = decodeURIComponent(location.hash.slice(1));
+    if (wanted && shows.has(wanted)) cutTo(wanted, true);
+  }
+</script>
+
+<style>
+  /* ── the room: lights down ──────────── */
+  .cinema {
+    --bg: #05060f;
+    --fg: #f3f3ef;
+    --fg-2: #a9abc6;
+    --line: rgb(243 243 239 / 0.2);
+    --accent: var(--room-films);
+    --on-accent: #0c0d21;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100svh - var(--bar));
+    background: var(--bg);
+    color: var(--fg);
+    overflow: clip;
+  }
+
+  .cinema__top {
+    padding: clamp(18px, 2.4vw, 34px) var(--gutter) 0;
+  }
+
+  /* ── the screen ─────────────────────── */
+  .screen {
+    position: relative;
+    display: grid;
+    flex: 1;
+    align-items: center;
+    padding: clamp(14px, 2.6svh, 44px) var(--gutter) clamp(14px, 2.4svh, 38px);
+    isolation: isolate;
+  }
+
+  /* the projector's light: a soft pool behind whatever is showing */
+  .screen::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: radial-gradient(60% 70% at 26% 50%, rgb(243 243 239 / 0.09), transparent 70%);
+    pointer-events: none;
+  }
+
+  .show {
+    display: grid;
+    grid-template-columns: minmax(0, 0.4fr) minmax(0, 1fr);
+    align-items: center;
+    gap: clamp(24px, 5vw, 90px);
+    max-width: var(--wrap);
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .show[hidden] {
+    display: none;
+  }
+
+  /* without scripts there is no strip to choose from: show every title, one under another */
+  :global(html:not(.js)) .show[hidden] {
+    display: grid;
+    margin-top: 60px;
+  }
+
+  .show__poster {
+    position: relative;
+    justify-self: end;
+    width: min(100%, calc((100svh - var(--bar) - 372px) * 0.6667), 440px);
+    min-width: 180px;
+    aspect-ratio: 2 / 3;
+    background: var(--pbg);
+    color: var(--pfg);
+    box-shadow:
+      0 0 0 1px rgb(243 243 239 / 0.16),
+      0 40px 80px -30px rgb(0 0 0 / 0.9),
+      0 0 120px -20px color-mix(in srgb, var(--pbg) 45%, transparent);
+    rotate: -2.2deg;
+    container-type: size;
+  }
+
+  .show__poster img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* a poster made of type, for a title with no artwork */
+  .card {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    height: 100%;
+    padding: 7cqw;
+  }
+
+  .card__k,
+  .card__foot {
+    display: flex;
+    justify-content: space-between;
+    font: 500 clamp(9px, 4cqw, 13px) / 1.2 var(--font-mono);
+  }
+
+  .card__title {
+    align-self: end;
+    padding-bottom: 6cqw;
+    font: 400 clamp(26px, 21cqw, 110px) / 0.92 var(--font-display);
+    text-transform: uppercase;
+    overflow-wrap: anywhere;
+  }
+
+  .card__foot {
+    padding-top: 4cqw;
+    border-top: 1.5px solid currentColor;
+  }
+
+  .show__k {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 18px;
+    margin: 0;
+    color: var(--fg-2);
+  }
+
+  .show__frame {
+    color: var(--accent);
+  }
+
+  .show__title {
+    max-width: 12ch;
+    margin: clamp(8px, 1.2svh, 20px) 0 0;
+    font: 400 clamp(48px, min(8.6vw, 11.6svh), 148px) / 0.92 var(--font-display);
+    letter-spacing: 0.004em;
+    text-transform: uppercase;
+    text-wrap: balance;
+  }
+
+  .show__line {
+    max-width: 24ch;
+    margin: clamp(10px, 1.6svh, 26px) 0 0;
+    font-size: clamp(20px, min(2.3vw, 3.5svh), 36px);
+    line-height: 1.14;
+  }
+
+  .show__thoughts {
+    max-width: 56ch;
+    margin-top: clamp(12px, 1.8svh, 28px);
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+  }
+
+  .show__label {
+    margin: 0 0 8px;
+    color: var(--accent);
+  }
+
+  .show__thoughts p:not(.show__label) {
+    margin: 0 0 0.8em;
+    color: #dcdcd4;
+    font-size: var(--fs-read);
+    line-height: 1.62;
+  }
+
+  .show__shelves {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: clamp(10px, 1.4vw, 18px) 0 0;
+  }
+
+  .show__shelves span {
+    padding: 5px 10px 4px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font: 650 12.5px/1.2 var(--font-body);
+  }
+
+  .show__shelves .show__sample {
+    border-style: dashed;
+    border-color: currentColor;
+    border-radius: 0;
+    color: var(--fg-2);
+    font: 500 12px/1.2 var(--font-mono);
+  }
+
+  /* the cut */
+  .screen__bars {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .screen__bars::before,
+  .screen__bars::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    left: 0;
+    height: 50.5%;
+    background: #000;
+    scale: 1 0;
+  }
+
+  .screen__bars::before {
+    top: 0;
+    transform-origin: top;
+  }
+
+  .screen__bars::after {
+    bottom: 0;
+    transform-origin: bottom;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .screen.is-cutting .screen__bars::before,
+    .screen.is-cutting .screen__bars::after {
+      animation: cut 0.62s cubic-bezier(0.7, 0, 0.2, 1);
+    }
+
+    @keyframes cut {
+      0% {
+        scale: 1 0;
+      }
+      26%,
+      34% {
+        scale: 1 1;
+      }
+      100% {
+        scale: 1 0;
+      }
+    }
+
+    /* the new title settles onto the screen as the bars open */
+    .show:not([hidden]) .show__poster {
+      animation: poster-in 0.8s var(--ease-out) backwards;
+    }
+
+    .show:not([hidden]) .show__text > * {
+      animation: text-in 0.7s var(--ease-out) backwards;
+    }
+
+    .show:not([hidden]) .show__text > :nth-child(2) {
+      animation-delay: 60ms;
+    }
+    .show:not([hidden]) .show__text > :nth-child(3) {
+      animation-delay: 120ms;
+    }
+    .show:not([hidden]) .show__text > :nth-child(n + 4) {
+      animation-delay: 180ms;
+    }
+
+    @keyframes poster-in {
+      from {
+        opacity: 0;
+        rotate: -6deg;
+        translate: -30px 0;
+      }
+    }
+
+    @keyframes text-in {
+      from {
+        opacity: 0;
+        translate: 0 16px;
+      }
+    }
+  }
+
+  /* ── the reel ───────────────────────── */
+  .reel {
+    padding-bottom: clamp(14px, 2vw, 26px);
+  }
+
+  .reel__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px 20px;
+    padding: 0 var(--gutter) clamp(10px, 1.2vw, 16px);
+  }
+
+  .cuts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .cuts button,
+  .reel__step button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 13px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: none;
+    color: var(--fg);
+    font: 650 13.5px/1 var(--font-body);
+    cursor: pointer;
+    transition:
+      background-color 0.2s var(--ease-out),
+      color 0.2s var(--ease-out),
+      border-color 0.2s var(--ease-out);
+  }
+
+  .cuts__by,
+  .cuts i {
+    color: var(--fg-2);
+    font: 500 11px/1 var(--font-mono);
+    transition: color 0.2s var(--ease-out);
+  }
+
+  .cuts button:hover,
+  .reel__step button:hover {
+    border-color: var(--fg);
+  }
+
+  .cuts button[aria-pressed='true'] {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+
+  .cuts button[aria-pressed='true'] :is(.cuts__by, i) {
+    color: inherit;
+  }
+
+  .reel__step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .reel__step button {
+    justify-content: center;
+    width: 40px;
+    padding: 0;
+  }
+
+  /* a strip of film: sprocket holes along both edges, a frame for every title */
+  .strip {
+    --hole: radial-gradient(circle at center, var(--bg) 0 3.4px, transparent 4px);
+    display: flex;
+    gap: 10px;
+    padding: 22px max(var(--gutter), calc((100% - var(--wrap)) / 2)) 22px;
+    background:
+      var(--hole) 9px 6px / 20px 12px repeat-x,
+      var(--hole) 9px calc(100% - 6px) / 20px 12px repeat-x,
+      #1a1b2e;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .frame {
+    position: relative;
+    flex: none;
+    width: clamp(92px, min(9.4vw, 15svh), 138px);
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--fg);
+    cursor: pointer;
+    transition: translate 0.35s var(--ease-out);
+  }
+
+  .frame[hidden] {
+    display: none;
+  }
+
+  .frame__cell {
+    position: relative;
+    display: grid;
+    aspect-ratio: 4 / 3;
+    align-content: end;
+    padding: 8px;
+    border-radius: 3px;
+    background: var(--pbg);
+    color: var(--pfg);
+    opacity: 0.42;
+    overflow: hidden;
+    transition:
+      opacity 0.3s ease,
+      outline-color 0.3s ease;
+    outline: 2.5px solid transparent;
+    outline-offset: 2px;
+  }
+
+  .frame__cell img {
+    grid-area: 1 / 1;
+    width: calc(100% + 16px);
+    height: calc(100% + 16px);
+    margin: -8px;
+    max-width: none;
+    object-fit: cover;
+  }
+
+  .frame__name {
+    font: 400 clamp(12px, 1.25vw, 17px) / 0.96 var(--font-display);
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  .frame__no {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    padding: 2px 4px;
+    background: var(--pbg);
+    color: var(--pfg);
+    font: 500 10.5px/1 var(--font-mono);
+  }
+
+  .frame:hover .frame__cell {
+    opacity: 0.8;
+  }
+
+  .frame:hover {
+    translate: 0 -3px;
+  }
+
+  .frame[aria-selected='true'] .frame__cell {
+    opacity: 1;
+    outline-color: var(--accent);
+  }
+
+  .frame:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+
+  .frame:focus-visible .frame__cell {
+    outline-color: #ffffff;
+  }
+
+  .reel__sample {
+    margin: clamp(10px, 1.2vw, 16px) 0 0;
+    padding: 0 var(--gutter);
+    color: var(--fg-2);
+  }
+
+  /* ── narrower: the strip first, the screen under it ── */
+  @media (max-width: 899px) {
+    .reel {
+      order: 1;
+      padding-top: 14px;
+      padding-bottom: 0;
+    }
+
+    .screen {
+      order: 2;
+      align-items: start;
+      padding-top: 26px;
+      padding-bottom: 44px;
+    }
+
+    .screen::before {
+      background: radial-gradient(90% 40% at 50% 20%, rgb(243 243 239 / 0.09), transparent 70%);
+    }
+
+    .show {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 26px;
+    }
+
+    .show__poster {
+      justify-self: start;
+      width: min(62vw, 300px);
+    }
+
+    .show__title {
+      font-size: clamp(48px, 15vw, 96px);
+    }
+
+    .reel__sample {
+      margin-bottom: 4px;
+    }
+  }
+</style>
