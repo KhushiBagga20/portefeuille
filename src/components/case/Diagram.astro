@@ -1,4 +1,5 @@
 ---
+import Cited from './Cited.astro';
 // An architecture diagram you can read like a map: parts on a grid, lines showing which
 // way data moves, and a panel that explains whichever part you pick.
 //
@@ -214,11 +215,11 @@ const uid = `dg-${d.id}`;
                 {n.stage && <StageMark stage={n.stage} word={n.stage === 'done' ? 'working' : undefined} />}
               </p>
               <h4 class="dd__name">{n.label}</h4>
-              {n.summary && <p class="dd__sum">{n.summary}</p>}
+              {n.summary && <p class="dd__sum"><Cited text={n.summary} /></p>}
               {n.details && (
                 <ul class="dd__list">
                   {n.details.map((x) => (
-                    <li>{x}</li>
+                    <li><Cited text={x} /></li>
                   ))}
                 </ul>
               )}

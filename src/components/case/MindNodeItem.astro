@@ -1,4 +1,5 @@
 ---
+import Cited from './Cited.astro';
 // One node of the mind map and, by calling itself, everything under it.
 // (Styles are in MindMap.astro.)
 import StageMark from './Stage.astro';
@@ -22,7 +23,7 @@ const opens = kids.length > 0 || Boolean(node.note);
             <StageMark stage={node.stage} word={node.stage === 'done' ? 'working' : undefined} />
           </span>
         )}
-        {node.note && <span class="mm__note">{node.note}</span>}
+        {node.note && <span class="mm__note"><Cited text={node.note} /></span>}
         <i class="mm__n" aria-hidden="true">
           {kids.length || '+'}
         </i>

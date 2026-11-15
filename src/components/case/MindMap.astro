@@ -254,6 +254,8 @@ const total = branches.reduce((n, b) => n + count(b.nodes), 0);
     flex: none;
     gap: 3px;
     max-width: 250px;
+    min-width: 0;
+    overflow-wrap: anywhere;
     padding: 9px 13px 8px;
     border: 1.5px solid var(--fg);
     border-radius: 10px;
@@ -366,6 +368,16 @@ const total = branches.reduce((n, b) => n + count(b.nodes), 0);
 
   [aria-expanded='true'] > .mm__node .mm__note {
     display: block;
+  }
+
+  /* an open note needs room to be read, and the marker moves out of its way */
+  [aria-expanded='true'] > .mm__node--leaf {
+    max-width: min(340px, 78vw);
+  }
+
+  [aria-expanded='true'] > .mm__node--leaf .mm__n {
+    top: 9px;
+    translate: none;
   }
 
   /* ── opening and closing ────────────── */

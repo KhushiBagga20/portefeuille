@@ -1,4 +1,5 @@
 ---
+import Cited from './Cited.astro';
 // Technical deep dives. Each one stays folded to a single line until someone wants it, so a
 // casual reader passes a tidy list of topics and a curious one can open any of them.
 // A topic that has no notes yet is listed, not offered: there is nothing to open.
@@ -31,10 +32,10 @@ const written = dives.filter((d) => d.body?.length);
                 <i class="dv__plus" aria-hidden="true" />
               </summary>
               <div class="dv__body">
-                {d.summary && <p class="dv__lede">{d.summary}</p>}
+                {d.summary && <p class="dv__lede"><Cited text={d.summary} /></p>}
                 <div class="dv__text read">
                   {d.body.map((para) => (
-                    <p>{para}</p>
+                    <p><Cited text={para} /></p>
                   ))}
                 </div>
                 {(d.chose || d.because || d.tradeoff) && (
