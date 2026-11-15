@@ -1,4 +1,5 @@
 ---
+import Cited from './Cited.astro';
 // A project's history as a line you read downward: what is finished, what is being worked
 // on, what is only planned. The three states never look alike — a solid mark, a turning
 // one, a dashed one — and a date is shown only when one is actually known.
@@ -50,11 +51,11 @@ const kindWord = { milestone: 'milestone', achievement: 'achievement', challenge
           <div class="tl__what">
             {(e.kind || e.update) && <p class="tl__kind mono">{e.update ? 'update' : kindWord[e.kind!]}</p>}
             <h3 class="tl__title">{e.title}</h3>
-            {e.body && <p class="tl__body">{e.body}</p>}
+            {e.body && <p class="tl__body"><Cited text={e.body} /></p>}
             {e.items && (
               <ul class="tl__points">
                 {e.items.map((x) => (
-                  <li>{x}</li>
+                  <li><Cited text={x} /></li>
                 ))}
               </ul>
             )}
