@@ -449,6 +449,32 @@ const when = meta.date
     color: var(--accent);
   }
 
+  /* a picture, and the caption written under it */
+  .text :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+  }
+
+  .text :global(p:has(> img)) {
+    margin-block: clamp(26px, 3.4vw, 46px);
+    text-indent: 0;
+  }
+
+  .text :global(p:has(> img) br) {
+    display: none;
+  }
+
+  .text :global(p:has(> img) em) {
+    display: block;
+    margin-top: 10px;
+    color: var(--fg-2);
+    font: 500 var(--fs-meta) / 1.45 var(--font-mono);
+    font-style: normal;
+  }
+
   .text :global(a) {
     color: inherit;
     text-decoration-color: var(--accent);
