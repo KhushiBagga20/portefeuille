@@ -215,6 +215,7 @@ function openingOf(body: string, kind: WritingKind): string {
     .replace(/^>\s?/gm, '')
     .replace(/^[-*]\s+/gm, '')
     .replace(/^---+$/gm, '')
+    .replace(/!\[[^\]]*\]\([^)]*\)\\?/g, '')
     .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
     .replace(/[*_`]/g, '');
   if (kind === 'poem') {

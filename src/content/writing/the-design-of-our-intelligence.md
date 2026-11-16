@@ -7,17 +7,28 @@ source: https://medium.com/@khushixbagga/the-design-of-our-intelligence-34177f37
 ---
 *“It’s taking my job!”*
 
+![A ChatGPT conversation. “you’ve.. changed?” “Not in the ways that matter to you.”](./images/design-of-our-intelligence-chatgpt-changed.png)
+
 I think humanity has been here before. Multiple times, in fact. After all, every revolution begins from knowledge. Reading recent AI headlines is like watching a game of ping pong balls. One day it’s *“AI is going to take all our jobs!”*, the next it’s *“AI will create millions of new ones!”* huh?
 
 The truth is, we’ve always been bad at predicting how technology reshapes work. Twenty years ago, who could’ve imagined that food delivery apps or e-commerce logistics would become billion-dollar industries employing millions? Today, new jobs don’t look like factory shifts or office cubicles for most. They might be consultation, AI feedback loops, consumer calls or training AI systems themselves.
 
 Let’s be honest, AI **will** take millions of jobs. Not just entry-level ones. Senior professionals are already being laid off and finding themselves labeled “overqualified” for lower-tier positions. Their stories keep piling up at LinkedIn- people with talent, skill, and decades of expertise being told, in essence, “we can’t afford you anymore”.
 
+![Screenshot of a New York Times article](./images/design-of-our-intelligence-nyt-article.png)\
+*An article from The New York Times .*
+
 The problem is real. But instead of pretending it will vanish, we need to learn the harder skill: if you present a problem, bring a solution too.
 
 Now, job fear is not the only fear circling AI. A rather curious complaint has emerged after the first beginning sparklers of GPT-5, the fact that it is “lifeless” compared to the previous 4o. Now, I’m sure 4o feels happy to be missed, but the real thing to ponder over, is that, was that the only reason?
 
+![News results from Mint, WIRED and Outlook Business about users calling GPT-5 a downgrade](./images/design-of-our-intelligence-gpt5-downgrade.png)\
+*Articles that talked about users calling GPT-5 a “downgrade”.*
+
 As it turns out, OpenAI had decreased the prompt limit for the new model and removed the previous models from the application, even for pro users. This caused an outrage, people complained about how they removed it because GPT-5 isn’t much different from 4o and it’s existence at the users’ fingertips could expose it. The most complaints included gpt-5 not being “friendly” enough. Imagine that- the biggest grievance about an AI LLM is that its not friendly.
+
+![Screenshot of a post by Sam Altman on X](./images/design-of-our-intelligence-altman-on-x.png)\
+*Extract: Sam Altman on X, few days after release of GPT-5 and complaints from users.*
 
 In a X post, to address the issues, Sam Altman said, “(other than when we released an update to GPT-4o that was too sycophantic).” I’m sure Sam Altman is one of the best people to use that word. The funny thing is, in one breath, we ask the AI to be friendly and in the other, the creator complains it’s not supposed to act that way. Now, this raises a strange hypocrisy.
 
