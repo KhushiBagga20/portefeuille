@@ -246,6 +246,10 @@ class ImportRepositoriesInput(Shape):
     repository_ids: list[Annotated[str, Field(pattern=r"^\d+$")]] = Field(min_length=1, max_length=20)
 
 
+class ScanInput(Shape):
+    enable_source_analysis: bool = False
+
+
 class AIProposal(Shape):
     title: str = Field(min_length=1, max_length=200)
     body: str = Field(min_length=1, max_length=5000)

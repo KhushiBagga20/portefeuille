@@ -60,7 +60,7 @@ async function request<T>(path: string, body?: unknown): Promise<T> {
   const response = await fetch(`${apiOrigin}${path}`, {
     method: body === undefined ? 'GET' : 'POST', credentials: 'include',
     headers: body === undefined ? {} : { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
-    body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(15000),
+    body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(path.endsWith('/scan') ? 60000 : 15000),
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -183,14 +183,26 @@ async function loadProject() {
   if (!evidence.length) el('evidence').textContent = 'No GitHub activity received yet.';
   renderJobs(jobs);
   el('repository-scans').replaceChildren();
-  for (const repo of repositories.filter(r => r.scan_enabled)) {
-    const p = document.createElement('p'); p.textContent = `${repo.full_name} · Checked daily for new commits.`;
-    const button = document.createElement('button'); button.textContent = 'Check GitHub for new work';
+  if (!repositories.length) {
+    const hint = document.createElement('p'); hint.textContent = 'No GitHub repository is connected to this project. Use “Choose which GitHub repositories appear as projects” above to add one.';
+    el('repository-scans').append(hint);
+  }
+  for (const repo of repositories) {
+    const p = document.createElement('p'); p.textContent = repo.full_name;
+    const hint = document.createElement('p'); hint.className = 'hint';
+    hint.textContent = repo.scan_enabled
+      ? 'AI analysis is enabled. New commits are checked daily. Existing work is reused when nothing has changed.'
+      : 'Clicking Generate allows eligible source files from this public repository to be sent to your configured AI and enables daily checks. AI usage may incur charges. The result stays private until you publish.';
+    const button = document.createElement('button'); button.textContent = 'Generate AI case study';
+    button.setAttribute('aria-label', `Generate AI case study for ${repo.full_name}`);
     button.onclick = () => void perform(async () => {
-      const result = await request<{ status: string }>(route(`/repositories/${encodeURIComponent(repo.id)}/scan`), {});
-      notice(result.status === 'done' ? 'GitHub is up to date. Your saved draft is available under Review latest ready draft.' : 'Preparing a private case-study draft. Follow Recent activity for progress; this will not publish anything.');
+      if (hasUnsaved()) throw new Error('Save your current edits before generating a case study.');
+      notice('Checking GitHub and preparing your private case study…');
+      const result = await request<{ status: string }>(route(`/repositories/${encodeURIComponent(repo.id)}/scan`), { enable_source_analysis: !repo.scan_enabled });
+      await loadProject();
+      notice(result.status === 'done' ? 'GitHub is up to date. The existing case study has been loaded; no extra AI generation was needed.' : 'AI is writing your private case study, diagram and mind map. Follow Recent activity below. You can leave Studio while it works; nothing is published automatically.');
     });
-    el('repository-scans').append(p, button);
+    el('repository-scans').append(p, hint, button);
   }
   el('history').replaceChildren();
   for (const publication of history) {
@@ -341,7 +353,9 @@ el('prepare-projects').onclick = () => void perform(async () => {
   if (!repository_ids.length) throw new Error('Select at least one repository first.');
   importedProjects = await request<ImportedProject[]>('/api/v1/studio/github/project-drafts', { repository_ids });
   renderImportedProjects(); await refreshProjects();
-  el('project-picker-status').textContent = 'Cards saved as private drafts. Review the names and descriptions below, then publish these cards. Full case studies can be added later.';
+  const firstDraft = importedProjects.find(p => p.revision && !p.published);
+  if (firstDraft) { projectSelect.value = firstDraft.slug; await loadProject(); }
+  el('project-picker-status').textContent = 'Cards saved as private drafts. Select a project below and click Generate AI case study in its GitHub connection panel. You can review the full writeup before publishing, or publish just the cards now.';
 });
 el('publish-projects').onclick = () => void perform(async () => {
   if (hasUnsaved()) throw new Error('Save your current edits before publishing project cards.');

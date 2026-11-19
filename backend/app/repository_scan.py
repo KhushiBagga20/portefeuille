@@ -17,7 +17,7 @@ from urllib.parse import quote
 
 import httpx
 from pydantic import Field
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from app.config import settings
 from app.models import Evidence, Job, Project, Publication, Repository, Revision, RevisionEvidence, now
@@ -414,7 +414,7 @@ def validate_citations(findings, paths):
 
 
 def scan_allowed(repo):
-    return repo.allow_ai and repo.github_id in settings().scan_repository_ids
+    return repo.allow_ai and (repo.allow_source_ai or repo.github_id in settings().scan_repository_ids)
 
 
 def enqueue_scan(db, repo):
@@ -422,8 +422,16 @@ def enqueue_scan(db, repo):
     if not scan_allowed(repo) or not cfg.ai_ready:
         raise ScanError("Repository source analysis is not enabled")
     project = db.get(Project, repo.project_id)
+    base_revision = None
     if not project.version:
-        raise ScanError("Publish the project baseline first")
+        base_revision = db.scalar(
+            select(Revision)
+            .where(Revision.project_id == project.id, Revision.base_version == 0)
+            .order_by(Revision.created_at.desc())
+            .limit(1)
+        )
+        if base_revision is None:
+            raise ScanError("Prepare a project card first")
     active = db.scalar(
         select(Job).where(
             Job.kind == "repository_scan",
@@ -445,6 +453,7 @@ def enqueue_scan(db, repo):
             "repository_id": repo.id,
             "project_id": project.id,
             "base_version": project.version,
+            "base_revision_id": base_revision.id if base_revision else None,
             "sha": sha,
             "provider": cfg.ai_provider,
             "model": cfg.ai_model,
@@ -464,7 +473,11 @@ def schedule_scans(db):
         return {"checked": 0, "failed": 0}
     count = failed = 0
     for repo in db.scalars(
-        select(Repository).where(Repository.github_id.in_(settings().scan_repository_ids))
+        select(Repository).where(
+            or_(
+                Repository.allow_source_ai.is_(True), Repository.github_id.in_(settings().scan_repository_ids)
+            )
+        )
     ):
         if scan_allowed(repo):
             try:
@@ -547,6 +560,15 @@ def scan_step(db, job):
                 Publication.project_id == repo.project_id, Publication.version == payload["base_version"]
             )
         )
+        if payload["base_version"] == 0:
+            seed = db.get(Revision, payload.get("base_revision_id"))
+            if seed is None or seed.project_id != repo.project_id or seed.base_version != 0:
+                raise ScanError("Private project card is unavailable")
+            snapshot = seed.content
+        elif base is not None:
+            snapshot = base.snapshot
+        else:
+            raise ScanError("Project baseline is unavailable")
         draft = complete(
             RepositoryDraft,
             "Write a readable portfolio case study for a technically curious visitor. "
@@ -574,9 +596,9 @@ def scan_step(db, job):
             {
                 "allowed_files": [f["path"] for f in payload["coverage"]["inspected"]],
                 "project_context": {
-                    key: base.snapshot["project"][key]
+                    key: snapshot["project"][key]
                     for key in ("name", "type", "oneLiner")
-                    if key in base.snapshot["project"]
+                    if key in snapshot["project"]
                 },
                 "analyses": [s["analysis"] for s in payload["sections"]],
                 "coverage": {
@@ -594,7 +616,7 @@ def scan_step(db, job):
         validate_citations(findings, paths)
         if not set(draft.architecture_files).issubset(paths) or len(draft.architecture.nodes) > 10:
             raise ScanError("Architecture citation or size is invalid")
-        content = copy.deepcopy(base.snapshot)
+        content = copy.deepcopy(snapshot)
         case = content["caseStudy"]
         case["intro"]["built"] = [f.statement for f in draft.built]
         case["features"] = [
@@ -658,6 +680,7 @@ def scan_step(db, job):
         )
         revision = Revision(
             project_id=repo.project_id,
+            parent_id=payload.get("base_revision_id"),
             base_version=payload["base_version"],
             content=content,
             content_hash=digest(content),

@@ -1,10 +1,17 @@
 # Repository case-study drafts
 
 Selected public GitHub repositories can be scanned directly, without another login or a personal
-access token. `GITHUB_SCAN_REPOSITORIES` is a comma-separated allowlist of numeric repository IDs
-whose source code the owner explicitly permits the configured AI provider to analyze. A repository
-must also be connected to the project with `allow_ai=true`. Permission for PR descriptions alone
-does not enable full source scans. Emptying the allowlist stops future scans and queued analysis.
+access token. In Studio, import a repository card, select the project and click **Generate AI case
+study**. The button explains source sharing and records `allow_source_ai=true` only after checking
+the repository is public, matches its connected numeric ID, and belongs to the signed-in owner.
+The request requires the owner session and CSRF protection. It also enables daily checks.
+A card may stay private: its immutable revision becomes the first scan's baseline and no publication
+is created until the owner explicitly approves the finished draft.
+
+`GITHUB_SCAN_REPOSITORIES` remains a legacy comma-separated source-consent allowlist. Both paths
+also require `allow_ai=true`; permission for PR descriptions alone does not enable full scans.
+To revoke analysis, set `allow_ai=false`, or clear both persisted source consent and the legacy
+allowlist entry. The worker checks permission again before processing a queued scan.
 
 Azure is configured as the provider. Set the allowlist only in Production and redeploy.
 The owner has enabled the 12 connected public repositories: Conduit, Sahaas-frontend, Kinetic,
@@ -13,7 +20,7 @@ GSSS-school-site and The-unsaid-page. Mind Pop and VerifAI need repository links
 
 The existing authenticated daily Vercel cron checks the default branch. A new commit queues one
 scan, deduplicated by repository, commit, provider, deployment and prompt version. Studio also has
-**Check all enabled projects now** and a per-project **Check GitHub for new work** button.
+**Check all enabled projects now** and a per-project **Generate AI case study** button.
 These reuse existing completed scans; an explicit owner click
 can retry a failed scan. A stale draft must be rebased/reviewed before publishing. There is no
 automatic publication and the worker retains no publication-write privileges.

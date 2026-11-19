@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, false
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -59,6 +59,7 @@ class Repository(Base):
     github_id: Mapped[str] = mapped_column(String(30), unique=True)
     full_name: Mapped[str] = mapped_column(String(200))
     allow_ai: Mapped[bool] = mapped_column(default=False)
+    allow_source_ai: Mapped[bool] = mapped_column(default=False, server_default=false())
 
 
 class Delivery(Base):

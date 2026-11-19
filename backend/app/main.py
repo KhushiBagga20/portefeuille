@@ -16,13 +16,14 @@ from app.github_projects import catalog, prepare_projects
 from app.models import Delivery, Evidence, Job, OwnerSession, Project, Publication, Repository, Revision
 from app.publishing import latest, project_by_slug, publish, revision_view
 from app.queue_delivery import dispatch_job, dispatch_pending
-from app.repository_scan import ScanError, enqueue_scan, scan_allowed, schedule_scans
+from app.repository_scan import ScanError, enqueue_scan, repository_metadata, scan_allowed, schedule_scans
 from app.schemas import (
     GenerateInput,
     ImportRepositoriesInput,
     PublishInput,
     RepositoryInput,
     RevisionInput,
+    ScanInput,
     digest,
 )
 
@@ -263,18 +264,25 @@ def repositories(slug: str, db: Session = Depends(get_db)):
     status_code=202,
     dependencies=[Depends(auth.require_owner)],
 )
-def scan_repository(slug: str, repository_id: str, db: Session = Depends(get_db)):
+def scan_repository(slug: str, repository_id: str, body: ScanInput, db: Session = Depends(get_db)):
     project = project_by_slug(db, slug)
     repo = db.get(Repository, repository_id)
     if not repo or repo.project_id != project.id:
         raise HTTPException(404, "Repository not found for this project")
     try:
+        if body.enable_source_analysis:
+            metadata = repository_metadata(repo)
+            if metadata.get("owner", {}).get("id") != settings().owner_github_id:
+                raise ScanError("Select a public repository owned by your GitHub account")
+            repo.allow_ai = True
+            repo.allow_source_ai = True
         job = enqueue_scan(db, repo)
         # Only an explicit owner request retries a failed scan; scheduled checks do not.
         if job.status == "failed":
             job.status, job.attempts, job.error = "queued", 0, None
         db.commit()
     except ScanError as exc:
+        db.rollback()
         raise HTTPException(422, str(exc)) from None
     except IntegrityError:
         db.rollback()
